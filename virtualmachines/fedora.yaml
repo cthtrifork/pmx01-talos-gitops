@@ -73,7 +73,7 @@ spec:
           requests:
             storage: 35Gi
         accessModes:
-          - ReadWriteMany
+          - ReadWriteOnce
         storageClassName: "local-path"
       source:
         http:
