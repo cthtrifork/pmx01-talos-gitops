@@ -27,6 +27,9 @@ patches:
       name: local-path
       annotations:
         storageclass.kubernetes.io/is-default-class: "true"
+      volumeBindingMode: WaitForFirstConsumer
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
 - patch: |- #yaml
     apiVersion: v1
     kind: Namespace
@@ -34,3 +37,6 @@ patches:
       name: local-path-storage
       labels:
         pod-security.kubernetes.io/enforce: privileged
+        pod-security.kubernetes.io/enforce-version: v1.30
+        pod-security.kubernetes.io/warn: privileged
+        pod-security.kubernetes.io/audit: privileged
