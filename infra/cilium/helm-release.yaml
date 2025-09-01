@@ -80,7 +80,7 @@ spec:
           enabled: false
       tls:
         auto:
-          enabled: true  # enable automatic TLS certificate generation
+          enabled: false  # enable automatic TLS certificate generation
           method: certmanager  #  auto generate certificates using cert-manager
           certValidityDuration: 1095  #  certificates validity duration in days (default 3 years)
           certManagerIssuerRef:
