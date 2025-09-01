@@ -22,7 +22,7 @@ spec:
             memory: 4G
         devices:
           disks:
-            - name: fedora-vm-pvc
+            - name: fedora-vm-pvc2
               disk:
                 bus: virtio
             - name: cloudinitdisk
@@ -35,9 +35,9 @@ spec:
         - name: podnet
           pod: {}
       volumes:
-        - name: fedora-vm-pvc
+        - name: fedora-vm-pvc2
           persistentVolumeClaim:
-            claimName: fedora-vm-pvc
+            claimName: fedora-vm-pvc2
         - name: cloudinitdisk
           cloudInitNoCloud:
             networkData: |
@@ -66,7 +66,7 @@ spec:
 
   dataVolumeTemplates:
   - metadata:
-      name: fedora-vm-pvc
+      name: fedora-vm-pvc2
     spec:
       storage:
         resources:
