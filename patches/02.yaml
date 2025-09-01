@@ -1,0 +1,14 @@
+machine:
+  network:
+    interfaces:
+      - interface: br0
+        bridge:
+          interfaces: [eno1]
+          stp:
+            enabled: false     # STP off avoids long “no-traffic” on boot for single uplink
+        addresses:
+          - 192.168.1.51/24
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 192.168.1.1
+            metric: 100
