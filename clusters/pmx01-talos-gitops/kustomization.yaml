@@ -10,7 +10,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: gitops
-  path: ./infra/bootstrap
+  path: ../../infra/bootstrap
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -25,7 +25,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: gitops
-  path: ./infra
+  path: ../../infra
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -40,4 +40,4 @@ spec:
   sourceRef:
     kind: GitRepository
     name: gitops
-  path: ./infra/post
+  path: ../../infra/post
