@@ -149,7 +149,7 @@ spec:
       enabled: true
       type: wireguard
     k8sServiceHost: localhost 
-    k8sServicePort: "6443"
+    k8sServicePort: "7445"
     egressGateway:
       enabled: false
     bpf:
