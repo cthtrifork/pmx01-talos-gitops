@@ -5,3 +5,4 @@ resources:
   - local-path-provisioner/
   - cert-manager/
   - kubevirt-operator/
+  - metrics-server/
