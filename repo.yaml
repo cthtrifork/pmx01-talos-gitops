@@ -32,7 +32,7 @@ spec:
   interval: 5m
   prune: true
   dependsOn:
-    - name: cert-manager
+    - name: gitops-infra
   sourceRef:
     kind: GitRepository
     name: gitops
