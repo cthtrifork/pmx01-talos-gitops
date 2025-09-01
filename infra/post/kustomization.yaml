@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - cilium/l2announcement.yaml
   - cert-manager/certificate-cluster-issuer.yaml
+  - kubevirt-operator/kubevirt.yaml
