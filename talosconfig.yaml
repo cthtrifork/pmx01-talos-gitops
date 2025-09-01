@@ -1,0 +1,8 @@
+context: portableinfo
+contexts:
+    portableinfo:
+        endpoints:
+            - https://portableinfo.eu-central-1.omni.siderolabs.io
+        auth:
+            siderov1:
+                identity: caspert@gmail.com
