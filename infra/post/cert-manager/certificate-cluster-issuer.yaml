@@ -1,7 +1,32 @@
+# Self-signed root CA (cluster-scoped)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: portableinfo-pmx01-root-ca-bootstrap
+spec:
+  selfSigned: {}
+
+---
+# Mint the actual Root CA using the self-signed bootstrap
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: portableinfo-pmx01-root-ca
+  namespace: cert-manager-system
+spec:
+  isCA: true
+  commonName: portableinfo-root-ca
+  secretName: portableinfo-root-ca
+  issuerRef:
+    name: portableinfo-pmx01-root-ca-bootstrap
+    kind: ClusterIssuer
+
+---
+# Final single ClusterIssuer backed by the minted Root CA
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
   name: certificate-cluster-issuer
-  namespace: cert-manager-system
 spec:
-  selfSigned: {}
+  ca:
+    secretName: portableinfo-root-ca
