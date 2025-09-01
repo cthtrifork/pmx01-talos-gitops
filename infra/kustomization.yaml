@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   - cilium/
   - local-path-provisioner/
-  - controllers/cert-manager/
+  - cert-manager/
