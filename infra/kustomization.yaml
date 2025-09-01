@@ -4,3 +4,4 @@ resources:
   - cilium/
   - local-path-provisioner/
   - cert-manager/
+  - kubevirt-operator/

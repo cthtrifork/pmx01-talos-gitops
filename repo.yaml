@@ -13,11 +13,26 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: gitops-infra-bootstrap
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: gitops
+  path: ./infra/bootstrap
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: gitops-infra
   namespace: flux-system
 spec:
   interval: 1m0s
   prune: true
+  dependsOn:
+    - name: gitops-infra-bootstrap
   sourceRef:
     kind: GitRepository
     name: gitops
