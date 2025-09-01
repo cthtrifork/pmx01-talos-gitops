@@ -25,7 +25,7 @@ spec:
       - --metric-resolution=1m
       - --kubelet-request-timeout=30s
     serviceMonitor:
-      enabled: true
+      enabled: false
     metrics:
       enabled: true
     resources:
