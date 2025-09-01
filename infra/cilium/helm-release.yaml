@@ -146,13 +146,13 @@ spec:
     operator:
       replicas: 1
       podDisruptionBudget:
-        enabled: true
+        enabled: false
         maxUnavailable: 50%
       prometheus:
         metricsService: true
-        enabled: true
+        enabled: false
         serviceMonitor:
-          enabled: true
+          enabled: false
       resources:
         limits:
           memory: 512Mi
