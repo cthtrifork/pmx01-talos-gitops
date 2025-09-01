@@ -157,8 +157,8 @@ spec:
         limits:
           memory: 512Mi
         requests:
-          cpu: ${CILIUM_OPERATOR_CPU_REQUEST:=100m}
-          memory: ${CILIUM_OPERATOR_MEMORY_REQUEST:=256Mi}
+          cpu: 50m
+          memory: 256Mi
     prometheus:
       metricsService: false
       enabled: false
