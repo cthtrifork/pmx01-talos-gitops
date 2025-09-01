@@ -20,7 +20,6 @@ spec:
   issuerRef:
     name: portableinfo-pmx01-root-ca-bootstrap
     kind: ClusterIssuer
-
 ---
 # Final single ClusterIssuer backed by the minted Root CA
 apiVersion: cert-manager.io/v1

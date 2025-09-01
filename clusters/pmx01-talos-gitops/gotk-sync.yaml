@@ -41,3 +41,18 @@ spec:
     kind: GitRepository
     name: gitops
   path: ../../infra/post
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gitops-virtualmachines
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  prune: true
+  dependsOn:
+    - name: gitops-infra-post
+  sourceRef:
+    kind: GitRepository
+    name: gitops
+  path: ../../virtualmachines
