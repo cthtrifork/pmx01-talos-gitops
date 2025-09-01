@@ -45,7 +45,7 @@ spec:
                 version: 1
                 config:
                   - type: physical
-                    name: eth0
+                    name: eno1 # eth0
                     subnets:
                       - type: dhcp
             userData: |-
