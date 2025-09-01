@@ -70,6 +70,9 @@ spec:
       requests:
         cpu: 100m
         memory: 256Mi
+    # Enable Cilium Ingress Controller
+    ingressController:
+      enabled: true
     envoy:
       resources:
         limits:
@@ -93,6 +96,11 @@ spec:
         enabled: ${CILIUM_HUBBLE_UI_ENABLED:=true}
         podDisruptionBudget:
           enabled: false
+        service:
+          annotations:
+            # Enable Omni Workload Proxying for this service
+            omni-kube-service-exposer.sidero.dev/port: "50080"
+            omni-kube-service-exposer.sidero.dev/label: Hubble
       tls:
         auto:
           enabled: false  # enable automatic TLS certificate generation
