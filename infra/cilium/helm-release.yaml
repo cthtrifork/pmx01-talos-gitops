@@ -50,8 +50,8 @@ spec:
         enabled: false
       hostRoot: /sys/fs/cgroup
     cluster:
-      name: ${CLUSTER_NAME:=default}
-      id: ${CLUSTER_ID:=0}
+      name: portableinfo-talos-pmx01
+      id: 1
     # kubernetes-in-docker hacks
     ipv4:
       enabled: true
@@ -82,7 +82,7 @@ spec:
           memory: 64Mi
     hubble:
       relay:
-        enabled: ${CILIUM_HUBBLE_RELAY_ENABLED:=true}
+        enabled: true
         podDisruptionBudget:
           enabled: false
         resources:
@@ -93,7 +93,7 @@ spec:
             cpu: 5m
             memory: 64Mi
       ui:
-        enabled: ${CILIUM_HUBBLE_UI_ENABLED:=true}
+        enabled: true
         podDisruptionBudget:
           enabled: false
         service:
