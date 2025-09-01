@@ -5,7 +5,7 @@ metadata:
   name: fedora-vm-test
   namespace: kubevirt-system
 spec:
-  running: false
+  running: true
   template:
     metadata:
       labels:
