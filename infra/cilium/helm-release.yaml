@@ -103,7 +103,7 @@ spec:
             omni-kube-service-exposer.sidero.dev/label: Hubble
       tls:
         auto:
-          enabled: false  # enable automatic TLS certificate generation
+          enabled: true  # enable automatic TLS certificate generation
           method: certmanager  #  auto generate certificates using cert-manager
           certValidityDuration: 1095  #  certificates validity duration in days (default 3 years)
           certManagerIssuerRef:
