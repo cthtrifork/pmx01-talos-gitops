@@ -2,5 +2,6 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: certificate-cluster-issuer
+  namespace: cert-manager-system
 spec:
   selfSigned: {}
