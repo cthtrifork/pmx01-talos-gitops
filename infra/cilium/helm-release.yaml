@@ -177,6 +177,7 @@ spec:
       enabled: false
     bpf:
       masquerade: true
+      hostLegacyRouting: true
     l2announcements:
       enabled: true
     externalIPs:
