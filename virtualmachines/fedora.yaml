@@ -6,7 +6,7 @@ metadata:
   namespace: kubevirt-system
 spec:
   #running: true
-  RunStrategy: Always
+  runStrategy: Always
   template:
     metadata:
       labels:
@@ -102,4 +102,5 @@ spec:
   selector:
     kubevirt.io/vm: fedora-vm
   type: LoadBalancer
+
 
