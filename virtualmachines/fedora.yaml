@@ -77,5 +77,27 @@ spec:
         storageClassName: "local-path"
       source:
         http:
-
           url: "https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    kubevirt.io/vm: fedora-vm
+  name: fedora-vm
+  namespace: kubevirt-system
+spec:
+  ipFamilyPolicy: PreferDualStack
+  externalTrafficPolicy: Local
+  ports:
+  - name: ssh
+    port: 22
+    protocol: TCP
+    targetPort: 22
+  - name: httpd
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    kubevirt.io/vm: fedora-vm
+  type: LoadBalancer
