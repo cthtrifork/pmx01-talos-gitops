@@ -173,14 +173,14 @@ spec:
       type: wireguard
     k8sServiceHost: localhost 
     k8sServicePort: "7445"
-    egressGateway:
-      enabled: false
-    bpf:
-      masquerade: true
-      hostLegacyRouting: true
-    l2announcements:
-      enabled: true
+    #egressGateway:
+    #  enabled: false
+    #bpf:
+    #  masquerade: true
+    #  hostLegacyRouting: true
+    #l2announcements:
+    #  enabled: true
     #externalIPs:
     #  enabled: true
-    policyEnforcementMode: always  # enforce network policies (default deny basically)
-    policyAuditMode: true  # NEVER SET THIS TO TRUE IN PRODUCTION, as it will disable all network policies and allow all traffic  
+    #policyEnforcementMode: always  # enforce network policies (default deny basically)
+    #policyAuditMode: true  # NEVER SET THIS TO TRUE IN PRODUCTION, as it will disable all network policies and allow all traffic  
