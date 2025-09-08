@@ -26,7 +26,7 @@ spec:
     mode: enabled
   # https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml
   values:
-    devices: br0
+    #devices: br0
     securityContext:
       capabilities:
         ciliumAgent:
@@ -72,7 +72,7 @@ spec:
         memory: 256Mi
     # Enable Cilium Ingress Controller
     ingressController:
-      enabled: true
+      enabled: false
     envoy:
       resources:
         limits:
@@ -180,7 +180,7 @@ spec:
       hostLegacyRouting: true
     l2announcements:
       enabled: true
-    externalIPs:
-      enabled: true
+    #externalIPs:
+    #  enabled: true
     policyEnforcementMode: always  # enforce network policies (default deny basically)
     policyAuditMode: true  # NEVER SET THIS TO TRUE IN PRODUCTION, as it will disable all network policies and allow all traffic  
