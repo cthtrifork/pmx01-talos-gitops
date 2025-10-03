@@ -29,6 +29,8 @@ talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p read /proc/net/
 ```sh
 kubectl virt --kubeconfig ./kubeconfig.yaml start -n kubevirt-system fedora-vm-test
 
+kubectl virt image-upload pvc fedora-pvc --no-create --image-path=/images/fedora30.qcow2
+
 kubectl virt --kubeconfig ./kubeconfig.yaml console -n kubevirt-system fedora-vm-test
 ```
 

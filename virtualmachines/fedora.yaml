@@ -32,7 +32,7 @@ metadata:
   namespace: kubevirt-system
 spec:
   #running: true
-  #runStrategy: Halted #Always
+  runStrategy: Manual
   template:
     metadata:
       labels:
