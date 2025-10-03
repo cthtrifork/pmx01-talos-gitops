@@ -78,8 +78,9 @@ spec:
             userData: |-
               #cloud-config
               users:
-                - name: cloud-user
-                  ssh_import_id: [user, 'gh:cthtrifork']
+                - name: cthtrifork
+                  ssh_import_id:
+                    - gh:cthtrifork
                   sudo: ['ALL=(ALL) NOPASSWD:ALL']
                   groups: sudo
                   shell: /bin/bash
