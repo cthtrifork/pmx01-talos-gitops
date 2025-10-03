@@ -26,6 +26,8 @@ spec:
     mode: enabled
   # https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml
   values:
+    ipam:
+      mode: kubernetes
     kubeProxyReplacement: true
     securityContext:
       capabilities:
@@ -40,6 +42,8 @@ spec:
 
     # Multi-NIC: select all 'en*' devices across nodes (works with differing names)
     devices: "en+"
+    nodePort:
+      directRoutingDevice: "en+"
 
     # Reasonable bare-metal defaults
     #tunnel: "disabled"
@@ -47,6 +51,8 @@ spec:
     autoDirectNodeRoutes: true
 
     enableIPv4Masquerade: true
+    ipMasqAgent:
+      enabled: false
     ipv4NativeRoutingCIDR: "10.244.0.0/16"
 
     # Hubble (optional – observability)
