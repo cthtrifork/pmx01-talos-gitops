@@ -26,163 +26,33 @@ spec:
     mode: enabled
   # https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml
   values:
-    devices: "eno1,enp87s0"
-      #- eno1 # talos-tmd-e0p
-      #- enp87s0 # talos-ska-6at
+    kubeProxyReplacement: true
     securityContext:
       capabilities:
-        ciliumAgent:
-          - CHOWN
-          - KILL
-          - NET_ADMIN
-          - NET_RAW
-          - IPC_LOCK
-          - SYS_ADMIN
-          - SYS_RESOURCE
-          - DAC_OVERRIDE
-          - FOWNER
-          - SETUID
-          - SETGID
-        cleanCiliumState:
-          - NET_ADMIN
-          - SYS_ADMIN
-          - SYS_RESOURCE
+        ciliumAgent: "{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}"
+        cleanCiliumState: "{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}"
     cgroup:
       autoMount:
         enabled: false
       hostRoot: /sys/fs/cgroup
-    cluster:
-      name: portableinfo-talos-pmx01
-      id: 1
-    # kubernetes-in-docker hacks
-    ipv4:
-      enabled: true
-    ipv6:
-      enabled: false
-    nodePort:
-      enabled: false
-    hostPort:
-      enabled: false
-    ipam:
-      mode: kubernetes
-    # Agent resource limits & requests
-    resources:
-      limits:
-        memory: 1Gi
-      requests:
-        cpu: 100m
-        memory: 256Mi
-    # Enable Cilium Ingress Controller
-    ingressController:
-      enabled: false
-    envoy:
-      resources:
-        limits:
-          memory: 512Mi
-        requests:
-          cpu: 20m
-          memory: 64Mi
+    k8sServiceHost: localhost
+    k8sServicePort: 7445
+
+    # Multi-NIC: select all 'en*' devices across nodes (works with differing names)
+    devices: "en+"
+
+    # Reasonable bare-metal defaults
+    #tunnel: "disabled"
+    routingMode: "native"
+    autoDirectNodeRoutes: true
+
+    enableIPv4Masquerade: true
+    ipv4NativeRoutingCIDR: "10.244.0.0/16"
+
+    # Hubble (optional – observability)
     hubble:
+      enabled: true
       relay:
         enabled: true
-        podDisruptionBudget:
-          enabled: false
-        resources:
-          limits:
-            cpu: 100m
-            memory: 512Mi
-          requests:
-            cpu: 5m
-            memory: 64Mi
       ui:
         enabled: true
-        podDisruptionBudget:
-          enabled: false
-        service:
-          annotations:
-            # Enable Omni Workload Proxying for this service
-            omni-kube-service-exposer.sidero.dev/port: "50080"
-            omni-kube-service-exposer.sidero.dev/label: Hubble
-      tls:
-        auto:
-          enabled: true  # enable automatic TLS certificate generation
-          method: helm # certmanager  #  auto generate certificates using cert-manager
-          certValidityDuration: 1095  #  certificates validity duration in days (default 3 years)
-          certManagerIssuerRef:
-            group: cert-manager.io  # Reference to cert-manager's issuer
-            kind: ClusterIssuer
-            name: certificate-cluster-issuer  # certificate-cluster-issuer
-        server:
-          extraDnsNames:
-            - "*.default.hubble-grpc.cilium.io"
-        frontend:
-          resources:
-            limits:
-              cpu: 100m
-              memory: 128Mi
-            requests:
-              cpu: 5m
-              memory: 64Mi
-        backend:
-          resources:
-            limits:
-              cpu: 100m
-              memory: 128Mi
-            requests:
-              cpu: 10m
-              memory: 64Mi
-    clustermesh:
-      apiserver:
-        podDisruptionBudget:
-          enabled: false
-          maxUnavailable: 1
-        tls:
-          auto:
-            enabled: true
-            method: helm # certmanager  #  auto generate certificates using cert-manager
-            certValidityDuration: 1095  #  certificates validity duration in days (default 3 years)
-            certManagerIssuerRef:
-              group: cert-manager.io  # Reference to cert-manager's issuer
-              kind: ClusterIssuer
-              name: certificate-cluster-issuer  # certificate-cluster-issuer
-    operator:
-      replicas: 1
-      podDisruptionBudget:
-        enabled: false
-        maxUnavailable: 50%
-      prometheus:
-        metricsService: true
-        enabled: false
-        serviceMonitor:
-          enabled: false
-      resources:
-        limits:
-          memory: 512Mi
-        requests:
-          cpu: 50m
-          memory: 256Mi
-    prometheus:
-      metricsService: false
-      enabled: false
-      serviceMonitor:
-        enabled: false
-        trustCRDsExist: true
-    dashboards:
-      enabled: false
-    kubeProxyReplacement: true
-    encryption:
-      enabled: true
-      type: wireguard
-    k8sServiceHost: localhost 
-    k8sServicePort: "7445"
-    #egressGateway:
-    #  enabled: false
-    #bpf:
-    #  masquerade: true
-    #  hostLegacyRouting: true
-    #l2announcements:
-    #  enabled: true
-    #externalIPs:
-    #  enabled: true
-    #policyEnforcementMode: always  # enforce network policies (default deny basically)
-    #policyAuditMode: true  # NEVER SET THIS TO TRUE IN PRODUCTION, as it will disable all network policies and allow all traffic  
