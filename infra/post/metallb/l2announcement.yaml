@@ -13,5 +13,5 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-    - METALLB_CIDR: "192.168.1.51/24"
+    - 192.168.1.50-192.168.1.99"
   autoAssign: false  # only services with a loadBalancerIP: will be assigned an IP from the pool.
