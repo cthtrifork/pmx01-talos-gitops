@@ -19,6 +19,10 @@ talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p read /proc/net/
 
 <https://www.itguyjournals.com/installing-cilium-and-multus-on-talos-os-for-advanced-kubernetes-networking/>
 
+## Vm stuff
+
+<https://github.com/kubevirt/kubectl-virt-plugin>
+
 
 ```sh
 kubectl --kubeconfig ./kubeconfig.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.podCIDR}{"\n"}{end}'

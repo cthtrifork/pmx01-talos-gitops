@@ -6,7 +6,7 @@ metadata:
   namespace: kubevirt-system
 spec:
   #running: true
-  runStrategy: Halted #Always
+  #runStrategy: Halted #Always
   template:
     metadata:
       labels:
