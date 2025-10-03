@@ -22,7 +22,17 @@ talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p read /proc/net/
 ## Vm stuff
 
 <https://github.com/kubevirt/kubectl-virt-plugin>
+<https://a-cup-of.coffee/blog/omni/>
+<https://www.talos.dev/v1.11/advanced/install-kubevirt/>
 
+
+```sh
+kubectl virt --kubeconfig ./kubeconfig.yaml start -n kubevirt-system fedora-vm-test
+
+kubectl virt --kubeconfig ./kubeconfig.yaml console -n kubevirt-system fedora-vm-test
+```
+
+# install
 
 ```sh
 kubectl --kubeconfig ./kubeconfig.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.podCIDR}{"\n"}{end}'
