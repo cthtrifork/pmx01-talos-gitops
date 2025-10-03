@@ -6,7 +6,10 @@ metadata:
   namespace: metallb-system
 spec:
   ipAddressPools:
-  - first-pool
+    - first-pool
+  interfaces:
+    - eno1
+    - enp87s0
 ---
 # https://metallb.universe.tf/configuration/_advanced_ipaddresspool_configuration/
 apiVersion: metallb.io/v1beta1
@@ -17,4 +20,4 @@ metadata:
 spec:
   addresses:
     - 192.168.1.50-192.168.1.99
-  autoAssign: false  # only services with a loadBalancerIP: will be assigned an IP from the pool.
+  autoAssign: false # only services with a loadBalancerIP: will be assigned an IP from the pool.
