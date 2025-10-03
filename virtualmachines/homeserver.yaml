@@ -1,10 +1,45 @@
+# 1) DataVolume to UPLOAD your QCOW2 into (the "installer" disk)
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: homeserver-installer-dv
+  namespace: kubevirt-system
+spec:
+  source:
+    upload: {}               # We will upload the qcow2 into this DV
+  contentType: kubevirt      
+  pvc:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 4Gi       
+    storageClassName: local-path
+
+---
+# 2) Blank 128Gi disk to INSTALL ONTO
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: homeserver-rootdisk-dv
+  namespace: kubevirt-system
+spec:
+  source:
+    blank: {}                 # empty disk
+  pvc:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 128Gi
+    storageClassName: local-path
+
+---
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
-  labels:
-    kubevirt.io/os: linux
   name: homeserver-vm
   namespace: kubevirt-system
+  labels:
+    kubevirt.io/os: linux
 spec:
   runStrategy: Manual
   template:
@@ -13,32 +48,37 @@ spec:
         kubevirt.io/vm: homeserver-vm
     spec:
       domain:
-        cpu:
-          cores: 2
-        devices:
-          disks:
-            - disk:
-                bus: virtio
-              name: disk0
         machine:
           type: q35
+        cpu:
+          cores: 2
         resources:
           requests:
             memory: 4096M
+        devices:
+          # Add a simple display/console combo so you can interact with the installer
+          interfaces:
+            - name: default
+              masquerade: {}
+          rng: {}  # entropy for faster installs
+          disks:
+            # Boot from the uploaded qcow2
+            - name: installer
+              disk:
+                bus: virtio
+              bootOrder: 1
+            # 128Gi target disk for installation
+            - name: rootdisk
+              disk:
+                bus: virtio
+              bootOrder: 2
+      networks:
+        - name: default
+          pod: {}
       volumes:
-        - name: disk0
-          persistentVolumeClaim:
-            claimName: homeserver-pvc
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: homeserver-pvc
-  namespace: kubevirt-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: "local-path"
-  resources:
-    requests:
-      storage: 128Gi
+        - name: installer
+          dataVolume:
+            name: installer-dv
+        - name: rootdisk
+          dataVolume:
+            name: rootdisk-dv

@@ -28,8 +28,20 @@ talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p read /proc/net/
 
 ```sh
 kubectl virt --kubeconfig ./kubeconfig.yaml start -n kubevirt-system fedora-vm-test
+kubectl virt --kubeconfig ./kubeconfig.yaml stop -n kubevirt-system fedora-vm-test
 
-kubectl virt image-upload pvc fedora-pvc --no-create --image-path=/images/fedora30.qcow2
+kubectl virt --kubeconfig ./kubeconfig.yaml start -n kubevirt-system homeserver-vm
+kubectl virt --kubeconfig ./kubeconfig.yaml image-upload pvc homeserver-pvc --no-create --image-path=/tmp/images/homeserver-centos-stream9.qcow2
+
+# Upload
+kubectl --kubeconfig ./kubeconfig.yaml -n cdi port-forward svc/cdi-uploadproxy 8443:443
+kubectl virt --kubeconfig ./kubeconfig.yaml image-upload dv homeserver-installer-dv \
+  -n kubevirt-system \
+  --no-create \
+  --image-path=/tmp/images/homeserver-centos-stream9.qcow2 \
+  --uploadproxy-url https://127.0.0.1:8443 \
+  --insecure
+kubectl virt --kubeconfig ./kubeconfig.yaml -n kubevirt-system get dv homeserver-installer-dv -o yaml | grep phase:
 
 kubectl virt --kubeconfig ./kubeconfig.yaml console -n kubevirt-system fedora-vm-test
 ```
