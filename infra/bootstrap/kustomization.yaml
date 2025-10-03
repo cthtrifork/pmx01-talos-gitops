@@ -4,3 +4,4 @@ resources:
   - cert-manager/namespace.yaml
   - kubevirt/namespace.yaml
   - repo.yaml
+  - metallb/namespace.yaml
