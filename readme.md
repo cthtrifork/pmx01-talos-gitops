@@ -5,7 +5,9 @@ Remember to install cilium directly and delete flannel + kubeproxy daemonsets, b
 ## Debugging
 
 ```sh
-kubectl --kubeconfig ./talos-default-kubeconfig.yaml get nodes
+kubectl --kubeconfig ./kubeconfig.yaml get nodes
 ssh -L 8000:localhost:8000 -N caspertdk@192.168.1.132
 talos-tmd-e0p
+
+talosctl --talosconfig ./talosconfig.yaml  get links --nodes talos-tmd-e0p
 ```

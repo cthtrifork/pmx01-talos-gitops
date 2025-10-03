@@ -26,7 +26,9 @@ spec:
     mode: enabled
   # https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml
   values:
-    #devices: br0
+    devices: "eno1,enp87s0"
+      #- eno1 # talos-tmd-e0p
+      #- enp87s0 # talos-ska-6at
     securityContext:
       capabilities:
         ciliumAgent:
