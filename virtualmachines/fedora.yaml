@@ -13,14 +13,14 @@ spec:
   externalTrafficPolicy: Local
   ipFamilyPolicy: SingleStack # IPv4
   ports:
-  - name: ssh
-    port: 22
-    protocol: TCP
-    targetPort: 22
-  - name: httpd
-    port: 80
-    protocol: TCP
-    targetPort: 80
+    - name: ssh
+      port: 22
+      protocol: TCP
+      targetPort: 22
+    - name: httpd
+      port: 80
+      protocol: TCP
+      targetPort: 80
   selector:
     kubevirt.io/vm: fedora-vm
   type: LoadBalancer
@@ -56,8 +56,8 @@ spec:
               disk:
                 bus: virtio
           interfaces:
-          - name: podnet
-            masquerade: {}
+            - name: podnet
+              masquerade: {}
       networks:
         - name: podnet
           pod: {}
@@ -93,16 +93,16 @@ spec:
                 - "sudo systemctl start --no-block httpd"
 
   dataVolumeTemplates:
-  - metadata:
-      name: fedora-vm-pvc2
-    spec:
-      storage:
-        resources:
-          requests:
-            storage: 35Gi
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: "local-path"
-      source:
-        http:
-          url: "https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"
+    - metadata:
+        name: fedora-vm-pvc2
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 35Gi
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: "local-path"
+        source:
+          http:
+            url: "https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"

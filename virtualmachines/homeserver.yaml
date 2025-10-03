@@ -1,0 +1,44 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  labels:
+    kubevirt.io/os: linux
+  name: homeserver-vm
+  namespace: kubevirt-system
+spec:
+  #runStrategy: Always
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: homeserver-vm
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: disk0
+        machine:
+          type: q35
+        resources:
+          requests:
+            memory: 4096M
+      volumes:
+        - name: disk0
+          persistentVolumeClaim:
+            claimName: homeserver-pvc
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: homeserver-pvc
+  namespace: kubevirt-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "local-path"
+  resources:
+    requests:
+      storage: 128Gi
