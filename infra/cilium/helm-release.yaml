@@ -76,3 +76,6 @@ spec:
         enabled: true
       ui:
         enabled: true
+
+    # -- Enable LoadBalancer IP Address Management
+    enableLBIPAM: false
