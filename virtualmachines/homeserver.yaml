@@ -1,84 +1,98 @@
-# 1) DataVolume to UPLOAD your QCOW2 into (the "installer" disk)
-apiVersion: cdi.kubevirt.io/v1beta1
-kind: DataVolume
-metadata:
-  name: homeserver-installer-dv
-  namespace: kubevirt-system
-spec:
-  source:
-    upload: {}               # We will upload the qcow2 into this DV
-  contentType: kubevirt      
-  pvc:
-    accessModes: ["ReadWriteOnce"]
-    resources:
-      requests:
-        storage: 4Gi       
-    storageClassName: local-path
-
 ---
-# 2) Blank 128Gi disk to INSTALL ONTO
-apiVersion: cdi.kubevirt.io/v1beta1
-kind: DataVolume
+apiVersion: v1
+kind: Service
 metadata:
-  name: homeserver-rootdisk-dv
+  labels:
+    kubevirt.io/vm: homeserver-vm
+  name: homeserver-vm
   namespace: kubevirt-system
+  annotations:
+    metallb.universe.tf/address-pool: first-pool
 spec:
-  source:
-    blank: {}                 # empty disk
-  pvc:
-    accessModes: ["ReadWriteOnce"]
-    resources:
-      requests:
-        storage: 128Gi
-    storageClassName: local-path
-
+  loadBalancerIP: 192.168.1.223 # todo
+  externalTrafficPolicy: Local
+  ipFamilyPolicy: SingleStack # IPv4
+  ports:
+    - name: ssh
+      port: 22
+      protocol: TCP
+      targetPort: 22
+  selector:
+    kubevirt.io/vm: homeserver-vm
+  type: LoadBalancer
 ---
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:
   name: homeserver-vm
   namespace: kubevirt-system
-  labels:
-    kubevirt.io/os: linux
 spec:
+  #running: true
   runStrategy: Manual
   template:
     metadata:
       labels:
         kubevirt.io/vm: homeserver-vm
+      #annotations:
+      #  kubevirt.io/allow-pod-bridge-network-live-migration: "true"
     spec:
+      #evictionStrategy: LiveMigrate
       domain:
-        machine:
-          type: q35
         cpu:
           cores: 2
         resources:
           requests:
-            memory: 4096M
+            memory: 32G
         devices:
-          # Add a simple display/console combo so you can interact with the installer
-          interfaces:
-            - name: default
-              masquerade: {}
-          rng: {}  # entropy for faster installs
           disks:
-            # Boot from the uploaded qcow2
-            - name: installer
+            - name: homeserver-vm-pvc
               disk:
                 bus: virtio
-              bootOrder: 1
-            # 128Gi target disk for installation
-            - name: rootdisk
+            - name: cloudinitdisk
               disk:
                 bus: virtio
-              bootOrder: 2
+          interfaces:
+            - name: podnet
+              masquerade: {}
       networks:
-        - name: default
+        - name: podnet
           pod: {}
       volumes:
-        - name: installer
-          dataVolume:
-            name: installer-dv
-        - name: rootdisk
-          dataVolume:
-            name: rootdisk-dv
+        - name: homeserver-vm-pvc
+          persistentVolumeClaim:
+            claimName: homeserver-vm-pvc
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            networkData: |
+              network:
+                version: 1
+                config:
+                  - type: physical
+                    name: eno1 # eth0
+                    subnets:
+                      - type: dhcp
+            userData: |-
+              #cloud-config
+              users:
+                - name: cthtrifork
+                  ssh_import_id:
+                    - gh:cthtrifork
+                  sudo: ['ALL=(ALL) NOPASSWD:ALL']
+                  groups: sudo
+                  shell: /bin/bash
+  dataVolumeTemplates:
+    - metadata:
+        name: homeserver-vm-pvc
+      spec:
+        storage:
+          resources:
+            requests:
+              storage: 256Gi
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: "local-path"
+        source:
+          http:
+            secretRef:
+              name: homeserver-download-secret
+            url: "https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2"
