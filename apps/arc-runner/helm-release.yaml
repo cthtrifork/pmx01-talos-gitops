@@ -1,0 +1,37 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: arc-runners
+  namespace: arc-runners-system
+spec:
+  interval: 10m
+  releaseName: arc-runners
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: 0.13.0  # https://github.com/actions/actions-runner-controller/pkgs/container/actions-runner-controller-charts%2Fgha-runner-scale-set
+      sourceRef:
+        kind: HelmRepository
+        name: actions-runner-controller
+        namespace: arc-runners-system
+  install:
+    createNamespace: true
+  values:
+    # name of the runner scale set -> what you use in `runs-on: arc-ubuntu`
+    githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
+    runnerScaleSetName: arc-ubuntu
+
+    # point to the secret we created with SOPS
+    githubConfigSecret:
+      name: github-auth
+      # choose ONE of these keys depending on how you made the secret:
+      key: github_token
+      # key: GITHUB_TOKEN
+
+    # optional: labels to match on in your GitHub workflows
+    containerMode:
+      type: dind
+    template:
+      spec:
+        containers: []

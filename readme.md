@@ -2,6 +2,13 @@
 
 Remember to install cilium directly and delete flannel + kubeproxy daemonsets, before flux can be applied.
 
+
+## Installation
+
+```sh
+cat "$HOME/sops/age/keys.txt" | kubectl --kubeconfig ./kubeconfig.yaml create secret generic sops-age --namespace=flux-system --from-file=age.agekey=/dev/stdin
+```
+
 ## Debugging
 
 ```sh

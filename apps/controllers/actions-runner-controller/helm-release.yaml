@@ -1,0 +1,23 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gha-runner-scale-set-controller
+  namespace: arc-controller-system
+spec:
+  interval: 10m
+  releaseName: gha-runner-scale-set-controller
+  chart:
+    spec:
+      chart: gha-runner-scale-set-controller
+      version: 0.13.0 # https://github.com/actions/actions-runner-controller/pkgs/container/actions-runner-controller-charts%2Fgha-runner-scale-set-controller
+      sourceRef:
+        kind: HelmRepository
+        name: actions-runner-controller
+        namespace: arc-runners
+  install:
+    createNamespace: false
+  values:
+    # tune as needed
+    prometheus:
+      enabled: false
