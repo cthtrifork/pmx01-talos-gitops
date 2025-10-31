@@ -14,7 +14,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: actions-runner-controller
-        namespace: arc-runners
+        namespace: arc-runners-system
   install:
     createNamespace: true
   # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set-controller/values.yaml
