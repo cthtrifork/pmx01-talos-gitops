@@ -16,8 +16,8 @@ spec:
         name: actions-runner-controller
         namespace: arc-runners
   install:
-    createNamespace: false
+    createNamespace: true
+  # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set-controller/values.yaml
   values:
-    # tune as needed
-    prometheus:
-      enabled: false
+    serviceAccount:
+      create: true
