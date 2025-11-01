@@ -33,7 +33,6 @@ spec:
     # point to the secret we created with SOPS
     githubConfigSecret: github-auth
 
-    # optional: labels to match on in your GitHub workflows
     containerMode:
       type: dind
     template:
@@ -50,11 +49,6 @@ spec:
               limits:
                 cpu: 1000m
                 memory: 8Gi
-            securityContext:
-              privileged: true
-              readOnlyRootFilesystem: false
-              allowPrivilegeEscalation: true
-              runAsUser: 0
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
@@ -78,3 +72,9 @@ spec:
             emptyDir: {}
           - name: containers
             emptyDir: {}
+    listenerTemplate:
+      spec:
+        containers:
+          - name: listener
+            securityContext:
+              runAsUser: 1000
