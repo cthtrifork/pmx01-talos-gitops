@@ -22,7 +22,8 @@ spec:
     serviceAccount:
       create: true
     watchSingleNamespace: arc-runners-system
-
+    flags:
+      updateStrategy: "eventual"
     resources:
       limits:
         cpu: 100m
