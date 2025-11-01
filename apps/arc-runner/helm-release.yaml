@@ -36,3 +36,12 @@ spec:
     # optional: labels to match on in your GitHub workflows
     containerMode:
       type: dind
+    template:
+      spec:
+        containers:
+          - name: runner
+            image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest"
+            imagePullPolicy: Always
+            command: ["/home/runner/run.sh"]
+        imagePullSecrets:
+          - name: github-auth
