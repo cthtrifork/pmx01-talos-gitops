@@ -1,18 +1,26 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: allow-gha-controller-github-auth
+  name: gha-rs-controller-namespace-admin
   namespace: arc-runners-system
 rules:
+  # allow it to create the Role / RoleBinding it needs
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # usually autoscaling runners need SAs in that ns
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # and you said it also needs the secret
   - apiGroups: [""]
     resources: ["secrets"]
-    resourceNames: ["github-auth"]
-    verbs: ["get"]
+    verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: allow-gha-controller-github-auth
+  name: gha-rs-controller-namespace-admin
   namespace: arc-runners-system
 subjects:
   - kind: ServiceAccount
@@ -21,4 +29,4 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: allow-gha-controller-github-auth
+  name: gha-rs-controller-namespace-admin
