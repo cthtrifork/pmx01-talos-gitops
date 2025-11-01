@@ -8,6 +8,7 @@ USER root
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git \
+  podman \
   && rm -rf /var/lib/apt/lists/*
 
 USER runner
@@ -29,7 +30,6 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install sops \
   && brew install yamllint \
   && brew install yq \
-  && brew install podman \
   && brew cleanup
 
   RUN systemctl enable podman.socket
