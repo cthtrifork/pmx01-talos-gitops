@@ -2,7 +2,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: arc-runners
+  name: arc-runners-homeserver-bootc
   namespace: arc-runners-system
 spec:
   interval: 10m
@@ -17,6 +17,7 @@ spec:
         namespace: arc-runners-system
   install:
     createNamespace: true
+  # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
   values:
     controllerServiceAccount:
       # this SA is created by the controller chart, in arc-systems
@@ -27,11 +28,7 @@ spec:
     runnerScaleSetName: arc-ubuntu
 
     # point to the secret we created with SOPS
-    githubConfigSecret:
-      name: github-auth
-      # choose ONE of these keys depending on how you made the secret:
-      key: github_token
-      # key: GITHUB_TOKEN
+    githubConfigSecret: github-auth
 
     # optional: labels to match on in your GitHub workflows
     containerMode:
