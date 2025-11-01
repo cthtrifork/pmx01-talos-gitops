@@ -7,7 +7,7 @@ USER root
 # hadolint ignore=DL3008
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-  apt-get install build-essential procps curl file git \
+  build-essential procps curl file git \
   && rm -rf /var/lib/apt/lists/*
 
 USER runner
