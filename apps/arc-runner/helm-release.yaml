@@ -51,13 +51,9 @@ spec:
                 cpu: 1000m
                 memory: 8Gi
             securityContext:
+              privileged: true
               readOnlyRootFilesystem: false
-              #runAsNonRoot: true
-              runAsUser: 0
-              allowPrivilegeEscalation: false
-              capabilities:
-                add:
-                  - NET_ADMIN
+              allowPrivilegeEscalation: true
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
