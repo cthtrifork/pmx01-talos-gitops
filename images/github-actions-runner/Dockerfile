@@ -31,3 +31,5 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install yq \
   && brew install podman \
   && brew cleanup
+
+  RUN systemctl enable podman.socket
