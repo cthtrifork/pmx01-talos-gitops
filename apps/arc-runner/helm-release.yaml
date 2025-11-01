@@ -43,5 +43,41 @@ spec:
             image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest"
             imagePullPolicy: Always
             command: ["/home/runner/run.sh"]
+            resources:
+              requests:
+                cpu: 256m
+                memory: 4Gi
+              limits:
+                cpu: 1000m
+                memory: 8Gi
+            securityContext:
+              readOnlyRootFilesystem: false
+              #runAsNonRoot: true
+              runAsUser: 0
+              allowPrivilegeEscalation: false
+              capabilities:
+                add:
+                  - NET_ADMIN
+            env:
+              - name: DOCKER_HOST
+                value: unix:///var/run/docker.sock
+              - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
+                value: "120"
+            volumeMounts:
+              - name: containers
+                mountPath: /var/lib/containers
+              - name: work
+                mountPath: /home/runner/_work
+              - name: dind-sock
+                mountPath: /var/run
         imagePullSecrets:
           - name: github-auth
+        volumes:
+          - name: work
+            emptyDir: {}
+          - name: dind-sock
+            emptyDir: {}
+          - name: dind-externals
+            emptyDir: {}
+          - name: containers
+            emptyDir: {}
