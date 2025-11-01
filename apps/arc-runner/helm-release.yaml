@@ -28,7 +28,7 @@ spec:
     runnerScaleSetName: arc-ubuntu
 
     maxRunners: 5
-    minRunners: 0
+    minRunners: 1
 
     # point to the secret we created with SOPS
     githubConfigSecret: github-auth
