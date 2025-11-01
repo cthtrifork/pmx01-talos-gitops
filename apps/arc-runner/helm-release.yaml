@@ -21,7 +21,7 @@ spec:
   values:
     controllerServiceAccount:
       # this SA is created by the controller chart, in arc-systems
-      name: gha-runner-scale-set-controller
+      name: gha-runner-scale-set-controller-gha-rs-controller
       namespace: arc-controller-system
     # name of the runner scale set -> what you use in `runs-on: arc-ubuntu`
     githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
