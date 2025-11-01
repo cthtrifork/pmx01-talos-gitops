@@ -54,6 +54,7 @@ spec:
               privileged: true
               readOnlyRootFilesystem: false
               allowPrivilegeEscalation: true
+              runAsUser: 0
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
