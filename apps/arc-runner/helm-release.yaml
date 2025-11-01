@@ -50,6 +50,8 @@ spec:
                 cpu: 1000m
                 memory: 8Gi
             securityContext:
+              seLinuxOptions:
+                type: spc_t
               privileged: true
               capabilities:
                 add:
@@ -64,6 +66,8 @@ spec:
                 value: chroot
               - name: STORAGE_DRIVER
                 value: vfs
+              - name: _BUILDAH_STARTED_IN_USERNS
+                value: ""
             volumeMounts:
               - name: containers
                 mountPath: /var/lib/containers
