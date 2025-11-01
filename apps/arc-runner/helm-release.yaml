@@ -71,9 +71,5 @@ spec:
         volumes:
           - name: work
             emptyDir: {}
-          - name: dind-sock
-            emptyDir: {}
-          - name: dind-externals
-            emptyDir: {}
           - name: containers
             emptyDir: {}
