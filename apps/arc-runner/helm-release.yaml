@@ -55,8 +55,8 @@ spec:
               privileged: true
               readOnlyRootFilesystem: false
               allowPrivilegeEscalation: true
-              runAsUser: 0
-              runAsGroup: 0
+              #runAsUser: 0
+              #runAsGroup: 0
               capabilities:
                 add:
                   - SYS_ADMIN
