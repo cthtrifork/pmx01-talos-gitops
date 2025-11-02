@@ -53,6 +53,8 @@ spec:
               seLinuxOptions:
                 type: spc_t
               privileged: true
+              readOnlyRootFilesystem: false
+              allowPrivilegeEscalation: true
               capabilities:
                 add:
                   - SYS_ADMIN
@@ -68,6 +70,8 @@ spec:
                 value: vfs
               - name: _BUILDAH_STARTED_IN_USERNS
                 value: ""
+              - name: _CONTAINERS_USERNS
+                value: "auto"
             volumeMounts:
               - name: containers
                 mountPath: /var/lib/containers
@@ -75,6 +79,20 @@ spec:
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
+        # initContainers:
+        #   - name: fix-storage-config
+        #     image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest"
+        #     imagePullPolicy: Always
+        #     volumeMounts:
+        #       - name: containers
+        #         mountPath: /var/lib/containers
+        #     args:
+        #       - "bash"
+        #       - "-c"
+        #       - |
+        #         sudo mkdir -p /etc/containers
+        #         echo -e "[storage]\ndriver = \"overlay\"\nrunroot = \"/run/containers/storage\"\ngraphroot = \"/var/lib/containers/storage\"" \
+        #           | sudo tee /etc/containers/storage.conf
         imagePullSecrets:
           - name: github-auth
         volumes:

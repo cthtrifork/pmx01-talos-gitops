@@ -8,7 +8,7 @@ USER root
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git \
-  podman \
+  podman uidmap fuse-overlayfs \
   && rm -rf /var/lib/apt/lists/*
 
 USER runner
@@ -32,4 +32,7 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install yq \
   && brew cleanup
 
-  RUN systemctl enable podman.socket
+RUN sudo mkdir -p /etc/containers && \
+  echo -e "[storage]\ndriver = \"overlay\"\nrunroot = \"/run/containers/storage\"\ngraphroot = \"/var/lib/containers/storage\"" \
+  | sudo tee /etc/containers/storage.conf
+RUN systemctl enable podman.socket
