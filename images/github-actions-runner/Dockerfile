@@ -32,7 +32,15 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install yq \
   && brew cleanup
 
-RUN sudo mkdir -p /etc/containers && \
-  echo -e "[storage]\ndriver = \"overlay\"\nrunroot = \"/run/containers/storage\"\ngraphroot = \"/var/lib/containers/storage\"" \
-  | sudo tee /etc/containers/storage.conf
-RUN systemctl enable podman.socket
+# Create podman dirs for rootful use
+RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage
+
+# Rootful storage config – no userns
+RUN cat >/etc/containers/storage.conf <<'EOF'
+[storage]
+driver = "overlay"
+runroot = "/run/containers/storage"
+graphroot = "/var/lib/containers/storage"
+[storage.options]
+mount_program = "/usr/bin/fuse-overlayfs"
+EOF

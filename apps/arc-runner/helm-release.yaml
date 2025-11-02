@@ -55,6 +55,8 @@ spec:
               privileged: true
               readOnlyRootFilesystem: false
               allowPrivilegeEscalation: true
+              runAsUser: 0
+              runAsGroup: 0
               capabilities:
                 add:
                   - SYS_ADMIN
@@ -68,10 +70,10 @@ spec:
                 value: chroot
               - name: STORAGE_DRIVER
                 value: vfs
-              - name: _BUILDAH_STARTED_IN_USERNS
-                value: ""
-              - name: _CONTAINERS_USERNS
-                value: "auto"
+              # - name: _BUILDAH_STARTED_IN_USERNS
+              #   value: ""
+              # - name: _CONTAINERS_USERNS
+              #   value: "auto"
             volumeMounts:
               - name: containers
                 mountPath: /var/lib/containers
