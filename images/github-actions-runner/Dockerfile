@@ -25,6 +25,8 @@ EOF
 RUN echo runner:10000:5000 | tee /etc/subuid; \
   echo runner:10000:5000 | tee /etc/subgid;
 
+cho "user.max_user_namespaces = 63556" >> /etc/sysctl.d/user-ns.conf
+
 USER runner
 
 ## We use Homebrew as the primary package manager
