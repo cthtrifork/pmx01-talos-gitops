@@ -33,8 +33,8 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install yq \
   && brew cleanup
 
-RUN echo podman:10000:5000 > /etc/subuid; \
-RUN echo podman:10000:5000 > /etc/subgid;
+#RUN echo runner:10000:5000 | tee /etc/subuid; \
+#  echo runner:10000:5000 | tee /etc/subgid;
 
 # Rootful storage config – no userns
 RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage && \
