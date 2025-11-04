@@ -25,9 +25,10 @@ EOF
 RUN echo runner:10000:5000 | tee /etc/subuid; \
   echo runner:10000:5000 | tee /etc/subgid;
 
-cho "user.max_user_namespaces = 63556" >> /etc/sysctl.d/user-ns.conf
-
 USER runner
+
+RUN touch /home/runner/.docker/config.json && \
+    echo "{}" > /home/runner/.docker/config.json
 
 ## We use Homebrew as the primary package manager
 # Install Homebrew
