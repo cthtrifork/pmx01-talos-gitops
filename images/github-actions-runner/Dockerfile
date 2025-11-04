@@ -11,6 +11,20 @@ RUN apt-get update \
   podman uidmap fuse-overlayfs iptables \
   && rm -rf /var/lib/apt/lists/*
 
+# Rootful storage config – no userns
+RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage && \
+  cat >/etc/containers/storage.conf <<'EOF'
+[storage]
+driver = "overlay"
+runroot = "/run/containers/storage"
+graphroot = "/var/lib/containers/storage"
+[storage.options]
+mount_program = "/usr/bin/fuse-overlayfs"
+EOF
+
+RUN echo runner:10000:5000 | tee /etc/subuid; \
+  echo runner:10000:5000 | tee /etc/subgid;
+
 USER runner
 
 ## We use Homebrew as the primary package manager
@@ -32,17 +46,3 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install yamllint \
   && brew install yq \
   && brew cleanup
-
-#RUN echo runner:10000:5000 | tee /etc/subuid; \
-#  echo runner:10000:5000 | tee /etc/subgid;
-
-# Rootful storage config – no userns
-RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage && \
-  cat >/etc/containers/storage.conf <<'EOF'
-[storage]
-driver = "overlay"
-runroot = "/run/containers/storage"
-graphroot = "/var/lib/containers/storage"
-[storage.options]
-mount_program = "/usr/bin/fuse-overlayfs"
-EOF
