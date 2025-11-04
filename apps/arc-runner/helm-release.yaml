@@ -59,8 +59,10 @@ spec:
               #runAsGroup: 0
               capabilities:
                 add:
-                  - SYS_ADMIN
-                  - CAP_SYS_ADMIN # needed for podman dind
+                  - "SYS_ADMIN"
+                  - "MKNOD"
+                  - "SYS_CHROOT"
+                  - "SETFCAP"
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
@@ -70,10 +72,12 @@ spec:
                 value: chroot
               - name: STORAGE_DRIVER
                 value: vfs
-              # - name: _BUILDAH_STARTED_IN_USERNS
-              #   value: ""
-              # - name: _CONTAINERS_USERNS
-              #   value: "auto"
+              - name: _BUILDAH_STARTED_IN_USERNS
+                value: ""
+              - name: _CONTAINERS_USERNS
+                value: "auto"
+              - name: _CONTAINERS_USERNS_CONFIGURED
+                value: ""
             volumeMounts:
               - name: containers
                 mountPath: /var/lib/containers
@@ -81,6 +85,8 @@ spec:
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
+              - mountPath: /home/podman/.local/share/containers
+                name: containers
         # initContainers:
         #   - name: fix-storage-config
         #     image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest"

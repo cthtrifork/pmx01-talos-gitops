@@ -8,10 +8,11 @@ USER root
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git \
-  podman uidmap fuse-overlayfs \
+  podman uidmap fuse-overlayfs iptables \
   && rm -rf /var/lib/apt/lists/*
 
 USER runner
+
 ## We use Homebrew as the primary package manager
 # Install Homebrew
 RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
@@ -32,11 +33,12 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install yq \
   && brew cleanup
 
-# Create podman dirs for rootful use
-RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage
+RUN echo podman:10000:5000 > /etc/subuid; \
+RUN echo podman:10000:5000 > /etc/subgid;
 
 # Rootful storage config – no userns
-RUN cat >/etc/containers/storage.conf <<'EOF'
+RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage && \
+  cat >/etc/containers/storage.conf <<'EOF'
 [storage]
 driver = "overlay"
 runroot = "/run/containers/storage"
