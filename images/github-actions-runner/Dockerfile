@@ -8,7 +8,8 @@ USER root
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git tree \
-  podman uidmap fuse-overlayfs iptables \
+  podman uidmap fuse-overlayfs iptables buildah \
+  socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
 
 # Rootful storage config – no userns
