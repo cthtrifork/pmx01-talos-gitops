@@ -13,14 +13,6 @@ RUN apt-get update \
   socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
 
-# Install buildah
-WORKDIR /tmp
-RUN go install golang.org/dl/go1.23.12@latest
-RUN git clone https://github.com/containers/buildah \
-  && cd buildah \
-  && make \
-  && make install
-
 # Rootful storage config – no userns
 RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage && \
   cat >/etc/containers/storage.conf <<'EOF'
