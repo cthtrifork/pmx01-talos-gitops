@@ -7,11 +7,18 @@ USER root
 # hadolint ignore=DL3008
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-  build-essential procps curl file git tree \
+  build-essential procps curl file git tree git \
   bats btrfs-progs git go-md2man golang libapparmor-dev libglib2.0-dev libgpgme11-dev libseccomp-dev libselinux1-dev make runc skopeo libbtrfs-dev \
-  podman uidmap fuse-overlayfs iptables buildah \
+  podman uidmap fuse-overlayfs iptables \
   socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
+
+# Install buildah
+WORKDIR /tmp
+RUN git clone https://github.com/containers/buildah \
+  && cd buildah \
+  && make \
+  && make install
 
 # Rootful storage config – no userns
 RUN mkdir -p /etc/containers /var/lib/containers /run/containers/storage && \
@@ -52,3 +59,5 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install yamllint \
   && brew install yq \
   && brew cleanup
+
+WORKDIR /home/runner
