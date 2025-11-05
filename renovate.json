@@ -1,33 +1,33 @@
 {
-  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: [
-    'config:best-practices',
-    ':disableDigestUpdates',
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":disableDigestUpdates"
   ],
-  digest: {
-    enabled: false,
+  "digest": {
+    "enabled": false
   },
-  rebaseWhen: 'auto',
-  packageRules: [
+  "rebaseWhen": "auto",
+  "packageRules": [
     {
-      automerge: true,
-      pinDigests: false,
-      matchUpdateTypes: [
-        'major',
-        'minor',
-        'patch',
-      ],
+      "automerge": true,
+      "pinDigests": false,
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ]
     },
     {
-      automerge: true,
-      pinDigests: false,
-      matchManagers: [
-        'github-actions',
+      "automerge": true,
+      "pinDigests": false,
+      "matchManagers": [
+        "github-actions"
       ],
-      matchUpdateTypes: [
-        'major',
-        'minor',
-        'patch',
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
       ]
     }
   ]
