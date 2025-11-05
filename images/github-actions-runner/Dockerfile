@@ -1,4 +1,4 @@
-FROM ghcr.io/actions/actions-runner:2.328.0@sha256:db0dcae6d28559e54277755a33aba7d0665f255b3bd2a66cdc5e132712f155e0
+FROM ghcr.io/actions/actions-runner:2.329.0
 ENV NONINTERACTIVE=1
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
 
@@ -8,6 +8,7 @@ USER root
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git tree \
+  bats btrfs-progs git go-md2man golang libapparmor-dev libglib2.0-dev libgpgme11-dev libseccomp-dev libselinux1-dev make runc skopeo libbtrfs-dev \
   podman uidmap fuse-overlayfs iptables buildah \
   socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
@@ -27,6 +28,8 @@ RUN echo runner:10000:5000 | tee /etc/subuid; \
   echo runner:10000:5000 | tee /etc/subgid;
 
 USER runner
+
+ENV DOCKER_BUILDKIT=1
 
 RUN mkdir -p /home/runner/.docker
 
