@@ -1,7 +1,6 @@
 FROM ghcr.io/actions/actions-runner:2.329.0 as build
-ENV NONINTERACTIVE=1
-ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
 
+# https://github.com/actions/runner/blob/main/images/Dockerfile
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-noble
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -32,10 +31,13 @@ WORKDIR /home/runner
 COPY --chown=runner:docker --from=build . .
 COPY --from=build /usr/local/lib/docker/cli-plugins/docker-buildx /usr/local/lib/docker/cli-plugins/docker-buildx
 
-RUN install -o root -g root -m 755 docker/* /usr/bin/ && rm -rf docker
+#RUN install -o root -g root -m 755 docker/* /usr/bin/ && rm -rf docker
 
 # CUSTOM
 USER root
+
+ENV NONINTERACTIVE=1
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
