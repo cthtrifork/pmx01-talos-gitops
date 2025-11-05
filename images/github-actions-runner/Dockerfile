@@ -39,6 +39,10 @@ RUN tar -C /usr/local -xzf "/tmp/go${GO_VERSION}.linux-amd64.tar.gz" \
   && mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
+USER runner
+ENV DOCKER_BUILDKIT=1
+RUN mkdir -p /home/runner/.docker
+
 # Ensure latest buildah
 # used by buildah
 RUN go install github.com/cpuguy83/go-md2man/v2@latest
@@ -48,11 +52,6 @@ RUN mkdir /tmp/buildah; \
      make;\
      make install;\
      rm -rf /tmp/buildah/*; \
-     
-USER runner
-ENV DOCKER_BUILDKIT=1
-
-RUN mkdir -p /home/runner/.docker
 
 ## We use Homebrew as the primary package manager
 # Install Homebrew
