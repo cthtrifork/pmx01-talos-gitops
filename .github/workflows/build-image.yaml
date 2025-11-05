@@ -49,6 +49,7 @@ jobs:
                       type=ref,event=pr
                       # set latest tag for default branch
                       type=raw,value=latest,enable={{is_default_branch}}
+                      type=raw,value=0.1.${{ github.run_number }}
 
             - name: Log in to the Container registry
               uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
