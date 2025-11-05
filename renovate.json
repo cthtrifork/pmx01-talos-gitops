@@ -28,7 +28,7 @@
         'major',
         'minor',
         'patch',
-      ],
+      ]
     }
   ]
 }
