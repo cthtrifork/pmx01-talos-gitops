@@ -1,7 +1,7 @@
 FROM ghcr.io/actions/actions-runner:2.329.0 as build
 
 # https://github.com/actions/runner/blob/main/images/Dockerfile
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-noble
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble@sha256:4e6dd3c625551285d75e664d112adfeea151a3996ea4a1fb5149db97017c1027
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNER_MANUALLY_TRAP_SIG=1
