@@ -68,16 +68,16 @@ spec:
                 value: unix:///var/run/docker.sock
               - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
                 value: "120"
-              - name: BUILDAH_ISOLATION
-                value: chroot
-              - name: STORAGE_DRIVER
-                value: vfs
-              - name: _BUILDAH_STARTED_IN_USERNS
-                value: ""
-              - name: _CONTAINERS_USERNS
-                value: "auto"
-              - name: _CONTAINERS_USERNS_CONFIGURED
-                value: ""
+              #- name: BUILDAH_ISOLATION
+              #  value: chroot
+              #- name: STORAGE_DRIVER
+              #  value: vfs
+              #- name: _BUILDAH_STARTED_IN_USERNS
+              #  value: ""
+              #- name: _CONTAINERS_USERNS
+              #  value: "auto"
+              #- name: _CONTAINERS_USERNS_CONFIGURED
+              #  value: ""
             volumeMounts:
               - name: containers
                 mountPath: /var/lib/containers
