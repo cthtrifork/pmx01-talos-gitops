@@ -5,10 +5,12 @@ ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}
 USER root
 # Install apt-get dependencies
 # hadolint ignore=DL3008
+
+RUN add-apt-repository ppa:longsleep/golang-backports
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git tree git \
-  bats btrfs-progs git go-md2man golang libapparmor-dev libglib2.0-dev libgpgme11-dev libseccomp-dev libselinux1-dev make runc skopeo libbtrfs-dev \
+  bats btrfs-progs git go-md2man golang-go=1.23.* libapparmor-dev libglib2.0-dev libgpgme11-dev libseccomp-dev libselinux1-dev make runc skopeo libbtrfs-dev \
   podman uidmap fuse-overlayfs iptables buildah \
   socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
