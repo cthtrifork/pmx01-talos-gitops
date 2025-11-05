@@ -31,12 +31,12 @@ RUN echo runner:10000:5000 | tee /etc/subuid; \
 
 # Ensure GO is installed
 ENV GO_VERSION=1.23.12
-RUN wget -P /tmp "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz"
+RUN wget -q -P /tmp "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz"
 
+ENV GOPATH /go
 RUN tar -C /usr/local -xzf "/tmp/go${GO_VERSION}.linux-amd64.tar.gz" \
   && rm "/tmp/go${GO_VERSION}.linux-amd64.tar.gz" \
   && mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
-ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
 
 # Ensure latest buildah
