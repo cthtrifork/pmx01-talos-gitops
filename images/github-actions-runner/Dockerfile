@@ -1,18 +1,48 @@
-FROM ghcr.io/actions/actions-runner:2.329.0
+FROM ghcr.io/actions/actions-runner:2.329.0 as build
 ENV NONINTERACTIVE=1
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
 
-USER root
-# Install apt-get dependencies
-# hadolint ignore=DL3008
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-noble
 
-RUN add-apt-repository ppa:longsleep/golang-backports
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RUNNER_MANUALLY_TRAP_SIG=1
+ENV ACTIONS_RUNNER_PRINT_LOG_TO_STDOUT=1
+ENV ImageOS=ubuntu22
+
+# 'gpg-agent' and 'software-properties-common' are needed for the 'add-apt-repository' command that follows
+RUN apt update -y \
+    && apt install -y --no-install-recommends sudo lsb-release gpg-agent software-properties-common curl jq unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure git-core/ppa based on guidance here:  https://git-scm.com/download/linux
+RUN add-apt-repository ppa:git-core/ppa \
+    && apt update -y \
+    && apt install -y git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN adduser --disabled-password --gecos "" --uid 1001 runner \
+    && groupadd docker --gid 123 \
+    && usermod -aG sudo runner \
+    && usermod -aG docker runner \
+    && echo "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers \
+    && echo "Defaults env_keep += \"DEBIAN_FRONTEND\"" >> /etc/sudoers
+
+WORKDIR /home/runner
+
+COPY --chown=runner:docker --from=build . .
+COPY --from=build /usr/local/lib/docker/cli-plugins/docker-buildx /usr/local/lib/docker/cli-plugins/docker-buildx
+
+RUN install -o root -g root -m 755 docker/* /usr/bin/ && rm -rf docker
+
+# CUSTOM
+USER root
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git tree git wget \
   bats btrfs-progs libapparmor-dev libglib2.0-dev libgpgme11-dev libseccomp-dev libselinux1-dev make runc skopeo libbtrfs-dev \
-  podman uidmap fuse-overlayfs iptables \
-  containernetworking-plugins \
+  podman uidmap fuse-overlayfs iptables buildah \
+  netavark \
   socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
 
@@ -29,26 +59,6 @@ EOF
 
 RUN echo runner:10000:5000 | tee /etc/subuid; \
   echo runner:10000:5000 | tee /etc/subgid;
-
-# Ensure GO is installed
-ENV GO_VERSION=1.23.12
-RUN wget -q -P /tmp "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz"
-
-ENV GOPATH /go
-RUN tar -C /usr/local -xzf "/tmp/go${GO_VERSION}.linux-amd64.tar.gz" \
-  && rm "/tmp/go${GO_VERSION}.linux-amd64.tar.gz" \
-  && mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
-ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
-
-# Ensure latest buildah
-# used by buildah
-RUN go install github.com/cpuguy83/go-md2man/v2@latest
-RUN mkdir /tmp/buildah; \
-     git clone https://github.com/containers/buildah /tmp/buildah; \
-     cd /tmp/buildah; \
-     make; \
-     make install; \
-     rm -rf /tmp/buildah/*;
 
 USER runner
 ENV DOCKER_BUILDKIT=1
