@@ -28,9 +28,7 @@ RUN echo runner:10000:5000 | tee /etc/subuid; \
 
 USER runner
 
-RUN mkdir -p /home/runner/.docker #&& \
-  #touch /home/runner/.docker/config.json && \
-  #echo '{"auths": {}}' > /home/runner/.docker/config.json
+RUN mkdir -p /home/runner/.docker
 
 ## We use Homebrew as the primary package manager
 # Install Homebrew
