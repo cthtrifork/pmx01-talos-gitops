@@ -12,6 +12,7 @@ RUN apt-get update \
   build-essential procps curl file git tree git wget \
   bats btrfs-progs libapparmor-dev libglib2.0-dev libgpgme11-dev libseccomp-dev libselinux1-dev make runc skopeo libbtrfs-dev \
   podman uidmap fuse-overlayfs iptables \
+  netavark aardvark-dns \
   socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
 
