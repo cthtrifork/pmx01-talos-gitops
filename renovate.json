@@ -31,18 +31,18 @@
       ]
     }
   ],
-  customManagers: [
+  "customManagers": [
     {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/^build_files/.*\\.sh$/',
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^build_files/.*\\.sh$/"
       ],
-      matchStrings: [
-        '(?<depName>[^\\s"\']+):\\s"?(?<currentValue>.[^"\'\\s]*)"?\\s+# renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<packageName>[^\\s]+)'
+      "matchStrings": [
+        "(?<depName>[^\\s\"\\']+):\\s\"?(?<currentValue>.[^\"'\\s]*)\"?\\s+# renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<packageName>[^\\s]+)"
       ],
-      datasourceTemplate: '{{{datasource}}}',
-      packageNameTemplate: '{{{packageName}}}',
-      versioningTemplate: 'semver',
-    },
+      "datasourceTemplate": "{{{datasource}}}",
+      "packageNameTemplate": "{{{packageName}}}",
+      "versioningTemplate": "semver"
+    }
   ]
 }
