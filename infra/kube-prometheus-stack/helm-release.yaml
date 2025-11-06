@@ -143,6 +143,12 @@ spec:
           memory: 1024Mi
     nodeExporter:
       enabled: true
+    kubelet:
+      enabled: true
+      namespace: kube-system
+      serviceMonitor:
+        enabled: true
+        kubelet: true
     prometheus-node-exporter:
       resources:
         limits:
