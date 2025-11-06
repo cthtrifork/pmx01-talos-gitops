@@ -33,36 +33,62 @@ spec:
     # point to the secret we created with SOPS
     githubConfigSecret: github-auth
 
-    containerMode:
-      type: dind
+    containerMode: {} # we use custom
     template:
       spec:
+        initContainers:
+          - name: init-dind-externals
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.43
+            imagePullPolicy: IfNotPresent
+            command:
+              ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+            volumeMounts:
+              - name: dind-externals
+                mountPath: /home/runner/tmpDir
+          - name: dind
+            image: public.ecr.aws/docker/library/docker:28.5.2-dind # mirror of docker official image
+            imagePullPolicy: IfNotPresent
+            args:
+              - dockerd
+              - --host=unix:///var/run/docker.sock
+              - --group=$(DOCKER_GROUP_GID)
+            env:
+              - name: DOCKER_GROUP_GID
+                value: "123"
+            securityContext:
+              privileged: true
+            restartPolicy: Always
+            startupProbe:
+              exec:
+                command:
+                  - docker
+                  - info
+              initialDelaySeconds: 0
+              failureThreshold: 24
+              periodSeconds: 5
+            volumeMounts:
+              - name: work
+                mountPath: /home/runner/_work
+              - name: dind-sock
+                mountPath: /var/run
+              - name: dind-externals
+                mountPath: /home/runner/externals
+              - name: docker-lib
+                mountPath: /var/lib/docker
         containers:
           - name: runner
-            image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.43"
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.43
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
             resources:
               requests:
-                cpu: 256m
-                memory: 4Gi
+                cpu: 100m
+                memory: 2Gi
               limits:
                 cpu: 4000m
                 memory: 16Gi
             securityContext:
-              seLinuxOptions:
-                type: spc_t
               privileged: true
-              readOnlyRootFilesystem: false
-              allowPrivilegeEscalation: true
-              #runAsUser: 0
-              #runAsGroup: 0
-              capabilities:
-                add:
-                  - "SYS_ADMIN"
-                  - "MKNOD"
-                  - "SYS_CHROOT"
-                  - "SETFCAP"
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
@@ -91,31 +117,42 @@ spec:
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
-              - mountPath: /home/podman/.local/share/containers
-                name: containers
+              - name: containers
+                mountPath: /home/podman/.local/share/containers
               - name: docker-lib
                 mountPath: /var/lib/docker
               - name: dnf-cache
                 mountPath: /var/cache/dnf
-        # initContainers:
-        #   - name: fix-storage-config
-        #     image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest"
-        #     imagePullPolicy: Always
-        #     volumeMounts:
-        #       - name: containers
-        #         mountPath: /var/lib/containers
-        #     args:
-        #       - "bash"
-        #       - "-c"
-        #       - |
-        #         sudo mkdir -p /etc/containers
-        #         echo -e "[storage]\ndriver = \"overlay\"\nrunroot = \"/run/containers/storage\"\ngraphroot = \"/var/lib/containers/storage\"" \
-        #           | sudo tee /etc/containers/storage.conf
         imagePullSecrets:
           - name: github-auth
         volumes:
           - name: work
-            emptyDir: {}
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 40Gi
+          - name: dind-sock
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 1Gi
+          - name: dind-externals
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 10Gi
           - name: docker-lib
             persistentVolumeClaim:
               claimName: arc-runner-docker-cache
