@@ -35,7 +35,7 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/^build_files/.*\\.sh$/"
+        "/^.github/.*\\.yaml$/"
       ],
       "matchStrings": [
         "(?<depName>[^\\s\"\\']+):\\s\"?(?<currentValue>.[^\"'\\s]*)\"?\\s+# renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<packageName>[^\\s]+)"
