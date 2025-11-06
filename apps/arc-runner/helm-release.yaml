@@ -38,7 +38,7 @@ spec:
       spec:
         initContainers:
           - name: init-dind-externals
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.43
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.44
             imagePullPolicy: IfNotPresent
             command:
               ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
