@@ -7,3 +7,4 @@ resources:
   - kubevirt/
   - metrics-server/
   - metallb/
+  - kube-prometheus-stack

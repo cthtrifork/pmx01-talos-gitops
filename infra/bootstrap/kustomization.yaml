@@ -5,3 +5,4 @@ resources:
   - kubevirt/namespace.yaml
   - repo.yaml
   - metallb/namespace.yaml
+  - kube-prometheus-stack/

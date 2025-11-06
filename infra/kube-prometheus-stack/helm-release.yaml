@@ -1,0 +1,240 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: kube-prometheus-stack-system
+spec:
+  interval: 5m
+  timeout: 10m
+  chart:
+    spec:
+      version: 79.1.1
+      chart: kube-prometheus-stack
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+      interval: 60m
+  driftDetection:
+    mode: enabled
+  install:
+    crds: Skip
+    remediation:
+      retries: 3
+  upgrade:
+    crds: Skip
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  # https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
+  # https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-state-metrics/values.yaml
+  # https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+  values:
+    fullnameOverride: kube-prom
+    nameOverride: prom
+    crds:
+      enabled: false
+    alertmanager:
+      enabled: false
+    prometheusOperator:
+      enabled: true
+      networkPolicy:
+        enabled: true
+        flavor: cilium
+      resources:
+        requests:
+          cpu: 20m
+          memory: 64Mi
+        limits:
+          memory: 128Mi
+      admissionWebhooks:
+        patch:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+    kubeStateMetrics:
+      enabled: false
+    grafana:
+      image:
+        registry: mirror.gcr.io
+        repository: grafana/grafana
+      # the o11y-collector is used for this
+      enabled: true
+      replicas: 1
+      topologySpreadConstraints:
+        - maxSkew: 1
+          minDomains: 3
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          nodeTaintsPolicy: Honor
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
+      grafana.ini:
+        users:
+          viewers_can_edit: true
+        auth:
+          disable_login_form: true
+          disable_signout_menu: true
+        auth.anonymous:
+          enabled: true
+          org_role: Editor
+        analytics:
+          enabled: "false"
+          reporting_enabled: "false"
+          check_for_plugin_updates: "false"
+          check_for_updates: "false"
+        security:
+          disable_gravatar: "true"
+        plugins:
+          public_key_retrieval_disabled: "true"
+          plugin_admin_enabled: "false"
+          preinstall_disabled: "true"
+        snapshots:
+          enabled: "false"
+          external_enabled: "false"
+        resources:
+          requests:
+            cpu: 10m
+            memory: 10Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        server:
+          root_url: https://grafana.pmx01.portableinfo.cloud/
+      adminPassword: admin
+      ingress:
+        annotations:
+          cert-manager.io/cluster-issuer: certificate-cluster-issuer
+        enabled: false
+        ingressClassName: traefik
+        hosts:
+          - grafana.pmx01.portableinfo.cloud
+        tls:
+          - hosts:
+              - grafana.pmx01.portableinfo.cloud
+            secretName: grafana.pmx01.portableinfo.cloud-tls
+      sidecar:
+        dashboards:
+          enabled: true
+          label: grafana_dashboard
+          labelValue: "1"
+          folderAnnotation: grafana_folder
+          provider:
+            foldersFromFilesStructure: true
+          # Allow discovery in all namespaces for dashboards
+          searchNamespace: ALL
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi
+          limits:
+            cpu: 50m
+            memory: 256Mi
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 1024Mi
+    nodeExporter:
+      enabled: false # Using node-exporter from o11y-collector
+    prometheus-node-exporter:
+      resources:
+        limits:
+          memory: 128Mi
+    prometheusConfigReloader:
+      resources:
+        requests:
+          cpu: 20m
+          memory: 64Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
+    prometheus:
+      enabled: true
+      ingress:
+        annotations:
+          cert-manager.io/cluster-issuer: certificate-cluster-issuer
+        enabled: false
+        ingressClassName: traefik
+        hosts:
+          - prometheus.pmx01.portableinfo.cloud
+        tls:
+          - hosts:
+              - prometheus.pmx01.portableinfo.cloud
+            secretName: prometheus.pmx01.portableinfo.cloud-tls
+      # the o11y-collector is used for this
+      podDisruptionBudget:
+        enabled: false
+      serviceMonitor:
+        selfMonitor: true
+      prometheusSpec:
+        replicas: 1
+        enableRemoteWriteReceiver: true
+        enableFeatures:
+          - exemplar-storage
+        ruleSelector:
+          matchExpressions:
+            - key: type
+              operator: In
+              values:
+                - rule
+        retention: 24h
+        retentionSize: 1GiB
+        scrapeInterval: 1m
+        scrapeTimeout: 1m
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 4Gi
+        serviceMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorNamespaceSelector:
+          matchLabels:
+            prometheus: alloy-is-used-instead
+        podMonitorSelectorNilUsesHelmValues: false
+        podMonitorNamespaceSelector:
+          matchLabels:
+            prometheus: alloy-is-used-instead
+        additionalConfig:
+          storage:
+            volumeClaimTemplate:
+              spec:
+                storageClassName: local-path
+                resources:
+                  requests:
+                    storage: 5Gi
+    defaultRules:
+      labels:
+        type: rule
+    kubernetesServiceMonitors:
+      enabled: true
+    global:
+      rbac:
+        create: false
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              # Ignore these objects from Flux diff as they are mutated from chart hooks
+              kind: (ValidatingWebhookConfiguration|MutatingWebhookConfiguration)
+              name: kube-prometheus-stack-admission
+            patch: |
+              - op: add
+                path: /metadata/annotations/helm.toolkit.fluxcd.io~1driftDetection
+                value: disabled
+          - target:
+              # Ignore these objects from Flux diff as they are mutated at apply time but not at dry-run time
+              kind: PrometheusRule
+            patch: |-
+              - op: add
+                path: /metadata/annotations/helm.toolkit.fluxcd.io~1driftDetection
+                value: disabled
