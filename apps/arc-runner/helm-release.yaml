@@ -114,13 +114,13 @@ spec:
               #- name: _CONTAINERS_USERNS_CONFIGURED
               #  value: ""
             volumeMounts:
-              - name: containers
+              - name: container-storage
                 mountPath: /var/lib/containers
               - name: work
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
-              - name: container-storage
+              - name: container-rootless-storage
                 mountPath: /home/runner/.local/share/containers/storage
               - name: docker-lib
                 mountPath: /var/lib/docker
@@ -162,6 +162,9 @@ spec:
           - name: container-storage
             persistentVolumeClaim:
               claimName: arc-runner-containers-cache
+          - name: container-rootless-storage
+            persistentVolumeClaim:
+              claimName: arc-runner-containers-rootless-cache
           - name: dnf-cache
             persistentVolumeClaim:
               claimName: arc-runner-dnf-cache
@@ -175,7 +178,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: arc-runner-docker-cache
+  name: arc-runner-containers-rootless-cache
   namespace: arc-runners-system
 spec:
   accessModes:
@@ -184,7 +187,19 @@ spec:
   resources:
     requests:
       storage: 64Gi
-  #storageClassName: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arc-runner-docker-cache
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 20Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
