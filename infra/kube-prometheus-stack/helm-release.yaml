@@ -213,7 +213,7 @@ spec:
       enabled: true
     global:
       rbac:
-        create: false
+        create: true
   postRenderers:
     - kustomize:
         patches:
