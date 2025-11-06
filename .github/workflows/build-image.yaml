@@ -15,7 +15,7 @@ on:
     #     - main
 
 env:
-    RUNNER_VERSION: "2.329.0"
+    RUNNER_VERSION: "2.329.0" # renovate: datasource=github-releases depName=actions/runner
 
 jobs:
     publish-images:
