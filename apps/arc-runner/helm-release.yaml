@@ -120,8 +120,8 @@ spec:
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
-              - name: containers
-                mountPath: /home/podman/.local/share/containers
+              - name: container-storage
+                mountPath: /home/runner/.local/share/containers/storage
               - name: docker-lib
                 mountPath: /var/lib/docker
               - name: dnf-cache
@@ -159,7 +159,7 @@ spec:
           - name: docker-lib
             persistentVolumeClaim:
               claimName: arc-runner-docker-cache
-          - name: containers
+          - name: container-storage
             persistentVolumeClaim:
               claimName: arc-runner-containers-cache
           - name: dnf-cache
