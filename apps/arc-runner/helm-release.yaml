@@ -95,6 +95,8 @@ spec:
                 name: containers
               - name: docker-lib
                 mountPath: /var/lib/docker
+              - name: dnf-cache
+                mountPath: /var/cache/dnf
         # initContainers:
         #   - name: fix-storage-config
         #     image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest"
@@ -116,10 +118,13 @@ spec:
             emptyDir: {}
           - name: docker-lib
             persistentVolumeClaim:
-              claimName: arc-runner-docker-cache   # pre-create an RWX PVC
+              claimName: arc-runner-docker-cache
           - name: containers
             persistentVolumeClaim:
               claimName: arc-runner-containers-cache
+          - name: dnf-cache
+            persistentVolumeClaim:
+              claimName: arc-runner-dnf-cache
     listenerTemplate:
       spec:
         containers:
@@ -153,3 +158,16 @@ spec:
   resources:
     requests:
       storage: 64Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arc-runner-dnf-cache
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 24Gi
