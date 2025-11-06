@@ -6,12 +6,7 @@ resources: []
 configMapGenerator:
   - name: infrastructure-dashboards
     files:
-      - infrastructure/certmanager.json
       - infrastructure/cilium.json
-      - infrastructure/cnpg.json
-      - infrastructure/harbor.json
-      - infrastructure/traefik.json
-      - infrastructure/vault.json
     options:
       labels:
         grafana_dashboard: '1'
