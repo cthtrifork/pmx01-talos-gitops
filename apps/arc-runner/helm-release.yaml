@@ -56,7 +56,10 @@ spec:
               - name: DOCKER_GROUP_GID
                 value: "123"
             securityContext:
+              allowPrivilegeEscalation: true
               privileged: true
+              capabilities:
+                add: ["SYS_ADMIN", "NET_ADMIN", "DAC_OVERRIDE", "CHOWN", "FOWNER", "SYS_RESOURCE"]
             restartPolicy: Always
             startupProbe:
               exec:
