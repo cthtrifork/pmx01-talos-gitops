@@ -100,7 +100,10 @@ RUN echo runner:10000:5000 | tee /etc/subuid; \
 
 USER runner
 ENV DOCKER_BUILDKIT=1
-RUN mkdir -p /home/runner/.docker
+RUN mkdir -p /home/runner/.docker && \
+  echo "{ \"auths\": {} }" > /home/runner/.docker/config.json
+
+ENV XDG_RUNTIME_DIR=/run/user/1001
 
 ## We use Homebrew as the primary package manager
 # Install Homebrew
