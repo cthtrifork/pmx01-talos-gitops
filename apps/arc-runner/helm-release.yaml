@@ -39,7 +39,7 @@ spec:
       spec:
         containers:
           - name: runner
-            image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.39"
+            image: "ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.43"
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
             resources:
