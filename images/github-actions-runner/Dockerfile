@@ -100,6 +100,7 @@ RUN echo runner:10000:5000 | tee /etc/subuid; \
 
 USER runner
 ENV DOCKER_BUILDKIT=1
+RUN mkdir -p /home/runner/.local/bin
 RUN mkdir -p /home/runner/.docker && \
   echo "{ \"auths\": {} }" > /home/runner/.docker/config.json
 
