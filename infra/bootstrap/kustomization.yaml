@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - cert-manager/namespace.yaml
   - kubevirt/namespace.yaml
-  - repo.yaml
   - metallb/namespace.yaml
+  - flux-system/
   - kube-prometheus-stack/
+  - repo.yaml
