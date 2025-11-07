@@ -6,4 +6,3 @@ resources:
   - metallb/namespace.yaml
   - flux-system/
   - kube-prometheus-stack/
-  - repo.yaml
