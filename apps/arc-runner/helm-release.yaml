@@ -161,8 +161,9 @@ spec:
                     requests:
                       storage: 10Gi
           - name: docker-lib
-            persistentVolumeClaim:
-              claimName: arc-runner-docker-cache
+            emptyDir: {}
+            #persistentVolumeClaim:
+            #  claimName: arc-runner-docker-cache
           - name: container-storage
             persistentVolumeClaim:
               claimName: arc-runner-containers-cache
