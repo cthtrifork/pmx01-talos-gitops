@@ -104,8 +104,6 @@ ENV HOME=/home/runner
 ENV PATH="/home/runner/.local/bin:${PATH}"
 ENV XDG_RUNTIME_DIR=/run/user/1001
 
-RUN sudo loginctl enable-linger $(whoami)
-
 # Ensure the home tree exists and is owned by the runner
 RUN mkdir -p /home/runner/.local/bin /home/runner/.cache /home/runner/.config /home/runner/.docker \
   && chown -R 1001:1001 /home/runner
