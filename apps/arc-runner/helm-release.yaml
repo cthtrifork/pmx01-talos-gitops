@@ -93,7 +93,7 @@ spec:
             securityContext:
               privileged: true
               runAsUser: 1001
-              runAsGroup: 123
+              runAsGroup: 1001
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
@@ -131,7 +131,7 @@ spec:
         imagePullSecrets:
           - name: github-auth
         securityContext:
-          fsGroup: 123
+          fsGroup: 1001
         volumes:
           - name: work
             ephemeral:
