@@ -129,6 +129,8 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew install sops \
   && brew install yamllint \
   && brew install yq \
+  && brew tap tsuru/homebrew-tsuru \
+  && brew install crane \
   && brew cleanup
 
 WORKDIR /home/runner
