@@ -92,6 +92,8 @@ spec:
                 memory: 16Gi
             securityContext:
               privileged: true
+              runAsUser: 1001
+              runAsGroup: 123
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
