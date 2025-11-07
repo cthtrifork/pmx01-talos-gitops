@@ -106,7 +106,6 @@ ENV XDG_RUNTIME_DIR=/run/user/1001
 
 # Ensure the home tree exists and is owned by the runner
 RUN mkdir -p /home/runner/.local/bin /home/runner/.cache /home/runner/.config /home/runner/.docker \
-  "$XDG_RUNTIME_DIR/podman" \
   && chown -R 1001:1001 /home/runner
 
 # Ensure default docker config
