@@ -100,9 +100,14 @@ RUN echo runner:10000:5000 | tee /etc/subuid; \
 
 USER runner
 ENV DOCKER_BUILDKIT=1
-RUN mkdir -p /home/runner/.local/bin
-RUN mkdir -p /home/runner/.docker && \
-  echo "{ \"auths\": {} }" > /home/runner/.docker/config.json
+ENV HOME=/home/runner
+ENV PATH="/home/runner/.local/bin:${PATH}"
+
+# Ensure the home tree exists and is owned by the runner
+RUN mkdir -p /home/runner/.local/bin /home/runner/.cache /home/runner/.config /home/runner/.docker  \
+ && chown -R 1001:1001 /home/runner
+# Ensure default docker config
+RUN echo "{ \"auths\": {} }" > /home/runner/.docker/config.json
 
 ENV XDG_RUNTIME_DIR=/run/user/1001
 
