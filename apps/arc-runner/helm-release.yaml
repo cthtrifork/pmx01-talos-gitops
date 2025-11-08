@@ -124,10 +124,10 @@ spec:
                 mountPath: /var/run
               - name: container-rootless-storage
                 mountPath: /home/runner/.local/share/containers/storage
-              - name: container-shared-storage
+              - name: container-mycontainers-storage
                 mountPath: /var/lib/mycontainers
-              # - name: container-shared-storage
-              #   mountPath: /var/lib/shared
+              - name: container-shared-storage
+                mountPath: /var/lib/shared
               - name: docker-lib
                 mountPath: /var/lib/docker
               - name: dnf-cache
@@ -187,6 +187,9 @@ spec:
           - name: dnf-cache
             persistentVolumeClaim:
              claimName: arc-runner-dnf-cache
+          - name: container-mycontainers-storage
+            persistentVolumeClaim:
+             claimName: container-mycontainers-storage
           - name: container-shared-storage
             persistentVolumeClaim:
              claimName: container-shared-storage
@@ -214,6 +217,19 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: container-shared-storage
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 24Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: container-mycontainers-storage
   namespace: arc-runners-system
 spec:
   accessModes:
