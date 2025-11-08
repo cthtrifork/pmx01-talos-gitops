@@ -126,8 +126,8 @@ spec:
                 mountPath: /home/runner/.local/share/containers/storage
               - name: container-shared-storage
                 mountPath: /var/lib/mycontainers
-              - name: container-shared-storage
-                mountPath: /var/lib/shared
+              # - name: container-shared-storage
+              #   mountPath: /var/lib/shared
               - name: docker-lib
                 mountPath: /var/lib/docker
               - name: dnf-cache
