@@ -128,8 +128,8 @@ spec:
                 mountPath: /var/lib/mycontainers
               - name: docker-lib
                 mountPath: /var/lib/docker
-              #- name: dnf-cache
-              #  mountPath: /var/cache/dnf
+              - name: dnf-cache
+                mountPath: /var/cache/dnf
         imagePullSecrets:
           - name: github-auth
         securityContext:
@@ -143,7 +143,7 @@ spec:
                     - ReadWriteOnce
                   resources:
                     requests:
-                      storage: 40Gi
+                      storage: 32Gi
           - name: dind-sock
             ephemeral:
               volumeClaimTemplate:
@@ -184,34 +184,38 @@ spec:
                   resources:
                     requests:
                       storage: 16Gi
-          - name: container-shared-storage
-            ephemeral:
-              volumeClaimTemplate:
-                spec:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 16Gi
-          #- name: dnf-cache
-          #  persistentVolumeClaim:
-          #    claimName: arc-runner-dnf-cache
+          - name: dnf-cache
+            persistentVolumeClaim:
+             claimName: arc-runner-dnf-cache
     listenerTemplate:
       spec:
         containers:
           - name: listener
             securityContext:
               runAsUser: 1000
-# ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: arc-runner-dnf-cache
-#   namespace: arc-runners-system
-# spec:
-#   accessModes:
-#     - ReadWriteOnce
-#   volumeMode: Filesystem
-#   resources:
-#     requests:
-#       storage: 24Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arc-runner-dnf-cache
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 24Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: container-shared-storage
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 24Gi
