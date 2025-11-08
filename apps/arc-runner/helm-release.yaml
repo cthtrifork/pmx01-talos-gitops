@@ -124,6 +124,8 @@ spec:
                 mountPath: /var/run
               - name: container-rootless-storage
                 mountPath: /home/runner/.local/share/containers/storage
+              - name: container-shared-storage
+                mountPath: /var/lib/mycontainers
               - name: docker-lib
                 mountPath: /var/lib/docker
               #- name: dnf-cache
@@ -174,6 +176,15 @@ spec:
                     requests:
                       storage: 32Gi
           - name: container-rootless-storage
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 16Gi
+          - name: container-shared-storage
             ephemeral:
               volumeClaimTemplate:
                 spec:
