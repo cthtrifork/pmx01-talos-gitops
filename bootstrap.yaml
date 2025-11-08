@@ -16,7 +16,7 @@ metadata:
   name: gitops-bootstrap
   namespace: flux-system
 spec:
-  #interval: 1m0s
+  interval: 10m
   prune: true
   sourceRef:
     kind: GitRepository
