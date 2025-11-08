@@ -38,7 +38,7 @@ spec:
       spec:
         initContainers:
           - name: init-dind-externals
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.49
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.58
             imagePullPolicy: IfNotPresent
             command:
               ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
@@ -80,7 +80,7 @@ spec:
                 mountPath: /var/lib/docker
         containers:
           - name: runner
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.49
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.58
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
             resources:
