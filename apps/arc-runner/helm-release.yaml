@@ -132,6 +132,8 @@ spec:
                 mountPath: /var/lib/docker
               - name: dnf-cache
                 mountPath: /var/cache/dnf
+              - name: dnf-cache
+                mountPath: /home/runner/.cache/dnf
         imagePullSecrets:
           - name: github-auth
         securityContext:
