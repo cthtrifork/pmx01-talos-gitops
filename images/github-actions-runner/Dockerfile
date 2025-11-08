@@ -137,6 +137,7 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew tap tsuru/homebrew-tsuru \
   && brew install crane \
   && brew install skopeo \
+  && brew install cosign \
   && brew cleanup
 
 WORKDIR /home/runner
