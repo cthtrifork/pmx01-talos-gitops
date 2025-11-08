@@ -93,7 +93,12 @@ runroot = "/run/containers/storage"
 graphroot = "/var/lib/containers/storage"
 [storage.options]
 mount_program = "/usr/bin/fuse-overlayfs"
+additionalimagestores = [ "/var/lib/shared",]
 EOF
+
+
+RUN mkdir -p /var/lib/shared && \
+  chmod -R a+rx /var/lib/shared
 
 RUN echo runner:10000:5000 | tee /etc/subuid; \
   echo runner:10000:5000 | tee /etc/subgid;
