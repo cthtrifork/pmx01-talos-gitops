@@ -5,7 +5,7 @@ metadata:
   name: gitops
   namespace: flux-system
 spec:
-  interval: 1m0s # todo
+  interval: 2m0s # todo
   url: https://github.com/cthtrifork/pmx01-talos-gitops
   ref:
     branch: main
@@ -16,7 +16,7 @@ metadata:
   name: gitops-bootstrap
   namespace: flux-system
 spec:
-  interval: 1m0s
+  #interval: 1m0s
   prune: true
   sourceRef:
     kind: GitRepository
