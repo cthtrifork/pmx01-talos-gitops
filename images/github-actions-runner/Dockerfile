@@ -79,7 +79,7 @@ ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git tree git wget \
-  podman uidmap fuse-overlayfs iptables buildah skopeo \
+  podman uidmap fuse-overlayfs iptables buildah skopeo slirp4netns \
   netavark \
   socat sqlite3 qemu-system-x86 qemu-utils \
   && rm -rf /var/lib/apt/lists/*
