@@ -202,7 +202,7 @@ metadata:
   namespace: arc-runners-system
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   volumeMode: Filesystem
   resources:
     requests:
@@ -215,7 +215,7 @@ metadata:
   namespace: arc-runners-system
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   volumeMode: Filesystem
   resources:
     requests:
