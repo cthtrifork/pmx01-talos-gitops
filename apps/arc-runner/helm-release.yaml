@@ -164,8 +164,6 @@ spec:
                       storage: 10Gi
           - name: docker-lib
             emptyDir: {}
-            #persistentVolumeClaim:
-            #  claimName: arc-runner-docker-cache
           - name: container-storage
             ephemeral:
               volumeClaimTemplate:
@@ -187,6 +185,9 @@ spec:
           - name: dnf-cache
             persistentVolumeClaim:
              claimName: arc-runner-dnf-cache
+          - name: container-shared-storage
+            persistentVolumeClaim:
+             claimName: container-shared-storage
     listenerTemplate:
       spec:
         containers:
