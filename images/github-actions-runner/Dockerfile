@@ -137,16 +137,17 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
   && brew tap tsuru/homebrew-tsuru \
   && brew install crane \
   && brew install cosign \
+	&& brew install oras \
   && brew cleanup
 
-ENV GITHUB_WORKSPACE=/home/runner/_work
+ENV HOME=/home/runner/
 
-RUN mkdir -p $GITHUB_WORKSPACE/.cache/trivy/db \
+RUN mkdir -p $HOME/.cache/trivy/db \
 	&& oras pull ghcr.io/aquasecurity/trivy-db:2 \
   && tar -xzf db.tar.gz -C $GITHUB_WORKSPACE/.cache/trivy/db \
   && rm db.tar.gz
 
-RUN mkdir -p $GITHUB_WORKSPACE/.cache/trivy/java-db \
+RUN mkdir -p $HOME/.cache/trivy/java-db \
 	&& oras pull ghcr.io/aquasecurity/trivy-java-db:1 \
   && tar -xzf javadb.tar.gz -C $GITHUB_WORKSPACE/.cache/trivy/java-db \
   && rm javadb.tar.gz
