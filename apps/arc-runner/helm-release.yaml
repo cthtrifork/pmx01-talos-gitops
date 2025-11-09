@@ -211,17 +211,17 @@ spec:
                     requests:
                       storage: 32Gi
           - name: container-rootless-storage
-            hostPath:
-              path: /var/mnt/local-storage-cache/gha-cache/containers-rootless
-              type: DirectoryOrCreate
-            # ephemeral:
-            #   volumeClaimTemplate:
-            #     spec:
-            #       accessModes:
-            #         - ReadWriteOnce
-            #       resources:
-            #         requests:
-            #           storage: 16Gi
+            # hostPath:
+            #   path: /var/mnt/local-storage-cache/gha-cache/containers-rootless
+            #   type: DirectoryOrCreate
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 16Gi
           - name: dnf-cache
             hostPath:
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get volumestatus u-local-storage-cache
