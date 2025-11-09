@@ -191,7 +191,7 @@ spec:
             # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get volumestatus u-local-storage
             # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get mountstatus u-local-storage
               path: /var/mnt/local-storage/gha-cache/dnf
-              type: Directory
+              type: DirectoryOrCreate
             #persistentVolumeClaim:
             # claimName: arc-runner-dnf-cache
           - name: container-mycontainers-storage
