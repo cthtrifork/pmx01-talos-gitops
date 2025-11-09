@@ -156,7 +156,7 @@ spec:
               - name: dind-sock
                 mountPath: /var/run
               - name: container-rootless-storage
-                mountPath: /home/runner/.local/share/containers/storage
+                mountPath: /home/runner/.local/share/containers
               - name: container-mycontainers-storage
                 mountPath: /var/lib/mycontainers
               - name: container-shared-storage
