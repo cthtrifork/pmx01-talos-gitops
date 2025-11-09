@@ -39,14 +39,42 @@ spec:
     template:
       spec:
         initContainers:
-          - name: init-dind-externals
+          - name: fix-perms
             image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.61
             imagePullPolicy: IfNotPresent
-            command:
-              ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              privileged: true
+              allowPrivilegeEscalation: true
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                set -eux
+                # Create if missing and set perms/ownership (idempotent)
+                install -d -m 0775 -o 1001 -g 1001 /mnt/dnf
+                install -d -m 0775 -o 1001 -g 1001 /mnt/rootless
+                # Also fix subpaths if they already exist
+                chown -R 1001:1001 /mnt/dnf /mnt/rootless || true
+                chmod 0775 /mnt/dnf /mnt/rootless || true
             volumeMounts:
-              - name: dind-externals
-                mountPath: /home/runner/tmpDir
+              - name: dnf-cache
+                mountPath: /mnt/dnf
+              - name: container-rootless-storage
+                mountPath: /mnt/rootless
+              - name: init-dind-externals
+                image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.61
+                imagePullPolicy: IfNotPresent
+                command:
+                  [
+                    "cp",
+                    "-r",
+                    "/home/runner/externals/.",
+                    "/home/runner/tmpDir/",
+                  ]
+                volumeMounts:
+                  - name: dind-externals
+                    mountPath: /home/runner/tmpDir
           - name: dind
             image: public.ecr.aws/docker/library/docker:28.5.2-dind # mirror of docker official image
             imagePullPolicy: IfNotPresent
@@ -61,7 +89,15 @@ spec:
               allowPrivilegeEscalation: true
               privileged: true
               capabilities:
-                add: ["SYS_ADMIN", "NET_ADMIN", "DAC_OVERRIDE", "CHOWN", "FOWNER", "SYS_RESOURCE"]
+                add:
+                  [
+                    "SYS_ADMIN",
+                    "NET_ADMIN",
+                    "DAC_OVERRIDE",
+                    "CHOWN",
+                    "FOWNER",
+                    "SYS_RESOURCE",
+                  ]
             restartPolicy: Always
             startupProbe:
               exec:
@@ -109,10 +145,8 @@ spec:
                 value: chroot
               - name: BUILDAH_LAYERS
                 value: "true"
-              #- name: BUILDAH_ISOLATION
-              #  value: chroot
               #- name: STORAGE_DRIVER
-              #  value: vfs
+              #  value: vfs # slower
               #- name: _BUILDAH_STARTED_IN_USERNS
               #  value: ""
               #- name: _CONTAINERS_USERNS
@@ -194,19 +228,19 @@ spec:
             #         requests:
             #           storage: 16Gi
           - name: dnf-cache
-            hostPath: 
-            # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get volumestatus u-local-storage
-            # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get mountstatus u-local-storage
+            hostPath:
+              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get volumestatus u-local-storage
+              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get mountstatus u-local-storage
               path: /var/mnt/local-storage/gha-cache/dnf
               type: DirectoryOrCreate
             #persistentVolumeClaim:
             # claimName: arc-runner-dnf-cache
           - name: container-mycontainers-storage
             persistentVolumeClaim:
-             claimName: container-mycontainers-storage
+              claimName: container-mycontainers-storage
           - name: container-shared-storage
             persistentVolumeClaim:
-             claimName: container-shared-storage
+              claimName: container-shared-storage
     listenerTemplate:
       spec:
         containers:
