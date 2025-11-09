@@ -187,8 +187,10 @@ spec:
                     requests:
                       storage: 16Gi
           - name: dnf-cache
-            hostPath: # talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p get volumestatus u-local-storage
-              path: /var/lib/gha-cache/dnf
+            hostPath: 
+            # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get volumestatus u-local-storage
+            # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get mountstatus u-local-storage
+              path: /var/mnt/local-storage/gha-cache/dnf
               type: Directory
             #persistentVolumeClaim:
             # claimName: arc-runner-dnf-cache
