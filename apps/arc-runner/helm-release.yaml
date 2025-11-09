@@ -57,6 +57,8 @@ spec:
                 # Also fix subpaths if they already exist
                 chown -R 1001:1001 /mnt/dnf /mnt/rootless || true
                 chmod 0775 /mnt/dnf /mnt/rootless || true
+                # Feed existing data into the mounted volumes
+                mv -r /home/runner/.local/share/containers /mnt/rootless || true
             volumeMounts:
               - name: dnf-cache
                 mountPath: /mnt/dnf
