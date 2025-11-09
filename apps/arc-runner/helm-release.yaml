@@ -30,6 +30,8 @@ spec:
     maxRunners: 5
     minRunners: 1
 
+    nodeSelector:
+      kubernetes.io/hostname: talos-tmd-e0p
     # point to the secret we created with SOPS
     githubConfigSecret: github-auth
 
@@ -91,6 +93,8 @@ spec:
                 cpu: 4000m
                 memory: 16Gi
             securityContext:
+              seLinuxOptions:
+                type: container_file_t
               privileged: true
               runAsUser: 1001
               runAsGroup: 1001
@@ -178,14 +182,17 @@ spec:
                     requests:
                       storage: 32Gi
           - name: container-rootless-storage
-            ephemeral:
-              volumeClaimTemplate:
-                spec:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 16Gi
+            hostPath:
+              path: /var/mnt/local-storage/gha-cache/containers-rootless
+              type: DirectoryOrCreate
+            # ephemeral:
+            #   volumeClaimTemplate:
+            #     spec:
+            #       accessModes:
+            #         - ReadWriteOnce
+            #       resources:
+            #         requests:
+            #           storage: 16Gi
           - name: dnf-cache
             hostPath: 
             # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get volumestatus u-local-storage
