@@ -212,7 +212,7 @@ spec:
                       storage: 32Gi
           - name: container-rootless-storage
             hostPath:
-              path: /var/mnt/local-storage/gha-cache/containers-rootless
+              path: /var/mnt/local-storage-cache/gha-cache/containers-rootless
               type: DirectoryOrCreate
             # ephemeral:
             #   volumeClaimTemplate:
