@@ -1,0 +1,8 @@
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: local-storage-cache
+provisioning:
+  diskSelector:
+    match: "!system_disk"
+  minSize: 40GB
+  maxSize: 40GB

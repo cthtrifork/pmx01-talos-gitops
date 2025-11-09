@@ -31,7 +31,7 @@ spec:
     minRunners: 1
 
     nodeSelector:
-      kubernetes.io/hostname: talos-tmd-e0p
+      kubernetes.io/hostname: talos-ska-6at
     # point to the secret we created with SOPS
     githubConfigSecret: github-auth
 
@@ -224,9 +224,9 @@ spec:
             #           storage: 16Gi
           - name: dnf-cache
             hostPath:
-              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get volumestatus u-local-storage
-              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-tmd-e0p get mountstatus u-local-storage
-              path: /var/mnt/local-storage/gha-cache/dnf
+              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get volumestatus u-local-storage-cache
+              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get mountstatus u-local-storage-cache
+              path: /var/mnt/local-storage-cache/gha-cache/dnf
               type: DirectoryOrCreate
             #persistentVolumeClaim:
             # claimName: arc-runner-dnf-cache
