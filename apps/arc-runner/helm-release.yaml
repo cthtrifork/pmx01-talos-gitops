@@ -62,19 +62,14 @@ spec:
                 mountPath: /mnt/dnf
               - name: container-rootless-storage
                 mountPath: /mnt/rootless
-              - name: init-dind-externals
-                image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.61
-                imagePullPolicy: IfNotPresent
-                command:
-                  [
-                    "cp",
-                    "-r",
-                    "/home/runner/externals/.",
-                    "/home/runner/tmpDir/",
-                  ]
-                volumeMounts:
-                  - name: dind-externals
-                    mountPath: /home/runner/tmpDir
+          - name: init-dind-externals
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.61
+            imagePullPolicy: IfNotPresent
+            command:
+              ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+            volumeMounts:
+              - name: dind-externals
+                mountPath: /home/runner/tmpDir
           - name: dind
             image: public.ecr.aws/docker/library/docker:28.5.2-dind # mirror of docker official image
             imagePullPolicy: IfNotPresent
