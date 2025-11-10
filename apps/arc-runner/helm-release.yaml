@@ -28,7 +28,7 @@ spec:
     runnerScaleSetName: arc-ubuntu
 
     maxRunners: 2
-    minRunners: 1
+    minRunners: 0
 
     nodeSelector:
       kubernetes.io/hostname: talos-ska-6at
