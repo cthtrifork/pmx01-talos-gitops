@@ -82,6 +82,7 @@ RUN apt-get update \
   podman uidmap fuse-overlayfs iptables buildah skopeo slirp4netns \
   netavark \
   socat sqlite3 qemu-system-x86 qemu-utils \
+  imagemagick \
   && rm -rf /var/lib/apt/lists/*
 
 # Rootful storage config – no userns
