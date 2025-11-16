@@ -233,9 +233,18 @@ spec:
           - name: container-shared-storage
             persistentVolumeClaim:
               claimName: container-shared-storage
+          #- name: container-shared-registry
+          #  persistentVolumeClaim:
+          #    claimName: container-shared-registry
           - name: container-shared-registry
-            persistentVolumeClaim:
-              claimName: container-shared-registry
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 16Gi
     listenerTemplate:
       spec:
         containers:
