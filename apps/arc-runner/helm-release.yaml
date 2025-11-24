@@ -232,10 +232,10 @@ spec:
               type: DirectoryOrCreate
           - name: container-shared-storage
             persistentVolumeClaim:
-              claimName: container-shared-storage
+              claimName: container-shared-storage2
           - name: container-shared-registry
             persistentVolumeClaim:
-             claimName: container-shared-registry
+             claimName: container-shared-registry2
           # - name: container-shared-registry
           #   ephemeral:
           #     volumeClaimTemplate:
@@ -255,7 +255,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: container-shared-registry
+  name: container-shared-registry2
   namespace: arc-runners-system
 spec:
   accessModes:
@@ -268,20 +268,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: arc-runner-dnf-cache
-  namespace: arc-runners-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 24Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: container-shared-storage
+  name: container-shared-storage2
   namespace: arc-runners-system
 spec:
   accessModes:
