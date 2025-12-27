@@ -39,8 +39,26 @@ spec:
     template:
       spec:
         initContainers:
+          - name: data-retention
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest
+            imagePullPolicy: IfNotPresent
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              privileged: true
+              allowPrivilegeEscalation: true
+            command: ["/bin/sh","-c"]
+            args:
+              - |
+                set -e
+                find /mnt/cache -type f -mtime +14 -print -delete
+                find /mnt/cache -type d -empty -mtime +14 -print -delete || true
+                done
+            volumeMounts:
+              - name: tmp-cache
+                mountPath: /mnt/cache
           - name: fix-perms
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.61
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest
             imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0
@@ -65,7 +83,7 @@ spec:
               - name: container-rootless-storage
                 mountPath: /mnt/rootless
           - name: init-dind-externals
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.62
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest
             imagePullPolicy: IfNotPresent
             command:
               ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
@@ -175,6 +193,8 @@ spec:
                 mountPath: /var/cache/dnf
               - name: dnf-cache
                 mountPath: /home/runner/.cache/dnf
+              - name: tmp-cache
+                mountPath: /mnt/cache
         imagePullSecrets:
           - name: github-auth
         securityContext:
@@ -242,6 +262,9 @@ spec:
           - name: container-shared-registry
             persistentVolumeClaim:
              claimName: container-shared-registry2
+          - name: tmp-cache
+            persistentVolumeClaim:
+             claimName: tmp-cache
           # - name: container-shared-registry
           #   ephemeral:
           #     volumeClaimTemplate:
@@ -257,6 +280,19 @@ spec:
           - name: listener
             securityContext:
               runAsUser: 1000
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tmp-cache
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 5Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
