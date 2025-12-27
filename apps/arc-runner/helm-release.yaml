@@ -194,7 +194,7 @@ spec:
               - name: dnf-cache
                 mountPath: /home/runner/.cache/dnf
               - name: tmp-cache
-                mountPath: /mnt/cache
+                mountPath: /tmp/cache
         imagePullSecrets:
           - name: github-auth
         securityContext:
