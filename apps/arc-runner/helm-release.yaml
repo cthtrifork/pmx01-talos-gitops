@@ -53,7 +53,6 @@ spec:
                 set -e
                 find /mnt/cache -type f -mtime +14 -print -delete
                 find /mnt/cache -type d -empty -mtime +14 -print -delete || true
-                done
             volumeMounts:
               - name: tmp-cache
                 mountPath: /mnt/cache
