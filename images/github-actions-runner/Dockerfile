@@ -1,5 +1,5 @@
 # Source: https://github.com/actions/runner/blob/main/images/Dockerfile
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-noble@sha256:625a5aa6b07f9a736ae634c29cc3795f45d4113040c16aecdcfc62e058a5520b AS build
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble@sha256:4e6dd3c625551285d75e664d112adfeea151a3996ea4a1fb5149db97017c1027 AS build
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -36,7 +36,7 @@ RUN export RUNNER_ARCH=${TARGETARCH} \
         "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${TARGETARCH}" \
     && chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-noble@sha256:625a5aa6b07f9a736ae634c29cc3795f45d4113040c16aecdcfc62e058a5520b
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble@sha256:4e6dd3c625551285d75e664d112adfeea151a3996ea4a1fb5149db97017c1027
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNER_MANUALLY_TRAP_SIG=1
