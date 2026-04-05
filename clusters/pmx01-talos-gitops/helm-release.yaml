@@ -10,3 +10,10 @@ spec:
   chartRef:
     kind: OCIRepository
     name: flux-operator
+  values:
+    commonAnnotations:
+      omni-kube-service-exposer.sidero.dev/port: "50080"
+      omni-kube-service-exposer.sidero.dev/label: Flux UI
+      omni-kube-service-exposer.sidero.dev/prefix: flux
+    serviceMonitor:
+      create: true
