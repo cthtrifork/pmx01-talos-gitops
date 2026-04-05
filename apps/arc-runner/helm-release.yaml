@@ -151,7 +151,7 @@ spec:
                 mountPath: /var/lib/docker
         containers:
           - name: runner
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79@sha256:09c9e04d79d11d4e2496eeecb874b1bf92db20fef4f0ae47536ceffce4b00545
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.80@sha256:38be40872401a79c8807aee9acd407e70b6ace70497ce2400570dba53dc17dc1
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
             resources:
