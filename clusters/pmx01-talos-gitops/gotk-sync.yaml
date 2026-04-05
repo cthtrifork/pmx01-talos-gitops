@@ -1,0 +1,101 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gitops-infra-bootstrap
+  namespace: flux-system
+spec:
+  interval: 10m
+  prune: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../infra/bootstrap
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gitops-infra
+  namespace: flux-system
+spec:
+  interval: 10m
+  prune: true
+  dependsOn:
+    - name: gitops-infra-bootstrap
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../infra
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gitops-infra-post
+  namespace: flux-system
+spec:
+  interval: 10m
+  prune: true
+  dependsOn:
+    - name: gitops-infra
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../infra/post
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gitops-virtualmachines
+  namespace: flux-system
+spec:
+  interval: 10m
+  prune: true
+  dependsOn:
+    - name: gitops-infra-post
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../virtualmachines
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: app-controllers
+  namespace: flux-system
+spec:
+  interval: 10m
+  prune: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  dependsOn:
+    - name: gitops-infra-post
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../apps/controllers
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: app
+  namespace: flux-system
+spec:
+  interval: 10m
+  prune: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  dependsOn:
+    - name: gitops-infra-post
+    - name: app-controllers
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../apps
