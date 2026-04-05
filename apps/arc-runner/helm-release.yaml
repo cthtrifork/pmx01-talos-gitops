@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: gha-runner-scale-set
-      version: 0.13.0 # https://github.com/actions/actions-runner-controller/pkgs/container/actions-runner-controller-charts%2Fgha-runner-scale-set
+      version: 0.14.0 # https://github.com/actions/actions-runner-controller/pkgs/container/actions-runner-controller-charts%2Fgha-runner-scale-set
       sourceRef:
         kind: HelmRepository
         name: actions-runner-controller
@@ -275,10 +275,25 @@ spec:
           #             storage: 16Gi
     listenerTemplate:
       spec:
+        securityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
         containers:
           - name: listener
             securityContext:
               runAsUser: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+            resources:
+              limits:
+                memory: 256Mi
+              requests:
+                cpu: 15m
+                memory: 64Mi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
