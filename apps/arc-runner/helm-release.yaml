@@ -143,14 +143,12 @@ spec:
             volumeMounts:
               - name: work
                 mountPath: /home/runner/_work
-              - name: tmp
-                mountPath: /tmp
-              - name: var-lib-docker
-                mountPath: /var/lib/docker
               - name: dind-sock
                 mountPath: /var/run
               - name: dind-externals
                 mountPath: /home/runner/externals
+              - name: docker-lib
+                mountPath: /var/lib/docker
         containers:
           - name: runner
             image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79
