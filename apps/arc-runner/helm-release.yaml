@@ -7,14 +7,9 @@ metadata:
 spec:
   interval: 10m
   releaseName: arc-runners
-  chart:
-    spec:
-      chart: gha-runner-scale-set
-      version: 0.14.0 # https://github.com/actions/actions-runner-controller/pkgs/container/actions-runner-controller-charts%2Fgha-runner-scale-set
-      sourceRef:
-        kind: HelmRepository
-        name: actions-runner-controller
-        namespace: arc-runners-system
+  chartRef:
+    kind: OCIRepository
+    name: arc-runners-system
   install:
     createNamespace: true
   # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
@@ -47,6 +42,12 @@ spec:
               runAsGroup: 0
               privileged: true
               allowPrivilegeEscalation: true
+            resources:
+              limits:
+                memory: 2Gi
+              requests:
+                cpu: 25m
+                memory: 128Mi
             command: ["/bin/sh","-c"]
             args:
               - |
@@ -64,6 +65,12 @@ spec:
               runAsGroup: 0
               privileged: true
               allowPrivilegeEscalation: true
+            resources:
+              limits:
+                memory: 2Gi
+              requests:
+                cpu: 25m
+                memory: 128Mi
             command: ["/bin/sh", "-c"]
             args:
               - |
@@ -82,15 +89,32 @@ spec:
               - name: container-rootless-storage
                 mountPath: /mnt/rootless
           - name: init-dind-externals
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest
-            imagePullPolicy: IfNotPresent
+            image: ghcr.io/actions/actions-runner:2.333.0
             command:
-              ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+              - "cp"
+              - "-r"
+              - "/home/runner/externals/."
+              - "/home/runner/tmpDir/"
             volumeMounts:
               - name: dind-externals
                 mountPath: /home/runner/tmpDir
+            resources:
+              limits:
+                memory: 2Gi
+              requests:
+                cpu: 25m
+                memory: 128Mi
+            securityContext:
+              runAsUser: 1001
+              runAsGroup: 1001
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
           - name: dind
-            image: public.ecr.aws/docker/library/docker:28.5.2-dind # mirror of docker official image
+            # renovate: datasource=docker depName=docker.io/library/docker
+            image: docker.io/library/docker:29.3.0-dind
             imagePullPolicy: IfNotPresent
             args:
               - dockerd
@@ -99,19 +123,14 @@ spec:
             env:
               - name: DOCKER_GROUP_GID
                 value: "123"
+            resources:
+              requests:
+                cpu: 200m
+                memory: 1Gi
+              limits:
+                memory: 5Gi
             securityContext:
-              allowPrivilegeEscalation: true
               privileged: true
-              capabilities:
-                add:
-                  [
-                    "SYS_ADMIN",
-                    "NET_ADMIN",
-                    "DAC_OVERRIDE",
-                    "CHOWN",
-                    "FOWNER",
-                    "SYS_RESOURCE",
-                  ]
             restartPolicy: Always
             startupProbe:
               exec:
@@ -124,15 +143,17 @@ spec:
             volumeMounts:
               - name: work
                 mountPath: /home/runner/_work
+              - name: tmp
+                mountPath: /tmp
+              - name: var-lib-docker
+                mountPath: /var/lib/docker
               - name: dind-sock
                 mountPath: /var/run
               - name: dind-externals
                 mountPath: /home/runner/externals
-              - name: docker-lib
-                mountPath: /var/lib/docker
         containers:
           - name: runner
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.78
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
             resources:
