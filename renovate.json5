@@ -1,0 +1,140 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    "group:recommended"
+  ],
+  "ignorePaths": [
+    "scripts/**",
+    "k8s/**/rendered/**",
+    "k8s/**/kyverno-policies/tests/**/*.yaml",
+    "k8s/**/sync.yaml",
+    "k8s/**/cluster.yaml"
+  ],
+  "docker-compose": {
+    "fileMatch": [
+      "(^|/)(?:docker-)?compose[^/]*\\.ya?ml$"
+    ]
+  },
+  "flux": {
+    "fileMatch": [
+      "(.+)\\.y(a?)ml"
+    ]
+  },
+  "github-actions": {
+    "fileMatch": [
+      "(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$",
+      "(^|/)action\\.ya?ml$"
+    ]
+  },
+  "kubernetes": {
+    "fileMatch": [
+      "(.+)\\.y(a?)ml"
+    ]
+  },
+  "helm-values": {
+    "fileMatch": [
+      "(.+)\\.y(a?)ml"
+    ]
+  },
+  "helmfile": {
+    "fileMatch": [
+      "(.+)\\.y(a?)ml"
+    ]
+  },
+  "helm": {
+    "fileMatch": [
+      "(.+)\\.y(a?)ml"
+    ]
+  },
+  "rebaseWhen": "auto",
+  "packageRules": [
+    {
+      "matchPackagePatterns": [
+        "toolkit.fluxcd.io",
+        "fluxcd"
+      ],
+      "automerge": false,
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ]
+    },
+    {
+      "extends": [
+        "helpers:pinGitHubActionDigests"
+      ],
+      "extractVersion": "^(?<version>v?\\d+\\.\\d+\\.\\d+)$",
+      "versioning": "regex:^v?(?<major>\\d+)(\\.(?<minor>\\d+)\\.(?<patch>\\d+))?$",
+      "recreateWhen": "always"
+    },
+    {
+      "automerge": true,
+      "pinDigests": false,
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ]
+    },
+    {
+      "matchDatasources": [
+        "helm"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "additionalBranchPrefix": "{{depName}}-",
+      "matchPackageNames": [
+        "*"
+      ]
+    },
+    {
+      "matchDatasources": [
+        "helm",
+        "docker"
+      ],
+      "matchPackageNames": [
+        "cilium",
+        "cilium/cilium",
+        "quay.io/cilium/cilium",
+        "quay.io/cilium/operator",
+        "quay.io/cilium/operator-generic",
+        "quay.io/cilium/hubble-relay",
+        "quay.io/cilium/hubble-ui",
+        "quay.io/cilium/hubble-ui-backend"
+      ],
+      "groupName": "cilium",
+      "groupSlug": "cilium",
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Catch images with renovate comment",
+      "managerFilePatterns": [
+        "/.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)image:(\\s?\\S+):(?<currentValue>\\S+)",
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)tag:(\\s?)(?<currentValue>\\S+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^.github/.*\\.yaml$/"
+      ],
+      "matchStrings": [
+        "(?<depName>[^\\s\"\\']+):\\s\"?(?<currentValue>.[^\"'\\s]*)\"?\\s+# renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<packageName>[^\\s]+)"
+      ],
+      "datasourceTemplate": "{{{datasource}}}",
+      "packageNameTemplate": "{{{packageName}}}",
+      "versioningTemplate": "semver"
+    }
+  ]
+}
