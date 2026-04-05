@@ -11,42 +11,6 @@
     "k8s/**/sync.yaml",
     "k8s/**/cluster.yaml"
   ],
-  "docker-compose": {
-    "fileMatch": [
-      "(^|/)(?:docker-)?compose[^/]*\\.ya?ml$"
-    ]
-  },
-  "flux": {
-    "fileMatch": [
-      "(.+)\\.y(a?)ml"
-    ]
-  },
-  "github-actions": {
-    "fileMatch": [
-      "(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$",
-      "(^|/)action\\.ya?ml$"
-    ]
-  },
-  "kubernetes": {
-    "fileMatch": [
-      "(.+)\\.y(a?)ml"
-    ]
-  },
-  "helm-values": {
-    "fileMatch": [
-      "(.+)\\.y(a?)ml"
-    ]
-  },
-  "helmfile": {
-    "fileMatch": [
-      "(.+)\\.y(a?)ml"
-    ]
-  },
-  "helm": {
-    "fileMatch": [
-      "(.+)\\.y(a?)ml"
-    ]
-  },
   "rebaseWhen": "auto",
   "packageRules": [
     {
