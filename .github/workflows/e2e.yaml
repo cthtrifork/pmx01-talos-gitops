@@ -96,7 +96,8 @@ jobs:
 
       - name: Wait for successful reconciliation
         run: |
-          flux reconcile kustomization flux-system --context="${CONTEXT}" --timeout="${TIMEOUT}"
+          wait="${WAIT:-5m}"
+          flux reconcile kustomization flux-system --context="${CONTEXT}" --timeout="${wait}"
           kubectl wait --for=condition=Ready kustomization flux-system -n flux-system --timeout=5m
 
       - name: List deployed resources
