@@ -28,3 +28,6 @@ jobs:
       - name: Deploy flux instance
         run: |
           kubectl apply -f clusters/pmx01-talos-gitops/flux-instance.yaml
+      - name: Wait for successful reconciliation
+        run: |
+          kubectl wait --for=condition=Ready kustomization flux-system -n flux-system --timeout=5m
