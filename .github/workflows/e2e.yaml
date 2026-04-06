@@ -12,7 +12,12 @@ permissions:
 env:
   CILIUM_CLI_VERSION: v0.19.2 # renovate: datasource=github-releases depName=cilium/cilium-cli
   CILIUM_VERSION: v1.19.2 # renovate: datasource=github-releases depName=cilium/cilium
-  INTERACTIVE: false
+  #INTERACTIVE: false
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 
 jobs:
   e2e-test:
@@ -29,18 +34,6 @@ jobs:
         with:
           config: scripts/kind.yaml
           cluster_name: pmx-talos
-      - name: Setup cilium
-        run: |
-         helm repo add cilium https://helm.cilium.io/
-         docker pull quay.io/cilium/cilium:${CILIUM_VERSION}
-         kind load docker-image quay.io/cilium/cilium:${CILIUM_VERSION} --name pmx-talos
-         helm install cilium cilium/cilium --version ${CILIUM_VERSION#v} \
-          --namespace kube-system \
-          --set image.pullPolicy=IfNotPresent \
-          --set ipam.mode=kubernetes
-        env:
-          CILIUM_VERSION: ${{env.CILIUM_VERSION}}
-
       - name: Install cilium CLI
         run: |
           CLI_ARCH=amd64
@@ -50,6 +43,25 @@ jobs:
           rm cilium-linux-${CLI_ARCH}.tar.gz
         env:
           CILIUM_CLI_VERSION: ${{env.CILIUM_CLI_VERSION}}
+          
+      - name: Setup cilium
+        run: |
+         helm repo add cilium https://helm.cilium.io/
+         docker pull quay.io/cilium/cilium:${CILIUM_VERSION}
+         kind load docker-image quay.io/cilium/cilium:${CILIUM_VERSION} --name pmx-talos
+
+         cilium install --version=${CILIUM_VERSION} --encryption wireguard --helm-auto-gen-values helm-values.yaml
+         cat helm-values.yaml 
+         cilium install --version=${CILIUM_VERSION} --encryption wireguard --helm-values helm-values.yaml 
+
+         #helm install cilium cilium/cilium --version ${CILIUM_VERSION#v} \
+         # --namespace kube-system \
+         # --set image.pullPolicy=IfNotPresent \
+         # --set ipam.mode=kubernetes
+        env:
+          CILIUM_VERSION: ${{env.CILIUM_VERSION}}
+
+
 
       - name: Wait for cilium
         run: cilium status --wait
