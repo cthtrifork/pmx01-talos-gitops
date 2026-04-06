@@ -27,11 +27,12 @@ jobs:
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           config: scripts/kind.yaml
+          cluster_name: pmx-talos
       - name: Setup cilium
         run: |
          helm repo add cilium https://helm.cilium.io/
          docker pull quay.io/cilium/cilium:${CILIUM_VERSION}
-         kind load docker-image quay.io/cilium/cilium:${CILIUM_VERSION}
+         kind load docker-image quay.io/cilium/cilium:${CILIUM_VERSION} --name kind-pmx-talos
          helm install cilium cilium/cilium --version ${CILIUM_VERSION#v} \
           --namespace kube-system \
           --set image.pullPolicy=IfNotPresent \
