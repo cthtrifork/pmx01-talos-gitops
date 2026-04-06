@@ -4,6 +4,7 @@ resources:
   - cilium/
   - local-path-provisioner/
   - cert-manager/
+  - flux-system/
   - kubevirt/
   - metrics-server/
   - metallb/
