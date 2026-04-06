@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  CILIUM_VERSION: v1.19.2
+  INTERACTIVE: false
+
 jobs:
   e2e-test:
     runs-on: ubuntu-latest
@@ -23,7 +27,34 @@ jobs:
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           config: scripts/kind.yaml
-      - name: Install latest stable
+      - name: Setup cilium
+        run: |
+         helm repo add cilium https://helm.cilium.io/
+         docker pull quay.io/cilium/cilium:${CILIUM_VERSION}
+         kind load docker-image quay.io/cilium/cilium:${CILIUM_VERSION}
+         helm install cilium cilium/cilium --version ${CILIUM_VERSION#v} \
+          --namespace kube-system \
+          --set image.pullPolicy=IfNotPresent \
+          --set ipam.mode=kubernetes \
+          --set kubeProxyReplacement=true
+        env:
+          CILIUM_VERSION: ${{env.CILIUM_VERSION}}
+
+      - name: Install cilium CLI
+        run: |
+          CLI_ARCH=amd64
+          if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+          curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+          sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+          sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+          rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+        env:
+          CILIUM_VERSION: ${{env.CILIUM_VERSION}}
+
+      - name: Wait for cilium
+        run: cilium status --wait
+
+      - name: Install latest flux-operator
         run: |
           helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
           --namespace flux-system \
@@ -35,10 +66,12 @@ jobs:
       - name: Verify flux instance is ready
         run: |
           kubectl  wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
+
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@main
         with:
           version: 'latest'
+
       - name: Wait for successful reconciliation
         run: |
           flux reconcile kustomization flux-system --context="${CONTEXT}" --timeout="${TIMEOUT}"
