@@ -55,9 +55,9 @@ spec:
     k8sServicePort: 7445
 
     # Multi-NIC: select all 'en*' devices across nodes (works with differing names)
-    devices: "e+"
-    nodePort:
-      directRoutingDevice: "e+"
+    #devices: "e+"
+    #nodePort:
+    #  directRoutingDevice: "e+"
 
     # Reasonable bare-metal defaults
     #tunnel: "disabled"
