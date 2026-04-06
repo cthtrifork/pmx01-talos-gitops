@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  upgrade-test:
+  e2e-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
