@@ -37,8 +37,7 @@ jobs:
          helm install cilium cilium/cilium --version ${CILIUM_VERSION#v} \
           --namespace kube-system \
           --set image.pullPolicy=IfNotPresent \
-          --set ipam.mode=kubernetes \
-          --set kubeProxyReplacement=true
+          --set ipam.mode=kubernetes
         env:
           CILIUM_VERSION: ${{env.CILIUM_VERSION}}
 
