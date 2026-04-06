@@ -10,10 +10,7 @@ spec:
   chartRef:
     kind: OCIRepository
     name: flux-operator
+  # https://github.com/controlplaneio-fluxcd/charts/blob/main/charts/flux-operator/values.yaml
   values:
-    commonAnnotations:
-      omni-kube-service-exposer.sidero.dev/port: "50080"
-      omni-kube-service-exposer.sidero.dev/label: Flux UI
-      omni-kube-service-exposer.sidero.dev/prefix: flux
     serviceMonitor:
       create: true
