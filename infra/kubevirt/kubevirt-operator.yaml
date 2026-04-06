@@ -8049,7 +8049,7 @@ spec:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
           value: v1.6.0
-        image: quay.io/kubevirt/virt-operator:v1.6.0
+        image: quay.io/kubevirt/virt-operator:v1.8.1@sha256:a6cd48ee32c53fc09944cb1b3b709b8ef634f0168472b2409d1a31d0c345cbcb
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
