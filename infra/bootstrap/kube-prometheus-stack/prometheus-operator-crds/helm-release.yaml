@@ -9,7 +9,7 @@ spec:
   chart:
     # https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-operator-crds/values.yaml
     spec:
-      version: 24.0.1
+      version: 24.0.2
       chart: prometheus-operator-crds
       sourceRef:
         kind: HelmRepository
