@@ -1,28 +1,31 @@
 name: Publish to Github
 on:
-    workflow_dispatch:
-    push:
-        paths:
-            - "images/**"
-            - "images/**/**"
-            - ".github/workflows/build-image.yaml"
-        branches:
-            - main
-        tags:
-            - v*.*.*
-    # pull_request:
-    #   branches:
-    #     - main
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'image tag prefix'
+        default: 'rc'
+        required: true
+
+permissions:
+  contents: read
 
 env:
     RUNNER_VERSION: "2.333.1" # renovate: datasource=github-releases depName=actions/runner
 
 jobs:
     publish-images:
+        outputs:
+            image_url: ${{ steps.slsa.outputs.image_url }}
+            image_digest: ${{ steps.slsa.outputs.image_digest }}
         runs-on: ubuntu-latest
         permissions:
             contents: read
-            packages: write
+            id-token: write # for creating OIDC tokens for signing.
+            packages: write # for pushing and signing container images.
         strategy:
             matrix:
                 image:
@@ -85,3 +88,12 @@ jobs:
                 COSIGN_EXPERIMENTAL: 1
               run: |
                 cosign sign --yes ghcr.io/${{ github.repository }}/${{ matrix.image.name }}@${{ steps.build-push.outputs.digest }}
+
+            - name: Generate SLSA metadata
+              id: slsa
+              run: |
+                image_url=ghcr.io/${{ github.repository }}/${{ matrix.image.name }}:0.1.${{ github.run_number }}
+                echo "image_url=$image_url" >> $GITHUB_OUTPUT
+            
+                image_digest=${{ steps.build-push.outputs.digest }}
+                echo "image_digest=$image_digest" >> $GITHUB_OUTPUT
