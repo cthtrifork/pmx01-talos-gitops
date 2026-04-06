@@ -5,3 +5,5 @@ resources:
   #- receiver.yaml
   - gitrepository.yaml
   - secret.enc.yaml
+  - helm-release.yaml
+  - helm-repository.yaml
