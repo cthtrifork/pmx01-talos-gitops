@@ -1,8 +1,10 @@
 name: e2e
 
 on:
+  workflow_dispatch:
   push:
-    branches: ['*']
+    branches: [ '*' ]
+    tags-ignore: [ '*' ]
 
 permissions:
   contents: read
@@ -19,6 +21,8 @@ jobs:
         uses: controlplaneio-fluxcd/flux-operator/actions/setup@c5505a455515f0ea78e04ff6f380cba8fe42a357 # v0.45.1
       - name: Setup Kubernetes Kind
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+        with:
+          config: scripts/kind.yaml
       - name: Install latest stable
         run: |
           helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
@@ -28,6 +32,25 @@ jobs:
       - name: Deploy flux instance
         run: |
           kubectl apply -f clusters/pmx01-talos-gitops/flux-instance.yaml
+      - name: Verify flux instance is ready
+        run: |
+          kubectl  wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@main
+        with:
+          version: 'latest'
       - name: Wait for successful reconciliation
         run: |
+          flux reconcile kustomization flux-system --context="${CONTEXT}" --timeout="${TIMEOUT}"
           kubectl wait --for=condition=Ready kustomization flux-system -n flux-system --timeout=5m
+
+      - name: List deployed resources
+        run: flux tree ks flux-system
+      - name: Debug failure
+        if: failure()
+        run: |
+          kubectl -n flux-system get all
+          kubectl -n flux-system logs deploy/source-controller
+          kubectl -n flux-system logs deploy/kustomize-controller
+          kubectl -n flux-system logs deploy/helm-controller
+          flux get all --all-namespaces
