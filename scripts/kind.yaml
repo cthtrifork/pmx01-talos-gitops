@@ -8,6 +8,7 @@ containerdConfigPatches:
 networking:
   disableDefaultCNI: true
   kubeProxyMode: none
+  apiServerPort: 6443
   serviceSubnet: "10.96.0.0/16"
   podSubnet: "10.244.0.0/16"
   dnsSearch:
@@ -19,4 +20,8 @@ nodes:
   - role: control-plane
   # == Workers ==
   - role: worker
-  
+    # Extra port mappings are added to allow access to cluster services via localhost on the host machine.
+    extraPortMappings:
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
