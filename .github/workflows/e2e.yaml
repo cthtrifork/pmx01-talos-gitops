@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  CILIUM_VERSION: v1.19.2
+  CILIUM_VERSION: v1.19.2 # renovate: datasource=github-releases depName=cilium/cilium-cli
   INTERACTIVE: false
 
 jobs:
