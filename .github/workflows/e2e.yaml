@@ -44,7 +44,7 @@ jobs:
         env:
           CILIUM_CLI_VERSION: ${{env.CILIUM_CLI_VERSION}}
           
-      - name: Setup cilium
+      - name: Install latest cilium
         run: |
          helm repo add cilium https://helm.cilium.io/
          docker pull quay.io/cilium/cilium:${CILIUM_VERSION}
@@ -52,14 +52,27 @@ jobs:
 
          helm install cilium cilium/cilium --version ${CILIUM_VERSION#v} \
           --namespace kube-system \
-          --set image.pullPolicy=IfNotPresent \
-          --set ipam.mode=kubernetes
+          --set hostPort.enabled=true \
+          --set nodePort.enabled=true \
+          --set ipam.mode=kubernetes \
+          --set kubeProxyReplacement=true \
+          --set k8sServicePort=6443 \
+          --set encryption.enabled=true \
+          --set encryption.type=wireguard \
+          --set operator.replicas=1 \
+          --set envoy.updateStrategy.rollingUpdate.maxUnavailable=1 \
+          --set updateStrategy.rollingUpdate.maxUnavailable=1 \
+          --set egressGateway.enabled=false \
+          --set bpf.masquerade=true \
+          --set policyAuditMode=true \
+          --set securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}" \
+          --set securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}" \
+          --set cgroup.autoMount.enabled=false \
+          --set cgroup.hostRoot=/sys/fs/cgroup
         env:
           CILIUM_VERSION: ${{env.CILIUM_VERSION}}
 
-
-
-      - name: Wait for cilium
+      - name: Wait for cilium to be ready
         run: |
           interactive="${INTERACTIVE:-true}"
           wait="${WAIT:-5m}"
@@ -71,6 +84,7 @@ jobs:
           --namespace flux-system \
           --create-namespace \
           --wait
+
       - name: Deploy flux instance
         run: |
           kubectl apply -f clusters/pmx01-talos-gitops/flux-instance.yaml
