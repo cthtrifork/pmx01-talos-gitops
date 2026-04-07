@@ -114,7 +114,7 @@ spec:
                   - ALL
           - name: dind
             # renovate: datasource=docker depName=docker.io/library/docker
-            image: docker.io/library/docker:29.3.1-dind
+            image: docker.io/library/docker:29.4.0-dind
             imagePullPolicy: IfNotPresent
             args:
               - dockerd
