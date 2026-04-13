@@ -1,5 +1,8 @@
 name: Publish to Github
 on:
+  pull_request: 
+    branches: 
+      - main
   push:
     tags:
       - 'v*'
@@ -40,12 +43,14 @@ jobs:
             - name: Prepare
               id: prep
               run: |
-                VERSION="${{ github.event.inputs.tag }}-${GITHUB_SHA::8}"
+                VERSION="${DEFAULT_TAG:-rc}-${GITHUB_SHA::8}"
                 if [[ $GITHUB_REF == refs/tags/* ]]; then
-                    VERSION=${GITHUB_REF/refs\/tags\//}
+                  VERSION=${GITHUB_REF/refs\/tags\//}
                 fi
                 echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
                 echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+              env:
+                DEFAULT_TAG: ${{ github.event.inputs.tag }}
 
             - name: Set up QEMU
               uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
@@ -81,8 +86,8 @@ jobs:
                   labels: ${{ steps.meta.outputs.labels }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
-                  sbom: true
-                  provenance: true
+                  sbom: ${{ github.event_name != 'pull_request' }}
+                  provenance: ${{ github.event_name != 'pull_request' }}
                   build-args: |
                       DOCKER_METADATA_OUTPUT_VERSION
                       RUNNER_VERSION=${{ env.RUNNER_VERSION }}
@@ -90,6 +95,7 @@ jobs:
        
             - uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
             - name: Sign images
+              if: ${{ github.event_name != 'pull_request' }}
               env:
                 COSIGN_EXPERIMENTAL: 1
               run: |
@@ -97,6 +103,7 @@ jobs:
 
             - name: Generate SLSA metadata
               id: slsa
+              if: ${{ github.event_name != 'pull_request' }}
               run: |
                 image_url=${{ matrix.image.registryurl }}:${{ steps.prep.outputs.VERSION }}
                 echo "image_url=$image_url" >> $GITHUB_OUTPUT
@@ -106,7 +113,7 @@ jobs:
 
     ghcr-provenance:
         needs: [publish-images]
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request'
         permissions:
             actions: read # for detecting the Github Actions environment.
             id-token: write # for creating OIDC tokens for signing.
