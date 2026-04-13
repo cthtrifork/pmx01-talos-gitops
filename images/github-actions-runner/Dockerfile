@@ -12,8 +12,9 @@ ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   build-essential procps curl file git tree git wget \
-  podman uidmap fuse-overlayfs iptables buildah skopeo slirp4netns \
-  netavark \
+  podman uidmap fuse-overlayfs iptables buildah \
+  netavark dnsutils \
+  skopeo gettext rsync \
   socat sqlite3 qemu-system-x86 qemu-utils \
   imagemagick \
   && rm -rf /var/lib/apt/lists/*
@@ -50,40 +51,26 @@ RUN mkdir -p /home/runner/.local/bin /home/runner/.cache /home/runner/.config /h
 # Ensure default docker config
 RUN echo "{ \"auths\": {} }" > /home/runner/.docker/config.json
 
+# Software list: https://github.com/actions/runner-images/blob/main/images/ubuntu-slim/ubuntu-slim-Readme.md
 ## We use Homebrew as the primary package manager
-# Install Homebrew
+# Install Homebrew first
 RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
   && echo >> /home/runner/.bashrc \
-  && echo "eval '$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)'" >> /home/runner/.bashrc \
-  && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
-  && brew update \
-  && brew upgrade \
-  && brew install cilium-cli \
-  && brew install fluxcd/tap/flux \
-  && brew install helm \
-  && brew install kind \
-  && brew install kubeconform \
-  && brew install kubectl \
-  && brew install make \
-  && brew install sops \
-  && brew install yamllint \
-  && brew install yq \
-  && brew tap tsuru/homebrew-tsuru \
-  && brew install crane \
-  && brew install cosign \
-	&& brew install oras \
-  && brew cleanup
+  && echo "eval '$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)'" >> /home/runner/.bashrc
 
-ENV HOME=/home/runner/
+COPY Brewfile Brewfile
+RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" && brew bundle
 
-RUN mkdir -p $HOME/.cache/trivy/db \
+ENV HOME=/home/runner
+
+RUN mkdir -p "${HOME}/.cache/trivy/db" \
 	&& oras pull ghcr.io/aquasecurity/trivy-db:2 \
-  && tar -xzf db.tar.gz -C $HOME/.cache/trivy/db \
+  && tar -xzf db.tar.gz -C "${HOME}/.cache/trivy/db" \
   && rm db.tar.gz
 
-RUN mkdir -p $HOME/.cache/trivy/java-db \
+RUN mkdir -p "${HOME}/.cache/trivy/java-db" \
 	&& oras pull ghcr.io/aquasecurity/trivy-java-db:1 \
-  && tar -xzf javadb.tar.gz -C $HOME/.cache/trivy/java-db \
+  && tar -xzf javadb.tar.gz -C "${HOME}/.cache/trivy/java-db" \
   && rm javadb.tar.gz
 
 # Remove Haskell, android and dotnet
