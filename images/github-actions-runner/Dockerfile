@@ -153,4 +153,10 @@ RUN mkdir -p $HOME/.cache/trivy/java-db \
   && tar -xzf javadb.tar.gz -C $HOME/.cache/trivy/java-db \
   && rm javadb.tar.gz
 
+# Remove Haskell, android and dotnet
+RUN rm -rf /usr/share/dotnet || true
+RUN rm -rf /usr/local/lib/android || true
+RUN rm -rf /opt/ghc || true
+RUN rm -rf /usr/local/.ghcup || true
+
 WORKDIR /home/runner
