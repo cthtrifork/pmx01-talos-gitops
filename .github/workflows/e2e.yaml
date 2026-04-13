@@ -5,6 +5,8 @@ on:
   push:
     branches: [ '*' ]
     tags-ignore: [ '*' ]
+    paths-ignore:
+      - images/**
 
 permissions:
   contents: read
