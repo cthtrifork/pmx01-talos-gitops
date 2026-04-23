@@ -1,6 +1,6 @@
 # Source: https://github.com/actions/runner/blob/main/images/Dockerfile
 # Source: https://github.com/actions/runner/blob/main/images/Dockerfile
-ARG RUNNER_VERSION=2.333.1
+ARG RUNNER_VERSION=2.334.0@sha256:b6614fce332517f74d0a76e7c762fb08e4f2ff13dcf333183397c8a5725b6e8e
 FROM ghcr.io/actions/actions-runner:${RUNNER_VERSION}
 
 # CUSTOM
