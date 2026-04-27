@@ -4,6 +4,8 @@
     'config:best-practices',
     'group:recommended',
   ],
+  "suppressNotifications": ["prEditedNotification", "prIgnoreNotification"],
+  "rebaseWhen": "conflicted",
   ignorePaths: [
     'scripts/**',
     'k8s/**/rendered/**',
