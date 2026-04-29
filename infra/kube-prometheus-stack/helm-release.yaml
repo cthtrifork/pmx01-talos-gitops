@@ -7,14 +7,9 @@ metadata:
 spec:
   interval: 5m
   timeout: 10m
-  chart:
-    spec:
-      version: 84.3.0
-      chart: kube-prometheus-stack
-      sourceRef:
-        kind: HelmRepository
-        name: prometheus-community
-      interval: 60m
+  chartRef:
+    kind: OCIRepository
+    name: prometheus-community-kube-prometheus-stack
   driftDetection:
     mode: enabled
   install:
