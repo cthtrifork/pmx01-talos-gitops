@@ -21,7 +21,7 @@ spec:
       name: RetryOnFailure
   values:
     reportsServer:
-      enabled: false
+      enabled: true
       waitForReady: true
       postgresql:
         # -- Deploy postgresql dependency chart
@@ -35,8 +35,7 @@ spec:
           cpu: 100m
           memory: 128Mi
       db:
-        # -- If set, database connection information will be read from the Secret with this name. Overrides `db.host`, `db.name`, `db.user`, and `db.password`.
-        secretName: "reportsdb-postgresql"
+        secretName: "reports-server-postgres-cluster-app"
         hostSecretKeyName: "host"
         portSecretKeyName: "port"
         name: reportsdb
