@@ -1,9 +1,15 @@
 ---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+kind: OCIRepository
 metadata:
   name: cert-manager
   namespace: cert-manager-system
 spec:
-  interval: 24h
-  url: https://charts.jetstack.io
+  interval: 12h
+  url: oci://quay.io/jetstack/charts/cert-manager
+  ref:
+    tag: v1.20.2
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: extract # can be 'extract' or 'copy', defaults to 'extract'

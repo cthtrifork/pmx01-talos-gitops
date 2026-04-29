@@ -7,14 +7,9 @@ metadata:
 spec:
   interval: 30m
   timeout: 10m
-  chart:
-    spec:
-      chart: cert-manager
-      version: v1.20.2
-      sourceRef:
-        kind: HelmRepository
-        name: cert-manager
-      interval: 12h
+  chartRef:
+    kind: OCIRepository
+    name: cert-manager
   driftDetection:
     mode: enabled
   values:
@@ -22,31 +17,31 @@ spec:
       enabled: true
     resources:
       requests:
-        cpu: 50m 
+        cpu: 50m
         memory: 128Mi
       limits:
         memory: 256Mi
     webhook:
       resources:
         requests:
-          cpu: 50m  
-          memory: 128Mi  
+          cpu: 50m
+          memory: 128Mi
         limits:
-          memory: 256Mi 
+          memory: 256Mi
     startupapicheck:
       resources:
         limits:
           memory: 32Mi
         requests:
-          cpu: 50m  
+          cpu: 50m
           memory: 32Mi
     cainjector:
       resources:
         requests:
-          cpu: 50m  
-          memory: 128Mi  
+          cpu: 50m
+          memory: 128Mi
         limits:
-          memory: 256Mi 
+          memory: 256Mi
     prometheus:
       enabled: false
       servicemonitor:
