@@ -4,7 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
   name: gha-runner-scale-set-controller
-  namespace: gha-runner-controller-system
+  namespace: arc-controller-system
 spec:
   interval: 12h
   url: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
