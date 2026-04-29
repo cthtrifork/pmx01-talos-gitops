@@ -75,5 +75,5 @@ spec:
           inRoles:
             - pg_monitor
             - pg_signal_backend
-          passwordSecret:
-            name: reportsdb-postgresql
+          #passwordSecret:
+          #  name: reportsdb-postgresql
