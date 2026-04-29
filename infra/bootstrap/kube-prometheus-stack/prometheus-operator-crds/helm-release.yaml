@@ -6,14 +6,8 @@ metadata:
   namespace: kube-prometheus-stack-system
 spec:
   interval: 5m
-  chart:
-    # https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-operator-crds/values.yaml
-    spec:
-      version: 28.0.1
-      chart: prometheus-operator-crds
-      sourceRef:
-        kind: HelmRepository
-        name: prometheus-community-crds
-      interval: 60m
+  chartRef:
+    kind: OCIRepository
+    name: prometheus-community-crds
   driftDetection:
     mode: enabled
