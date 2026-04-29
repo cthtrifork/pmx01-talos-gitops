@@ -1,4 +1,4 @@
-W---
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -17,7 +17,7 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: server-ca-issuer
+  name: reports-server-postgres-server-ca-issuer
 spec:
   ca:
     secretName: reports-server-postgres-server-ca-key-pair
@@ -48,6 +48,6 @@ spec:
     - reports-server-postgres-ro.default
     - reports-server-postgres-ro.default.svc
   issuerRef:
-    name: server-ca-issuer
+    name: reports-server-postgres-server-ca-issuer
     kind: Issuer
     group: cert-manager.io
