@@ -39,9 +39,7 @@ spec:
         - "[ClusterRole,*,kyverno:migrate-resources]"
         - "[ClusterRole,*,hubble-ui]"
         # cluster roles
-        - "[ClusterRole,*,platform-engineer]"
-
-          # Ignore kube-prometheus-stack as they are only for local development and are a pain to manage
+        - "[ClusterRole,*,platform-engineer]" # Ignore kube-prometheus-stack as they are only for local development and are a pain to manage
         - "[ClusterRole,*,kube-prometheus-stack-grafana-clusterrole]"
         - "[ClusterRole,*,kube-prometheus-stack-kube-state-metrics]"
         - "[ClusterRole,*,kube-prometheus-stack-operator]"
