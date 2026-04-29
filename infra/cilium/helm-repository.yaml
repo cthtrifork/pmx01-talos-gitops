@@ -1,9 +1,13 @@
 ---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+kind: OCIRepository
 metadata:
   name: cilium
   namespace: kube-system
 spec:
-  interval: 10m
-  url: https://helm.cilium.io/
+  interval: 12h
+  url: oci://quay.io/cilium/charts/cilium
+  ref:
+    tag: 1.19.3
+    digest: "sha256:0683e1fc672e0c6587a8d8d43f6845430aaaed47e36dacbe77e3e621ea7a4c69" # 1.19.3
