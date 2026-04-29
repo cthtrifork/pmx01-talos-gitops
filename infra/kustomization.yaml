@@ -10,3 +10,4 @@ resources:
   - metallb/
   - kube-prometheus-stack
   - storage-system/
+  - policy-system/
