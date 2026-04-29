@@ -26,10 +26,8 @@ spec:
       clusterName: reports-server-postgres
       instances: 1
       certificates:
-        serverTLSSecret: reportsdb-server-cert
-        serverCASecret: reportsdb-server-cert
-        clientCASecret: reportsdb-client-cert
-        replicationTLSSecret: reportsdb-client-cert
+        serverTLSSecret: reports-server-postgres-cert
+        serverCASecret: reports-server-postgres-cert
       priorityClassName: system-cluster-critical
       monitoring:
         enabled: true
