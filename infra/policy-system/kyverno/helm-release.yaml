@@ -12,9 +12,6 @@ spec:
   driftDetection:
     mode: enabled
   # https://github.com/kyverno/kyverno/blob/main/charts/kyverno/values.yaml
-  valuesFrom:
-    - kind: ConfigMap
-      name: kyverno-helm-values
   install:
     strategy:
       name: RetryOnFailure
