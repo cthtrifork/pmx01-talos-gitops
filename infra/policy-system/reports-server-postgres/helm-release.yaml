@@ -53,8 +53,8 @@ spec:
       initdb:
         database: reportsdb
         owner: reportsdb
-        secret:
-          name: reportsdb-postgresql
+        #secret:
+        #  name: reportsdb-postgresql
         options: []
         encoding: UTF8
         # postInitSQL:
