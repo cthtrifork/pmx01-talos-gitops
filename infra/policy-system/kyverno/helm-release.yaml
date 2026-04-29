@@ -1,10 +1,14 @@
 ---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: kyverno
   namespace: policy-system
 spec:
+  dependsOn:
+    - name: cloudnative-pg
+      namespace: storage-system
   interval: 1h
   chartRef:
     kind: OCIRepository
@@ -58,7 +62,7 @@ spec:
       image:
         registry: ghcr.io
     admissionController:
-      replicas: 2
+      replicas: 1
       antiAffinity:
         enabled: false
       serviceMonitor:
@@ -100,7 +104,7 @@ spec:
               resources:
                 - nodes
     backgroundController:
-      replicas: 2
+      replicas: 1
       antiAffinity:
         enabled: false
       serviceMonitor:
@@ -218,7 +222,7 @@ spec:
                 - delete
                 - deletecollection
     cleanupController:
-      replicas: 2
+      replicas: 1
       antiAffinity:
         enabled: false
       serviceMonitor:
@@ -262,7 +266,7 @@ spec:
                 - get
               resources:
                 - nodes
-      replicas: 2
+      replicas: 1
       antiAffinity:
         enabled: false
       serviceMonitor:
