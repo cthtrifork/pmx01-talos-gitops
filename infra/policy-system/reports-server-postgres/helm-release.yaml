@@ -51,17 +51,17 @@ spec:
           cpu: 30m
           memory: 48Mi
       initdb:
-          database: reportsdb
-          owner: reportsdb
-          secret:
-            name: reportsdb-postgresql
-          options: []
-          encoding: UTF8
-          # postInitSQL:
-          #  - CREATE EXTENSION IF NOT EXISTS vector;
-          postInitApplicationSQL: []
-          postInitTemplateSQL: []
-      enableSuperuserAccess: false
+        database: reportsdb
+        owner: reportsdb
+        secret:
+          name: reportsdb-postgresql
+        options: []
+        encoding: UTF8
+        # postInitSQL:
+        #  - CREATE EXTENSION IF NOT EXISTS vector;
+        postInitApplicationSQL: []
+        postInitTemplateSQL: []
+      enableSuperuserAccess: true
       superuserSecret: ""
       postgresql:
         parameters:
@@ -77,4 +77,3 @@ spec:
             - pg_signal_backend
           passwordSecret:
             name: reportsdb-postgresql
-
