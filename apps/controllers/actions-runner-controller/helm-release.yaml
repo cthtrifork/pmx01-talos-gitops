@@ -7,14 +7,9 @@ metadata:
 spec:
   interval: 10m
   releaseName: gha-runner-scale-set-controller
-  chart:
-    spec:
-      chart: gha-runner-scale-set-controller
-      version: 0.14.1 # https://github.com/actions/actions-runner-controller/pkgs/container/actions-runner-controller-charts%2Fgha-runner-scale-set-controller
-      sourceRef:
-        kind: HelmRepository
-        name: actions-runner-controller
-        namespace: arc-runners-system
+  chartRef:
+    kind: OCIRepository
+    name: gha-runner-scale-set-controller
   install:
     createNamespace: true
   # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set-controller/values.yaml
