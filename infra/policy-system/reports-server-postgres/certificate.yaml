@@ -1,0 +1,53 @@
+W---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: reports-server-postgres-server-ca
+spec:
+  isCA: true
+  commonName: reports-server-postgres-server-ca
+  secretName: reports-server-postgres-server-ca-key-pair
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: portableinfo-pmx01-root-ca-bootstrap
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: server-ca-issuer
+spec:
+  ca:
+    secretName: reports-server-postgres-server-ca-key-pair
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: reports-server-postgres-cert
+  labels:
+    cnpg.io/reload: ""
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: reports-server-postgres-cert
+spec:
+  secretName: reports-server-postgres-cert
+  usages:
+    - server auth
+  dnsNames:
+    - reports-server-postgres-rw
+    - reports-server-postgres-rw.default
+    - reports-server-postgres-rw.default.svc
+    - reports-server-postgres-r
+    - reports-server-postgres-r.default
+    - reports-server-postgres-r.default.svc
+    - reports-server-postgres-ro
+    - reports-server-postgres-ro.default
+    - reports-server-postgres-ro.default.svc
+  issuerRef:
+    name: server-ca-issuer
+    kind: Issuer
+    group: cert-manager.io

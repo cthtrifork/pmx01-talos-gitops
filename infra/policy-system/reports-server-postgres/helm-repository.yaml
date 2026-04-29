@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: cnpg-cluster
+  namespace: policy-system
+spec:
+  interval: 12h
+  url: oci://ghcr.io/cloudnative-pg/charts/cluster
+  ref:
+    tag: 0.6.0
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: extract # can be 'extract' or 'copy', defaults to 'extract'

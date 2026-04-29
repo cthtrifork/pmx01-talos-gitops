@@ -20,6 +20,34 @@ spec:
     strategy:
       name: RetryOnFailure
   values:
+    reportsServer:
+      enabled: false
+      waitForReady: true
+      postgresql:
+        # -- Deploy postgresql dependency chart
+        enabled: false
+        auth:
+          database: reportsdb
+      resources:
+        limits:
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+      db:
+        # -- If set, database connection information will be read from the Secret with this name. Overrides `db.host`, `db.name`, `db.user`, and `db.password`.
+        secretName: "reportsdb-postgresql"
+        hostSecretKeyName: "host"
+        portSecretKeyName: "port"
+        name: reportsdb
+        dbNameSecretKeyName: "dbname"
+        userSecretKeyName: "username"
+        passwordSecretKeyName: "password"
+        # -- Database SSL
+        sslmode: disable
+        sslrootcert: ""
+        sslkey: ""
+        sslcert: ""
     config:
       resourceFiltersInclude:
         - "[ClusterRole,*,cluster-admin]"
