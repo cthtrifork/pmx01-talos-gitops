@@ -123,9 +123,10 @@
         '/.*\\.ya?ml$/',
       ],
       matchStrings: [
-        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)image:(\\s?\\S+):(?<currentValue>\\S+)',
-        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)tag:(\\s?)(?<currentValue>\\S+)',
+        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)image:(\\s?\\S+):(?<currentValue>\\S+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
+        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)tag:(\\s?)(?<currentValue>\\S+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
       ],
+      autoReplaceStringTemplate: 'Image={{depName}}:{{newValue}}{{#if newDigest}}@{{newDigest}}{{/if}}',
     },
     {
       customType: 'regex',
