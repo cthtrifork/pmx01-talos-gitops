@@ -6,6 +6,7 @@
   ],
   "suppressNotifications": ["prEditedNotification", "prIgnoreNotification"],
   "rebaseWhen": "conflicted",
+	pinDigests: true,
   ignorePaths: [
     'scripts/**',
     'k8s/**/rendered/**',
