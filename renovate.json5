@@ -123,10 +123,23 @@
         '/.*\\.ya?ml$/',
       ],
       matchStrings: [
-        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)image:(\\s?\\S+):(?<currentValue>\\S+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
         '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)tag:(\\s?)(?<currentValue>\\S+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
       ],
-      autoReplaceStringTemplate: 'Image={{depName}}:{{newValue}}{{#if newDigest}}@{{newDigest}}{{/if}}',
+      autoReplaceStringTemplate: 'tag: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}',
+      packageNameTemplate: '{{{depName}}}',
+      datasourceTemplate: '{{{datasource}}}',
+      versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
+    },
+    {
+      customType: 'regex',
+      description: 'Catch images with renovate comment',
+      managerFilePatterns: [
+        '/.*\\.ya?ml$/',
+      ],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)image:(\\s?\\S+):(?<currentValue>\\S+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
+      ],
+      autoReplaceStringTemplate: 'image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}',
       packageNameTemplate: '{{{depName}}}',
       datasourceTemplate: '{{{datasource}}}',
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
