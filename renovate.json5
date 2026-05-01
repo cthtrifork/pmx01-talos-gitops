@@ -118,28 +118,28 @@
   customManagers: [
     {
       customType: 'regex',
-      description: 'Catch images with renovate comment',
+      description: 'Catch image references with renovate comment',
       managerFilePatterns: [
         '/.*\\.ya?ml$/',
       ],
       matchStrings: [
-        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)tag:(\\s?)(?<currentValue>\\S+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+image:\\s*\\S+:(?<currentValue>[^\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
       ],
-      autoReplaceStringTemplate: 'tag: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}',
+      autoReplaceStringTemplate: 'image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}',
       packageNameTemplate: '{{{depName}}}',
       datasourceTemplate: '{{{datasource}}}',
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
     },
     {
       customType: 'regex',
-      description: 'Catch images with renovate comment',
+      description: 'Catch image tags with renovate comment',
       managerFilePatterns: [
         '/.*\\.ya?ml$/',
       ],
       matchStrings: [
-        '# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?(\\s+)image:(\\s?\\S+):(?<currentValue>\\S+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+tag:\\s*(?<currentValue>[^\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
       ],
-      autoReplaceStringTemplate: 'image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}',
+      autoReplaceStringTemplate: 'tag: {{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}',
       packageNameTemplate: '{{{depName}}}',
       datasourceTemplate: '{{{datasource}}}',
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}',
