@@ -1,0 +1,208 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: trivy-operator
+  namespace: security-system
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: aqua
+  driftDetection:
+    mode: enabled
+  interval: 30m
+  timeout: 10m
+  install:
+    disableWait: true
+    crds: CreateReplace
+    strategy:
+      name: RetryOnFailure
+  upgrade:
+    crds: CreateReplace
+    disableWait: true
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  # https://github.com/aquasecurity/trivy-operator/blob/main/deploy/helm/values.yaml
+  values:
+    image:
+      registry: harbor.${SHARED_SERVICES_DOMAIN}/gcr-cache
+    excludeNamespaces: "local-path-storage"
+    policiesBundle:
+      registry: harbor.${SHARED_SERVICES_DOMAIN}/gcr-cache
+    trivy:
+      debug: "false"
+      slow: ${TRIVY_SLOW:=false} # set to true to enable slow mode which reduces load on the trivy server
+      serverURL: "http://trivy-service.trivy-operator-system.svc.cluster.local:4954"
+      imageScanCacheDir: "/tmp/trivy/.cache"
+      #httpProxy: ""
+      #httpsProxy: "${HTTPS_PROXY}"
+      #noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
+      # Skip DB updates for Trivy client (scanjobs)
+      clientServerSkipUpdate: true
+      skipJavaDBUpdate: false
+      #offlineScan: false
+      podLabels:
+        kube-kraken.dk/with-https-proxy: "true"
+        kube-kraken.dk/mount-root-ca: "true"
+      image:
+        registry: harbor.${SHARED_SERVICES_DOMAIN}/gcr-cache
+        # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy
+        tag: 0.70.0
+      dbRegistry: harbor.${SHARED_SERVICES_DOMAIN}/gcr-cache
+      javaDbRegistry: harbor.${SHARED_SERVICES_DOMAIN}/gcr-cache
+      registry:
+        mirror:
+          # re-enable once tenants have migrated to harbor
+          #"ghcr.io": harbor.${SHARED_SERVICES_DOMAIN}/ghcr-cache # can not be used, as tenants are also using private ghcr.io repositories which overlaps
+          "mirror.gcr.io": harbor.${SHARED_SERVICES_DOMAIN}/gcr-cache
+          "registry-1.docker.io": harbor.${SHARED_SERVICES_DOMAIN}/docker-hub-cache
+          "index.docker.io": harbor.${SHARED_SERVICES_DOMAIN}/docker-hub-cache
+          "docker.io": harbor.${SHARED_SERVICES_DOMAIN}/docker-hub-cache
+          "quay.io": harbor.${SHARED_SERVICES_DOMAIN}/quay-cache
+          "registry.k8s.io": harbor.${SHARED_SERVICES_DOMAIN}/k8s-cache
+          "us-docker.pkg.dev": harbor.${SHARED_SERVICES_DOMAIN}/us-pkg-cache
+          "8gears.container-registry.com": harbor.${SHARED_SERVICES_DOMAIN}/8gears-cache
+          "oci.external-secrets.io": harbor.${SHARED_SERVICES_DOMAIN}/external-secrets-cache
+          "public.ecr.aws": harbor.${SHARED_SERVICES_DOMAIN}/public-ecr-aws
+          "registry.gitlab.com": harbor.${SHARED_SERVICES_DOMAIN}/gitlab-registry-cache
+      storageSize: ${TRIVY_STORAGE_SIZE:=5Gi}
+      ignoreFileName: /etc/trivy/.trivyignore.yaml
+      configFile:
+        vulnerability:
+          severity-source: # https://github.com/aquasecurity/trivy-db/blob/main/pkg/vulnsrc/vulnerability/const.go#L51
+            - redhat # redhat is more mature and a more trusted source, while NVD pulls in from many sources and can be quite volatile
+            - auto # proceed with normal listing if no CVE or CVE with rating was found at redhat
+          ignore-status:
+            - will_not_fix
+            - not_affected
+          #vex:
+          #  - repo
+        scan:
+          offline: true
+          disable-telemetry: true
+          skip-version-check: true
+          show-suppressed: false
+          scanners:
+            - vuln
+      server:
+        replicas: 1 # we should add redis backend if we want more replicas
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        podSecurityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          runAsUser: 65534
+          fsGroup: 65534
+          runAsGroup: 65534
+        resources:
+          requests:
+            cpu: ${TRIVY_SERVER_CPU_REQUEST:=100m}
+            memory: ${TRIVY_SERVER_MEM_REQUEST:=512Mi}
+            ephemeral-storage: "2Gi"
+          limits:
+            memory: ${TRIVY_SERVER_MEM_LIMIT:=2Gi}
+        extraServerVolumes:
+          volumeMounts:
+            # trivy image docker.io/library/hello-world --vex repo --show-suppressed --format table --cache-dir=/home/scanner/.cache
+            - name: configfile
+              mountPath: /etc/trivy/trivy-config.yaml
+              subPath: trivy.configFile
+          volumes:
+            - name: configfile
+              configMap:
+                name: trivy-operator-trivy-config
+      resources:
+        requests:
+          cpu: ${TRIVY_SCANNER_CPU_REQUEST:=100m}
+          memory: ${TRIVY_SCANNER_MEM_REQUEST:=256Mi}
+          ephemeralStorage: "100Mi"
+        limits:
+          memory: ${TRIVY_SCANNER_MEM_LIMIT:=8Gi} # Has to have several container images in memory...
+          ephemeralStorage: "2Gi"
+    serviceMonitor:
+      enabled: true
+    operator:
+      replicas: ${TRIVY_OPERATOR_REPLICAS:=2}
+      scanJobsInSameNamespace: true
+      logDevMode: false
+      httpProxy: ""
+      httpsProxy: "${HTTPS_PROXY}"
+      noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
+      podLabels:
+        kube-kraken.dk/mount-root-ca: "true" # todo
+      # Setting this option to true will enable the Client Server mode, managed by the Trivy Operator.
+      builtInTrivyServer: true
+      exposedSecretScannerEnabled: false # we do not use this feature
+      scannerReportTTL: ${TRIVY_SCANNER_TTL:=24h}
+      scanJobTTL: "5m" # set to 1m to keep jobs for a little while for troubleshooting
+      scanJobsConcurrentLimit: ${TRIVY_SCANNER_CONCURRENTLIMIT:=5}
+      sbomGenerationEnabled: true
+      clusterComplianceEnabled: true
+      infraAssessmentScannerEnabled: false # requires priviledges that we do not like
+      # enable this to get the vulnerability ID in the metrics
+      # note that it causes high cardinality
+      metricsVulnIdEnabled: true # Allows more insights in our dashboards
+    resources:
+      limits:
+        ephemeral-storage: 2Gi
+        memory: 2Gi
+      requests:
+        cpu: 100m
+        memory: 512Mi
+    trivyOperator:
+      scanJobPodTemplateLabels: "kube-kraken.dk/with-https-proxy=true,kube-kraken.dk/mount-root-ca=true"
+      scanJobTolerations:
+        - key: "kube-kraken/role"
+          operator: "Equal"
+          value: "tool"
+          effect: "NoSchedule"
+      scanJobCustomVolumesMount:
+        - name: trivy-cache
+          mountPath: /tmp/trivy/.cache
+      scanJobCustomVolumes:
+        - name: trivy-cache
+          ephemeral: # we are using ephemeral volumes to not fill out nodes through emptydir
+            volumeClaimTemplate:
+              metadata:
+                labels:
+                  app: trivy-operator-scanjob-cache
+              spec:
+                storageClassName: ${DEFAULT_STORAGE_CLASS:=local-path}
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 10Gi # some pods have several images that are quite large. timescaledb is 7 GiB!
+      scanJobPodTemplatePodSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      scanJobCompressLogs: false
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    volumes:
+      - name: cache-policies
+        emptyDir:
+          sizeLimit: 100Mi
+    tolerations:
+      - key: "kube-kraken/role"
+        operator: "Equal"
+        value: "tool"
+        effect: "NoSchedule"
+    nodeCollector:
+      registry: harbor.${SHARED_SERVICES_DOMAIN}/ghcr-cache
+      tolerations:
+        # Allow the node collector to run on control plane nodes
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule

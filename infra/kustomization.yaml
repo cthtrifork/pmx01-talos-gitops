@@ -11,3 +11,5 @@ resources:
   - kube-prometheus-stack
   - storage-system/
   - policy-system/
+  - registry-system/
+  - security-system/
