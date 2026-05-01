@@ -123,7 +123,7 @@
         '/.*\\.ya?ml$/',
       ],
       matchStrings: [
-        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+image:\\s*\\S+:(?<currentValue>[^\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)image:\\s+"?(?<depName2>[^\\s:@\\"]+)(?::(?<currentValue>[-a-zA-Z0-9.]+))?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?"?'
       ],
       autoReplaceStringTemplate: "image: {{{depName}}}:{{{newValue}}}@{{{newDigest}}}",
       packageNameTemplate: '{{{depName}}}',
@@ -137,7 +137,7 @@
         '/.*\\.ya?ml$/',
       ],
       matchStrings: [
-        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\s+tag:\\s*(?<currentValue>[^\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?',
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)tag:\\s+"?(?<currentValue>[-a-zA-Z0-9.]+)?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?"?'
       ],
       autoReplaceStringTemplate: "tag: {{{depName}}}:{{{newValue}}}@{{{newDigest}}}",
       packageNameTemplate: '{{{depName}}}',
