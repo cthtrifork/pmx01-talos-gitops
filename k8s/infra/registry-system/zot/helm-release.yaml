@@ -36,3 +36,12 @@ spec:
   # https://github.com/project-zot/helm-charts/blob/main/charts/zot/values.yaml
   values:
     mountConfig: true
+    service:
+      type: ClusterIP
+      port: 5000
+    replicaCount: 1
+    # todo: consider VPA
+    image:
+      repository: ghcr.io/project-zot/zot
+      pullPolicy: IfNotPresent
+      tag: "v2.1.16"
