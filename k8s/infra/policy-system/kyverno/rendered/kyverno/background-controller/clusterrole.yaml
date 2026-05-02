@@ -187,6 +187,16 @@ metadata:
   namespace: policy-system
 rules:
   - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
+      - create
+      - delete
+      - get
+      - patch
+      - update
+  - apiGroups:
       - apps
     resources:
       - deployments

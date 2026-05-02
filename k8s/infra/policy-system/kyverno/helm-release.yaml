@@ -149,6 +149,16 @@ spec:
         clusterRole:
           extraResources:
             - apiGroups:
+                - ""
+              resources:
+                - serviceaccounts
+              verbs:
+                - create
+                - delete
+                - get
+                - patch
+                - update
+            - apiGroups:
                 - apps
               resources:
                 - deployments
