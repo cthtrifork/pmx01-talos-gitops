@@ -6,5 +6,8 @@ resources:
 configMapGenerator:
   - name: zot-config
     namespace: registry-system
+    behavior: merge
+    options:
+      disableNameSuffixHash: true
     files:
       - zot.json
