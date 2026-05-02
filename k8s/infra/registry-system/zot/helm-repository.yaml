@@ -1,11 +1,13 @@
 ---
-# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/helmrepository_v1beta2.json
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+kind: OCIRepository
 metadata:
   name: zot
   namespace: registry-system
 spec:
-  type: default
-  interval: 5m0s
-  url: https://zotregistry.dev/helm-charts
+  interval: 12h
+  url: oci://ghcr.io/project-zot/helm-charts/zot
+  ref:
+    tag: 0.1.112
+    digest: sha256:2fba558977e17efcd2ec301a39868a35a8b72a59634686560b67fb2a62bdd743

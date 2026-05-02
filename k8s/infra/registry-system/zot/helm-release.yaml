@@ -6,17 +6,9 @@ metadata:
   name: zot
   namespace: registry-system
 spec:
-  #chartRef:
-  #  kind: OCIRepository
-  #  name: zot
-  chart:
-    spec:
-      chart: zot
-      version: '0.1.112'
-      sourceRef:
-        kind: HelmRepository
-        name: zot
-      interval: 5m
+  chartRef:
+    kind: OCIRepository
+    name: zot
   releaseName: zot
   driftDetection:
     mode: enabled
