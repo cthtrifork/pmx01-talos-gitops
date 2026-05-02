@@ -14,7 +14,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../infra/bootstrap
+  path: ../../k8s/infra/bootstrap
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -29,7 +29,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../infra
+  path: ../../k8s/infra
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -44,7 +44,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../infra/post
+  path: ../../k8s/infra/post
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
