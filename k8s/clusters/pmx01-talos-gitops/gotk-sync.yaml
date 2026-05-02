@@ -14,7 +14,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../k8s/infra/bootstrap
+  path: ../../k8s/k8s/infra/bootstrap
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -29,7 +29,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../k8s/infra
+  path: ../../k8s/k8s/infra
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -44,7 +44,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../k8s/infra/post
+  path: ../../k8s/k8s/infra/post
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -59,7 +59,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../virtualmachines
+  path: ../../k8s/virtualmachines
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -78,7 +78,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../apps/controllers
+  path: ../../k8s/apps/controllers
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -98,4 +98,4 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../../apps
+  path: ../../k8s/apps
