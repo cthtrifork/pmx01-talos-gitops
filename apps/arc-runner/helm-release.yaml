@@ -35,7 +35,7 @@ spec:
       spec:
         initContainers:
           - name: data-retention
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79@sha256:09c9e04d79d11d4e2496eeecb874b1bf92db20fef4f0ae47536ceffce4b00545
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.2.0@sha256:c72a6fe83b3e0ba38acff0d39cd2ffb004ed1aa9cb274a8f1dea6ab7fcffe537
             imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0
@@ -58,7 +58,7 @@ spec:
               - name: tmp-cache
                 mountPath: /mnt/cache
           - name: fix-perms
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79@sha256:09c9e04d79d11d4e2496eeecb874b1bf92db20fef4f0ae47536ceffce4b00545
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.2.0@sha256:c72a6fe83b3e0ba38acff0d39cd2ffb004ed1aa9cb274a8f1dea6ab7fcffe537
             imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0
@@ -151,7 +151,7 @@ spec:
                 mountPath: /var/lib/docker
         containers:
           - name: runner
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79@sha256:09c9e04d79d11d4e2496eeecb874b1bf92db20fef4f0ae47536ceffce4b00545
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.2.0@sha256:c72a6fe83b3e0ba38acff0d39cd2ffb004ed1aa9cb274a8f1dea6ab7fcffe537
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
             resources:
