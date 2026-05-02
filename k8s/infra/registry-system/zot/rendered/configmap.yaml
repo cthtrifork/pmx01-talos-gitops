@@ -1,9 +1,0 @@
----
-# Source: zot/templates/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: zot-config
-  namespace: registry-system
-data:
-  config.json: "{\n  \"storage\": { \"rootDirectory\": \"/var/lib/registry\" },\n  \"http\": { \"address\": \"0.0.0.0\", \"port\": \"5000\" },\n  \"log\": { \"level\": \"debug\" }\n}"

@@ -31,7 +31,6 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 4c588a7156c6b8bce93d61bf8ccb4de49cad1f0c8e9c4205a4359f9d18683dd4
       labels:
         app.kubernetes.io/name: zot
         app.kubernetes.io/instance: zot
