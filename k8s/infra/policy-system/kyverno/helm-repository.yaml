@@ -9,4 +9,5 @@ spec:
   interval: 12h
   url: oci://ghcr.io/kyverno/charts/kyverno
   ref:
-    tag: 3.8.0@sha256:ae87475ab2efedc133426c77228362e3d47234e76a3f7cfeced552666e6b3292
+    tag: 3.8.0
+    digest: sha256:ae87475ab2efedc133426c77228362e3d47234e76a3f7cfeced552666e6b3292
