@@ -58,7 +58,14 @@ spec:
         app.kubernetes.io/name: spegel
         app.kubernetes.io/instance: spegel
     spec:
-      securityContext: {}
+      securityContext:
+        fsGroup: 0
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 0
+        runAsNonRoot: false
+        runAsUser: 0
+        seccompProfile:
+          type: RuntimeDefault
       priorityClassName: system-node-critical
       containers:
         - name: cleanup

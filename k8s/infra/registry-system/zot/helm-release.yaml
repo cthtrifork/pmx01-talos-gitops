@@ -45,3 +45,18 @@ spec:
       # Name of the storage class to use if it is different than the default one
       storageClassName: "local-path"
     configFiles: ~
+# https://docs.giantswarm.io/tutorials/registry/zot/
+    resources:
+      requests:
+        cpu: 350m
+        memory: 1024Mi
+      limits:
+        cpu: 500m
+        memory: 1024Mi
+
+    env:
+      - name: GOGC
+        value: "50"
+      - name: GOMEMLIMIT
+        # Set this to about 80% of the memory limit.
+        value: 800MiB

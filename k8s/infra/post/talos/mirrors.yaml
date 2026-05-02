@@ -1,0 +1,18 @@
+---
+# https://docs.siderolabs.com/talos/v1.13/reference/configuration/cri/registrymirrorconfig
+apiVersion: v1alpha1
+kind: RegistryMirrorConfig
+name: docker.io
+endpoints:
+    - url: https://zot.-registry.local:5000 # The URL of the registry mirror endpoint.
+    - url: http://my-harbor/v2/registry-k8s.io/ # The URL of the registry mirror endpoint.
+      overridePath: true # Use endpoint path as supplied, without adding `/v2/` suffix.
+#skipFallback: true # Skip fallback to the original registry if none of the mirrors are available
+---
+apiVersion: v1alpha1
+kind: RegistryTLSConfig
+name: my-private-registry.local:5000 # Registry endpoint to apply the TLS configuration to.
+ca: |- # CA registry certificate to add the list of trusted certificates.
+    -----BEGIN CERTIFICATE-----
+    MIID...IDAQAB
+    -----END CERTIFICATE-----

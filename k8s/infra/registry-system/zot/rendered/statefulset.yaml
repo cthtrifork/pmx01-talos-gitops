@@ -42,7 +42,11 @@ spec:
           securityContext: null
           image: "ghcr.io/project-zot/zot:v2.1.16"
           imagePullPolicy: IfNotPresent
-          env: null
+          env:
+            - name: GOGC
+              value: "50"
+            - name: GOMEMLIMIT
+              value: 800MiB
           ports:
             - name: zot
               containerPort: 5000
@@ -72,7 +76,13 @@ spec:
               path: /startupz
               port: 5000
               scheme: HTTP
-          resources: null
+          resources:
+            limits:
+              cpu: 500m
+              memory: 1024Mi
+            requests:
+              cpu: 350m
+              memory: 1024Mi
       volumes:
         - name: zot-config
           configMap:
