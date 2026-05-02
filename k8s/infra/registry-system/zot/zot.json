@@ -10,6 +10,9 @@
         "level": "debug"
       },
       "extensions": {
+        "ui": {
+          "enable": true
+        },
         "sync": {
           "enable": true,
           "registries": [
