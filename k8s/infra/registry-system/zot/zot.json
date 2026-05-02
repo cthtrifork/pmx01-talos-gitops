@@ -23,6 +23,12 @@
               "urls": [
                 "https://docker.io/library"
               ],
+              "content": [
+                {
+                  "prefix": "**",
+                  "destination": "/docker-images"
+                }
+              ],
               "onDemand": true,
               "tlsVerify": true,
               "maxRetries": 3,
@@ -31,6 +37,12 @@
             {
               "urls": [
                 "https://ghcr.io"
+              ],
+              "content": [
+                {
+                  "prefix": "**",
+                  "destination": "/ghcr-images"
+                }
               ],
               "onDemand": true,
               "tlsVerify": true,

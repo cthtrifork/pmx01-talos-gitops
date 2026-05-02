@@ -12,3 +12,5 @@ configMapGenerator:
         kyverno.io/watch: "true"
     files:
       - config.json=zot.json
+generatorOptions:
+  disableNameSuffixHash: true
