@@ -1,0 +1,22 @@
+---
+# Source: trivy-operator/templates/monitor/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: trivy-operator
+  namespace: security-system
+  labels:
+    helm.sh/chart: trivy-operator-0.32.1
+    app.kubernetes.io/name: trivy-operator
+    app.kubernetes.io/instance: trivy-operator
+    app.kubernetes.io/version: "0.30.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trivy-operator
+      app.kubernetes.io/instance: trivy-operator
+  endpoints:
+    - honorLabels: true
+      port: metrics
+      scheme: http

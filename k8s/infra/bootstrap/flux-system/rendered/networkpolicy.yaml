@@ -1,0 +1,28 @@
+---
+# Source: flux-operator/templates/networkpolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: flux-operator-web
+  namespace: flux-system
+  labels:
+    helm.sh/chart: flux-operator-0.45.1
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.45.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  policyTypes:
+    - Ingress
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: flux-operator
+      app.kubernetes.io/instance: flux-operator
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9080
+        - protocol: TCP
+          port: 8080

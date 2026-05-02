@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  annotations:
+    helm.toolkit.fluxcd.io/driftDetection: disabled
+  labels:
+    app: prom
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: prom
+    app.kubernetes.io/version: 84.5.0
+    chart: kube-prometheus-stack-84.5.0
+    heritage: Helm
+    release: kube-prometheus-stack
+    type: rule
+  name: kube-prom-k8s.rules.container-cpu-usage-seconds-total
+  namespace: kube-prometheus-stack-system
+spec:
+  groups:
+  - name: k8s.rules.container_cpu_usage_seconds_total
+    rules:
+    - expr: |-
+        sum by (cluster, namespace, pod, container) (
+          rate(container_cpu_usage_seconds_total{job="kubelet", metrics_path="/metrics/cadvisor", image!=""}[5m])
+        ) * on (cluster, namespace, pod) group_left(node) topk by (cluster, namespace, pod) (
+          1, max by (cluster, namespace, pod, node) (kube_pod_info{node!=""})
+        )
+      record: node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m
+    - expr: |-
+        sum by (cluster, namespace, pod, container) (
+          irate(container_cpu_usage_seconds_total{job="kubelet", metrics_path="/metrics/cadvisor", image!=""}[5m])
+        ) * on (cluster, namespace, pod) group_left(node) topk by (cluster, namespace, pod) (
+          1, max by (cluster, namespace, pod, node) (kube_pod_info{node!=""})
+        )
+      record: node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate

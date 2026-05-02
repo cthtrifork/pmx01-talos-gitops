@@ -1,0 +1,23 @@
+---
+# Source: zot/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zot
+  namespace: registry-system
+  labels:
+    helm.sh/chart: zot-0.1.109
+    app.kubernetes.io/name: zot
+    app.kubernetes.io/instance: zot
+    app.kubernetes.io/version: "v2.1.16"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: NodePort
+  ports:
+    - port: 5000
+      targetPort: zot
+      protocol: TCP
+      name: zot
+  selector:
+    app.kubernetes.io/name: zot
+    app.kubernetes.io/instance: zot

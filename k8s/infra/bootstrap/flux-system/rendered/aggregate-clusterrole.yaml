@@ -1,0 +1,53 @@
+---
+# Source: flux-operator/templates/aggregate-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-operator-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    helm.sh/chart: flux-operator-0.45.1
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.45.1"
+    app.kubernetes.io/managed-by: Helm
+  namespace: flux-system
+rules:
+  - apiGroups:
+      - fluxcd.controlplane.io
+    resources:
+      - resourcesets
+      - resourcesetinputproviders
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+---
+# Source: flux-operator/templates/aggregate-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-operator-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    helm.sh/chart: flux-operator-0.45.1
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.45.1"
+    app.kubernetes.io/managed-by: Helm
+  namespace: flux-system
+rules:
+  - apiGroups:
+      - fluxcd.controlplane.io
+    resources:
+      - resourcesets
+      - resourcesetinputproviders
+    verbs:
+      - get
+      - list
+      - watch

@@ -1,0 +1,61 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  labels:
+    app: prom-admission
+    app.kubernetes.io/component: prometheus-operator-webhook
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: prom-prometheus-operator
+    app.kubernetes.io/part-of: prom
+    app.kubernetes.io/version: 84.5.0
+    chart: kube-prometheus-stack-84.5.0
+    heritage: Helm
+    release: kube-prometheus-stack
+  name: kube-prom-admission
+  namespace: kube-prometheus-stack-system
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: kube-prom-operator
+      namespace: kube-prometheus-stack-system
+      path: /admission-prometheusrules/validate
+  failurePolicy: Ignore
+  name: prometheusrulevalidate.monitoring.coreos.com
+  rules:
+  - apiGroups:
+    - monitoring.coreos.com
+    apiVersions:
+    - '*'
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - prometheusrules
+  sideEffects: None
+  timeoutSeconds: 10
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: kube-prom-operator
+      namespace: kube-prometheus-stack-system
+      path: /admission-alertmanagerconfigs/validate
+  failurePolicy: Ignore
+  name: alertmanagerconfigsvalidate.monitoring.coreos.com
+  rules:
+  - apiGroups:
+    - monitoring.coreos.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - alertmanagerconfigs
+  sideEffects: None
+  timeoutSeconds: 10

@@ -1,0 +1,61 @@
+---
+# Source: cluster/templates/cluster.yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: reports-server-postgres-cluster
+  namespace: policy-system
+  labels:
+    helm.sh/chart: cluster-0.6.0
+    app.kubernetes.io/name: cluster
+    app.kubernetes.io/instance: reports-server-postgres
+    app.kubernetes.io/part-of: cloudnative-pg
+    app.kubernetes.io/managed-by: Helm
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:16
+  imagePullPolicy: IfNotPresent
+  postgresUID: 26
+  postgresGID: 26
+  storage:
+    size: 8Gi
+    storageClass: local-path
+  resources:
+    limits:
+      memory: 200Mi
+    requests:
+      cpu: 30m
+      memory: 48Mi
+  affinity:
+    topologyKey: topology.kubernetes.io/zone
+  priorityClassName: system-cluster-critical
+  primaryUpdateMethod: switchover
+  primaryUpdateStrategy: unsupervised
+  logLevel: info
+  certificates:
+    serverCASecret: reports-server-postgres-cert
+    serverTLSSecret: reports-server-postgres-cert
+  enableSuperuserAccess: true
+  enablePDB: true
+  postgresql:
+    parameters:
+      max_connections: "1024"
+  managed:
+    roles:
+      - comment: reportsdb user
+        ensure: present
+        inRoles:
+          - pg_monitor
+          - pg_signal_backend
+        login: true
+        name: reportsdb
+        superuser: false
+  monitoring:
+    disableDefaultQueries: false
+  bootstrap:
+    initdb:
+      database: reportsdb
+      encoding: UTF8
+      options: []
+      postInitTemplateSQL: []
+      owner: reportsdb

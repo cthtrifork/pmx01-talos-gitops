@@ -1,0 +1,318 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kyverno
+  namespace: policy-system
+spec:
+  dependsOn:
+    - name: cloudnative-pg
+      namespace: storage-system
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: kyverno
+  driftDetection:
+    mode: enabled
+  # https://github.com/kyverno/kyverno/blob/main/charts/kyverno/values.yaml
+  install:
+    strategy:
+      name: RetryOnFailure
+  values:
+    reportsServer:
+      enabled: false
+      waitForReady: true
+      postgresql:
+        # -- Deploy postgresql dependency chart
+        enabled: false
+        auth:
+          database: reportsdb
+      resources:
+        limits:
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+      db:
+        secretName: "reports-server-postgres-cluster-app"
+        hostSecretKeyName: "host"
+        portSecretKeyName: "port"
+        name: reportsdb
+        dbNameSecretKeyName: "dbname"
+        userSecretKeyName: "username"
+        passwordSecretKeyName: "password"
+        # -- Database SSL
+        sslmode: disable
+        sslrootcert: ""
+        sslkey: ""
+        sslcert: ""
+    config:
+      resourceFiltersInclude:
+        - "[ClusterRole,*,cluster-admin]"
+        - "[ClusterRole,*,admin]"
+        - "[ClusterRole,*,edit]"
+        - "[ClusterRole,*,view]"
+        - "[ClusterRole,*,flux-edit-flux-system]"
+        - "[ClusterRole,*,flux-view-flux-system]"
+        - "[ClusterRole,*,crd-controller-flux-system]"
+        - "[ClusterRole,*,system:kubelet-api-admin]"
+        - "[ClusterRole,*,system:kube-controller-manager]"
+        - "[ClusterRole,*,system:controller:clusterrole-aggregation-controller]"
+        - "[ClusterRole,*,system:controller:generic-garbage-collector]"
+        - "[ClusterRole,*,system:controller:horizontal-pod-autoscaler]"
+        - "[ClusterRole,*,system:controller:namespace-controller]"
+        - "[ClusterRole,*,system:controller:resourcequota-controller]"
+        - "[ClusterRole,*,kyverno:migrate-resources]"
+        - "[ClusterRole,*,hubble-ui]"
+        # cluster roles
+        - "[ClusterRole,*,platform-engineer]" # Ignore kube-prometheus-stack as they are only for local development and are a pain to manage
+        - "[ClusterRole,*,kube-prometheus-stack-grafana-clusterrole]"
+        - "[ClusterRole,*,kube-prometheus-stack-kube-state-metrics]"
+        - "[ClusterRole,*,kube-prometheus-stack-operator]"
+        - "[ClusterRole,*,kube-prometheus-stack-prometheus]"
+      resourceFiltersExclude:
+        # By default, Kyverno exclude a number of resources from its list of watched resources.
+        # Including elements in this list will exlude them from the list of ignored resources,
+        # effectively including them in the list of watched resources.
+        - "[Node,*,*]"
+        - "[Node/*,*,*]"
+      excludeKyvernoNamespace: false
+      resourceFiltersIncludeNamespaces:
+        - kube-system
+        - flux-system
+        - local-path-storage
+        - cilium-secrets
+    global:
+      image:
+        registry: ghcr.io
+    admissionController:
+      replicas: 1
+      antiAffinity:
+        enabled: false
+      serviceMonitor:
+        enabled: true
+        interval: 60s
+      container:
+        resources:
+          limits:
+            memory: 384Mi
+          requests:
+            cpu: 50m # Goldilocks recommends 15m
+            memory: 128Mi # Goldilocks recommends 100Mi
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 1
+        minAvailable:
+      rbac:
+        clusterRole:
+          extraResources:
+            - apiGroups:
+                - rbac.authorization.k8s.io
+              resources:
+                - rolebindings
+              verbs:
+                - get
+            - apiGroups:
+                - cilium.io
+              resources:
+                - ciliumnetworkpolicies
+              verbs:
+                - list
+                - get
+                - create
+                - update
+            - apiGroups:
+                - ""
+              verbs:
+                - get
+              resources:
+                - nodes
+    backgroundController:
+      replicas: 1
+      antiAffinity:
+        enabled: false
+      serviceMonitor:
+        enabled: true
+        interval: 60s
+      resources:
+        limits:
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 1
+        minAvailable:
+      rbac:
+        clusterRole:
+          extraResources:
+            - apiGroups:
+                - apps
+              resources:
+                - deployments
+              verbs:
+                - create
+                - update
+                - patch
+            - apiGroups:
+                - apps
+              resources:
+                - statefulsets
+                - daemonsets
+              verbs:
+                - update
+            - apiGroups:
+                - monitoring.coreos.com
+              resources:
+                - servicemonitors
+                - podmonitors
+              verbs:
+                - list
+                - watch
+            - apiGroups:
+                - cilium.io
+              resources:
+                - ciliumnetworkpolicies
+              verbs:
+                - list
+                - get
+                - create
+                - update
+                - delete
+            - apiGroups:
+                - batch
+              resources:
+                - cronjobs
+                - jobs
+              verbs:
+                - create
+                - delete
+                - deletecollection
+                - get
+                - list
+                - patch
+                - update
+                - watch
+            - apiGroups:
+                - ""
+              verbs:
+                - get
+                - list
+                - update
+              resources:
+                - nodes
+            - apiGroups:
+                - cilium.io
+              verbs:
+                - get
+                - update
+                - list
+              resources:
+                - ciliumnodes
+            - apiGroups:
+                - postgresql.cnpg.io
+              resources:
+                - subscriptions
+                - publications
+                - imagecatalogs
+                - backups
+                - clusterimagecatalogs
+                - clusters
+                - poolers
+                - scheduledbackups
+                - databases
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+                - update
+                - patch
+                - delete
+                - deletecollection
+
+            - apiGroups:
+                - helm.toolkit.fluxcd.io
+              resources:
+                - helmreleases
+              verbs:
+                - create
+                - get
+                - list
+                - watch
+                - update
+                - patch
+                - delete
+                - deletecollection
+    cleanupController:
+      replicas: 1
+      antiAffinity:
+        enabled: false
+      serviceMonitor:
+        enabled: true
+        interval: 60s
+      resources:
+        limits:
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 1
+        minAvailable:
+    reportsController:
+      rbac:
+        clusterRole:
+          extraResources:
+            - apiGroups:
+                - cilium.io
+              verbs:
+                - get
+                - watch
+                - list
+              resources:
+                - ciliumnodes
+                - ciliumnetworkpolicies
+            - apiGroups:
+                - "rbac.authorization.k8s.io"
+              resources:
+                - "roles"
+                - "clusterroles"
+              verbs:
+                - "get"
+                - "list"
+                - "watch"
+            - apiGroups:
+                - ""
+              verbs:
+                - get
+              resources:
+                - nodes
+      replicas: 1
+      antiAffinity:
+        enabled: false
+      serviceMonitor:
+        enabled: true
+        interval: 60s
+      resources:
+        limits:
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+    features:
+      backgroundScan:
+        skipResourceFilters: false
+        logging:
+          verbosity: 2
+        backgroundScan:
+          backgroundScanInterval: 1h
+      policyExceptions:
+        enabled: true
+        namespace: "*"
+    grafana:
+      enabled: false
+    generateSuccessEvents: false

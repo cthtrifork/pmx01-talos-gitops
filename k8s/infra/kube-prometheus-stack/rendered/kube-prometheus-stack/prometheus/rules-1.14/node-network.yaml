@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  annotations:
+    helm.toolkit.fluxcd.io/driftDetection: disabled
+  labels:
+    app: prom
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: prom
+    app.kubernetes.io/version: 84.5.0
+    chart: kube-prometheus-stack-84.5.0
+    heritage: Helm
+    release: kube-prometheus-stack
+    type: rule
+  name: kube-prom-node-network
+  namespace: kube-prometheus-stack-system
+spec:
+  groups:
+  - name: node-network
+    rules:
+    - alert: NodeNetworkInterfaceFlapping
+      annotations:
+        description: Network interface "{{ $labels.device }}" changing its up status
+          often on node-exporter {{ $labels.namespace }}/{{ $labels.pod }}
+        runbook_url: https://runbooks.prometheus-operator.dev/runbooks/general/nodenetworkinterfaceflapping
+        summary: Network interface is often changing its status
+      expr: changes(node_network_up{job="node-exporter",device!~"veth.+"}[2m]) > 2
+      for: 2m
+      labels:
+        severity: warning

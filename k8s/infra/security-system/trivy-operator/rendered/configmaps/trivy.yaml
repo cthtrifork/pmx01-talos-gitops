@@ -1,0 +1,75 @@
+---
+# Source: trivy-operator/templates/configmaps/trivy.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trivy-operator-trivy-config
+  namespace: security-system
+  labels:
+    helm.sh/chart: trivy-operator-0.32.1
+    app.kubernetes.io/name: trivy-operator
+    app.kubernetes.io/instance: trivy-operator
+    app.kubernetes.io/version: "0.30.1"
+    app.kubernetes.io/managed-by: Helm
+data:
+  trivy.repository: "harbor./gcr-cache/aquasec/trivy"
+  trivy.tag: "0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e"
+  trivy.imagePullPolicy: "IfNotPresent"
+  trivy.additionalVulnerabilityReportFields: ""
+  trivy.registry.mirror.8gears.container-registry.com: "harbor./8gears-cache"
+  trivy.registry.mirror.docker.io: "harbor./docker-hub-cache"
+  trivy.registry.mirror.index.docker.io: "harbor./docker-hub-cache"
+  trivy.registry.mirror.mirror.gcr.io: "harbor./gcr-cache"
+  trivy.registry.mirror.oci.external-secrets.io: "harbor./external-secrets-cache"
+  trivy.registry.mirror.public.ecr.aws: "harbor./public-ecr-aws"
+  trivy.registry.mirror.quay.io: "harbor./quay-cache"
+  trivy.registry.mirror.registry-1.docker.io: "harbor./docker-hub-cache"
+  trivy.registry.mirror.registry.gitlab.com: "harbor./gitlab-registry-cache"
+  trivy.registry.mirror.registry.k8s.io: "harbor./k8s-cache"
+  trivy.registry.mirror.us-docker.pkg.dev: "harbor./us-pkg-cache"
+  trivy.severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+  trivy.slow: "false"
+  trivy.skipJavaDBUpdate: "false"
+  trivy.includeDevDeps: "false"
+  trivy.imageScanCacheDir: "/tmp/trivy/.cache"
+  trivy.filesystemScanCacheDir: "/var/trivyoperator/trivy-db"
+  trivy.dbRepository: "harbor./gcr-cache/aquasec/trivy-db"
+  trivy.javaDbRepository: "harbor./gcr-cache/aquasec/trivy-java-db"
+  trivy.command: "image"
+  trivy.sbomSources: ""
+  trivy.dbRepositoryInsecure: "false"
+  trivy.useBuiltinRegoPolicies: "false"
+  trivy.useEmbeddedRegoPolicies: "true"
+  trivy.supportedConfigAuditKinds: "Workload,Service,Role,ClusterRole,NetworkPolicy,Ingress,LimitRange,ResourceQuota"
+  trivy.timeout: "5m0s"
+  trivy.configFile: |
+    scan:
+      disable-telemetry: true
+      offline: true
+      scanners:
+      - vuln
+      show-suppressed: false
+      skip-version-check: true
+    vulnerability:
+      ignore-status:
+      - will_not_fix
+      - not_affected
+      severity-source:
+      - redhat
+      - auto
+  trivy.ignoreFileName: "/etc/trivy/.trivyignore.yaml"
+  trivy.serverURL: "http://trivy-service.security-system:4954"
+  trivy.mode: "ClientServer"
+  trivy.resources.requests.cpu: "100m"
+  trivy.resources.requests.memory: "256Mi"
+  trivy.resources.requests.ephemeral-storage: "100Mi"
+  trivy.resources.limits.cpu: "500m"
+  trivy.resources.limits.memory: "8Gi"
+  trivy.resources.limits.ephemeral-storage: "2Gi"
+  TRIVY_LISTEN: "0.0.0.0:4954"
+  TRIVY_CACHE_DIR: "/home/scanner/.cache/trivy"
+  TRIVY_DEBUG: "false"
+  TRIVY_SKIP_DB_UPDATE: "false"
+  TRIVY_DB_REPOSITORY: "harbor./gcr-cache/aquasec/trivy-db"
+  TRIVY_JAVA_DB_REPOSITORY: "harbor./gcr-cache/aquasec/trivy-java-db"
+  TRIVY_INSECURE: "false"

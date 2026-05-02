@@ -1,0 +1,72 @@
+---
+# Source: flux-operator/templates/web-standard-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-web-user
+  labels:
+    helm.sh/chart: flux-operator-0.45.1
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.45.1"
+    app.kubernetes.io/managed-by: Helm
+  namespace: flux-system
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: flux-operator/templates/web-standard-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-web-admin
+  labels:
+    helm.sh/chart: flux-operator-0.45.1
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.45.1"
+    app.kubernetes.io/managed-by: Helm
+  namespace: flux-system
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - fluxcd.controlplane.io
+      - source.toolkit.fluxcd.io
+      - source.extensions.fluxcd.io
+      - kustomize.toolkit.fluxcd.io
+      - helm.toolkit.fluxcd.io
+      - image.toolkit.fluxcd.io
+      - notification.toolkit.fluxcd.io
+    resources: ["*"]
+    verbs:
+      - patch
+      - reconcile
+      - suspend
+      - resume
+      - download
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+    verbs:
+      - patch
+      - restart
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+      - jobs
+    verbs:
+      - create
+      - restart
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete

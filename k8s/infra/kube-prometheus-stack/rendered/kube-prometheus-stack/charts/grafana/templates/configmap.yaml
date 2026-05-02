@@ -1,0 +1,49 @@
+apiVersion: v1
+data:
+  grafana.ini: |
+    [analytics]
+    check_for_plugin_updates = false
+    check_for_updates = false
+    enabled = false
+    reporting_enabled = false
+    [auth]
+    disable_login_form = true
+    disable_signout_menu = true
+    [auth.anonymous]
+    enabled = true
+    org_role = Editor
+    [log]
+    mode = console
+    [paths]
+    data = /var/lib/grafana/
+    logs = /var/log/grafana
+    plugins = /var/lib/grafana/plugins
+    provisioning = /etc/grafana/provisioning
+    [plugins]
+    plugin_admin_enabled = false
+    preinstall_disabled = true
+    public_key_retrieval_disabled = true
+    [resources]
+    limits = map[cpu:50m memory:64Mi]
+    requests = map[cpu:10m memory:10Mi]
+    [security]
+    disable_gravatar = true
+    [server]
+    domain = ''
+    root_url = https://grafana.pmx01.portableinfo.cloud/
+    [snapshots]
+    enabled = false
+    external_enabled = false
+    [unified_storage]
+    index_path = /var/lib/grafana-search/bleve
+    [users]
+    viewers_can_edit = true
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/version: 13.0.1
+    helm.sh/chart: grafana-12.3.0
+  name: kube-prometheus-stack-grafana
+  namespace: kube-prometheus-stack-system

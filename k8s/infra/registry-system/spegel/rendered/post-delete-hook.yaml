@@ -1,0 +1,121 @@
+---
+# Source: spegel/templates/post-delete-hook.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: spegel-cleanup
+  namespace: registry-system
+  labels:
+    app.kubernetes.io/component: cleanup
+    helm.sh/chart: spegel-0.7.0
+    app.kubernetes.io/name: spegel
+    app.kubernetes.io/instance: spegel
+    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    helm.sh/hook: "post-delete"
+    helm.sh/hook-delete-policy: "before-hook-creation, hook-succeeded"
+    helm.sh/hook-weight: "0"
+spec:
+  selector:
+    app.kubernetes.io/component: cleanup
+    app.kubernetes.io/name: spegel
+    app.kubernetes.io/instance: spegel
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: readiness
+      port: 8080
+      protocol: TCP
+---
+# Source: spegel/templates/post-delete-hook.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: spegel-cleanup
+  namespace: registry-system
+  labels:
+    app.kubernetes.io/component: cleanup
+    helm.sh/chart: spegel-0.7.0
+    app.kubernetes.io/name: spegel
+    app.kubernetes.io/instance: spegel
+    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    helm.sh/hook: "post-delete"
+    helm.sh/hook-delete-policy: "before-hook-creation, hook-succeeded"
+    helm.sh/hook-weight: "0"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: cleanup
+      app.kubernetes.io/name: spegel
+      app.kubernetes.io/instance: spegel
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: cleanup
+        app.kubernetes.io/name: spegel
+        app.kubernetes.io/instance: spegel
+    spec:
+      securityContext: {}
+      priorityClassName: system-node-critical
+      containers:
+        - name: cleanup
+          image: "ghcr.io/spegel-org/spegel@sha256:1109b33fabac86809b06f831eef7359b12232f5708554aef39efd036dce40748"
+          imagePullPolicy: IfNotPresent
+          args:
+            - cleanup
+            - --containerd-registry-config-path=/etc/cri/conf.d/hosts
+            - --addr=:8080
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: readiness
+          ports:
+            - name: readiness
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: containerd-config
+              mountPath: /etc/cri/conf.d/hosts
+      volumes:
+        - name: containerd-config
+          hostPath:
+            path: /etc/cri/conf.d/hosts
+            type: DirectoryOrCreate
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+        - effect: NoSchedule
+          operator: Exists
+---
+# Source: spegel/templates/post-delete-hook.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: spegel-cleanup-wait
+  namespace: registry-system
+  labels:
+    app.kubernetes.io/component: cleanup-wait
+    helm.sh/chart: spegel-0.7.0
+    app.kubernetes.io/name: spegel
+    app.kubernetes.io/instance: spegel
+    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    helm.sh/hook: "post-delete"
+    helm.sh/hook-delete-policy: "before-hook-creation, hook-succeeded"
+    helm.sh/hook-weight: "1"
+spec:
+  containers:
+    - name: cleanup-wait
+      image: "ghcr.io/spegel-org/spegel@sha256:1109b33fabac86809b06f831eef7359b12232f5708554aef39efd036dce40748"
+      imagePullPolicy: IfNotPresent
+      args:
+        - cleanup-wait
+        - --probe-endpoint=spegel-cleanup.registry-system.svc.cluster.local.:8080
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 0

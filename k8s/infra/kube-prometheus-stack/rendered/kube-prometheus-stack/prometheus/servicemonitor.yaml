@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: prom-prometheus
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: prom
+    app.kubernetes.io/version: 84.5.0
+    chart: kube-prometheus-stack-84.5.0
+    heritage: Helm
+    release: kube-prometheus-stack
+  name: kube-prom-prometheus
+  namespace: kube-prometheus-stack-system
+spec:
+  endpoints:
+  - path: /metrics
+    port: http-web
+  - path: /metrics
+    port: reloader-web
+  namespaceSelector:
+    matchNames:
+    - kube-prometheus-stack-system
+  selector:
+    matchLabels:
+      app: prom-prometheus
+      release: kube-prometheus-stack
+      self-monitor: "true"

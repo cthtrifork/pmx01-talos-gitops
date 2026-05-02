@@ -1,0 +1,68 @@
+---
+# Source: zot/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zot
+  namespace: registry-system
+  labels:
+    helm.sh/chart: zot-0.1.109
+    app.kubernetes.io/name: zot
+    app.kubernetes.io/instance: zot
+    app.kubernetes.io/version: "v2.1.16"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zot
+      app.kubernetes.io/instance: zot
+  template:
+    metadata:
+      annotations:
+      labels:
+        app.kubernetes.io/name: zot
+        app.kubernetes.io/instance: zot
+    spec:
+      serviceAccountName: zot
+      securityContext: null
+      containers:
+        - name: zot
+          securityContext: null
+          image: "ghcr.io/project-zot/zot:v2.1.16"
+          imagePullPolicy: IfNotPresent
+          env: null
+          ports:
+            - name: zot
+              containerPort: 5000
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/registry
+          livenessProbe:
+            initialDelaySeconds: 5
+            httpGet:
+              path: /livez
+              port: 5000
+              scheme: HTTP
+          readinessProbe:
+            initialDelaySeconds: 5
+            httpGet:
+              path: /readyz
+              port: 5000
+              scheme: HTTP
+          startupProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+            httpGet:
+              path: /startupz
+              port: 5000
+              scheme: HTTP
+          resources: null
+      volumes:
+        - name: data
+          emptyDir: {}
+      dnsPolicy: ClusterFirst

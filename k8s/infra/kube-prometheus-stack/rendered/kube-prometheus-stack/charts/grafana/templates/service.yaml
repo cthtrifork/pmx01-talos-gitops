@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    omni-kube-service-exposer.sidero.dev/label: Grafana
+    omni-kube-service-exposer.sidero.dev/port: "50082"
+    omni-kube-service-exposer.sidero.dev/prefix: grafana
+  labels:
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/version: 13.0.1
+    helm.sh/chart: grafana-12.3.0
+  name: kube-prometheus-stack-grafana
+  namespace: kube-prometheus-stack-system
+spec:
+  ports:
+  - name: http-web
+    port: 80
+    protocol: TCP
+    targetPort: grafana
+  selector:
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/name: grafana
+  type: ClusterIP

@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  annotations:
+    helm.toolkit.fluxcd.io/driftDetection: disabled
+  labels:
+    app: prom
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: prom
+    app.kubernetes.io/version: 84.5.0
+    chart: kube-prometheus-stack-84.5.0
+    heritage: Helm
+    release: kube-prometheus-stack
+    type: rule
+  name: kube-prom-k8s.rules.container-memory-rss
+  namespace: kube-prometheus-stack-system
+spec:
+  groups:
+  - name: k8s.rules.container_memory_rss
+    rules:
+    - expr: |-
+        container_memory_rss{job="kubelet", metrics_path="/metrics/cadvisor", image!=""}
+        * on (cluster, namespace, pod) group_left(node) topk by (cluster, namespace, pod) (1,
+          max by (cluster, namespace, pod, node) (kube_pod_info{node!=""})
+        )
+      record: node_namespace_pod_container:container_memory_rss

@@ -1,0 +1,36 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-5"
+  labels:
+    app: prom-admission-patch
+    app.kubernetes.io/component: prometheus-operator-webhook
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: prom-prometheus-operator
+    app.kubernetes.io/part-of: prom
+    app.kubernetes.io/version: 84.5.0
+    chart: kube-prometheus-stack-84.5.0
+    heritage: Helm
+    release: kube-prometheus-stack
+  name: kube-prom-admission-patch
+  namespace: kube-prometheus-stack-system
+spec:
+  egress:
+  - toEntities:
+    - kube-apiserver
+  endpointSelector:
+    matchLabels:
+      app: prom-admission-patch
+      app.kubernetes.io/component: prometheus-operator-webhook
+      app.kubernetes.io/instance: kube-prometheus-stack
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: prom-prometheus-operator
+      app.kubernetes.io/part-of: prom
+      app.kubernetes.io/version: 84.5.0
+      chart: kube-prometheus-stack-84.5.0
+      heritage: Helm
+      release: kube-prometheus-stack

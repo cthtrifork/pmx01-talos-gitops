@@ -45,7 +45,7 @@ jobs:
           rm cilium-linux-${CLI_ARCH}.tar.gz
         env:
           CILIUM_CLI_VERSION: ${{env.CILIUM_CLI_VERSION}}
-          
+
       - name: Install latest cilium
         run: |
          helm repo add cilium https://helm.cilium.io/
@@ -86,7 +86,7 @@ jobs:
 
       - name: Deploy flux instance
         run: |
-          kubectl apply -f clusters/pmx01-talos-gitops/flux-instance.yaml
+          kubectl apply -f k8s/clusters/pmx01-talos-gitops/flux-instance.yaml
       - name: Verify flux instance is ready
         run: |
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
