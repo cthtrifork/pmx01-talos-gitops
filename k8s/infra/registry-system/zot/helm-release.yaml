@@ -38,3 +38,9 @@ spec:
       pullPolicy: IfNotPresent
       tag: "v2.1.16"
     persistence: true
+    pvc:
+      create: true
+      accessModes: ["ReadWriteOnce"]
+      storage: 8Gi
+      # Name of the storage class to use if it is different than the default one
+      storageClassName: "local-path"
