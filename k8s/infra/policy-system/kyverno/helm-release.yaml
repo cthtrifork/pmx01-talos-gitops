@@ -159,6 +159,14 @@ spec:
                 - patch
                 - update
             - apiGroups:
+                - ''
+              resources:
+                - pods
+              verbs:
+                - create
+                - update
+                - delete
+            - apiGroups:
                 - apps
               resources:
                 - deployments
