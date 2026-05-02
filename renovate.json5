@@ -9,6 +9,7 @@
     "prIgnoreNotification"
   ],
   "rebaseWhen": "conflicted",
+  "recreateWhen": "always",
   "pinDigests": true,
   "ignorePaths": [
     "scripts/**",
