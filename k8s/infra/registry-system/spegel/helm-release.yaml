@@ -34,3 +34,19 @@ spec:
       enabled: true
       labels:
         grafana_dashboard: "1"
+    podSecurityContext:
+      runAsNonRoot: false
+      runAsUser: &uid 0
+      runAsGroup: *uid
+      fsGroup: *uid
+      fsGroupChangePolicy: OnRootMismatch
+      seccompProfile:
+        type: RuntimeDefault
+
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: ["ALL"]
+      seccompProfile:
+        type: RuntimeDefault
