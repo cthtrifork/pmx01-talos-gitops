@@ -4,4 +4,4 @@ namespace: policy-system
 resources:
   - namespace.yaml
   - kyverno/
-  - reports-server-postgres/
+ # - reports-server-postgres/

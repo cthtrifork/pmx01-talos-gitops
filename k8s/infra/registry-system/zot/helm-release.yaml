@@ -37,3 +37,4 @@ spec:
       repository: ghcr.io/project-zot/zot
       pullPolicy: IfNotPresent
       tag: "v2.1.16"
+    persistence: true

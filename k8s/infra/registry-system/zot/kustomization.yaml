@@ -8,5 +8,7 @@ configMapGenerator:
     namespace: registry-system
     options:
       disableNameSuffixHash: true
+      labels:
+        kyverno.io/watch: "true"
     files:
       - config.json=zot.json

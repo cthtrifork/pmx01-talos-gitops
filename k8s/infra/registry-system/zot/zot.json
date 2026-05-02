@@ -13,6 +13,9 @@
         "ui": {
           "enable": true
         },
+        "search": {
+          "enable": true
+        },
         "sync": {
           "enable": true,
           "registries": [
