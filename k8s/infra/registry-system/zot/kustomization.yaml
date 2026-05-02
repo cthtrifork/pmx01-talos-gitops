@@ -9,4 +9,4 @@ configMapGenerator:
     options:
       disableNameSuffixHash: true
     files:
-      - zot.json
+      - config.json=zot.json
