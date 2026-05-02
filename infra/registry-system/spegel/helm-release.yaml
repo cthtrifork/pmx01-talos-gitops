@@ -28,8 +28,6 @@ spec:
   values:
     spegel:
       containerdRegistryConfigPath: /etc/cri/conf.d/hosts
-      #additionalMirrorTargets:
-      #  - https://zot.example.com
       # -- Registries for which mirror configuration will be created. Empty means all registires will be mirrored.
       mirroredRegistries: []
     grafanaDashboard:

@@ -1,154 +1,156 @@
 {
-  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: [
-    'config:best-practices',
-    'group:recommended',
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    "group:recommended"
   ],
-  "suppressNotifications": ["prEditedNotification", "prIgnoreNotification"],
+  "suppressNotifications": [
+    "prEditedNotification",
+    "prIgnoreNotification"
+  ],
   "rebaseWhen": "conflicted",
-	pinDigests: true,
-  ignorePaths: [
-    'scripts/**',
-    'k8s/**/rendered/**',
-    'k8s/**/kyverno-policies/tests/**/*.yaml',
-    'k8s/**/sync.yaml',
-    'k8s/**/cluster.yaml',
+  "pinDigests": true,
+  "ignorePaths": [
+    "scripts/**",
+    "k8s/**/rendered/**",
+    "k8s/**/kyverno-policies/tests/**/*.yaml",
+    "k8s/**/sync.yaml",
+    "k8s/**/cluster.yaml"
   ],
-  'docker-compose': {
-    managerFilePatterns: [
-      '/(^|/)(?:docker-)?compose[^/]*\\.ya?ml$/',
-    ],
+  "docker-compose": {
+    "managerFilePatterns": [
+      "/(^|/)(?:docker-)?compose[^/]*\\.ya?ml$/"
+    ]
   },
-  flux: {
-    managerFilePatterns: [
-      '/(.+)\\.y(a?)ml/',
-    ],
+  "flux": {
+    "managerFilePatterns": [
+      "/(.+)\\.y(a?)ml/"
+    ]
   },
-  'github-actions': {
-    managerFilePatterns: [
-      '/(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$/',
-      '/(^|/)action\\.ya?ml$/',
-    ],
+  "github-actions": {
+    "managerFilePatterns": [
+      "/(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$/",
+      "/(^|/)action\\.ya?ml$/"
+    ]
   },
-  kubernetes: {
-    managerFilePatterns: [
-      '/(.+)\\.y(a?)ml/',
-    ],
+  "kubernetes": {
+    "managerFilePatterns": [
+      "/(.+)\\.y(a?)ml/"
+    ]
   },
-  'helm-values': {
-    managerFilePatterns: [
-      '/(.+)\\.y(a?)ml/',
-    ],
+  "helm-values": {
+    "managerFilePatterns": [
+      "/(.+)\\.y(a?)ml/"
+    ]
   },
-  helmfile: {
-    managerFilePatterns: [
-      '/(.+)\\.y(a?)ml/',
-    ],
+  "helmfile": {
+    "managerFilePatterns": [
+      "/(.+)\\.y(a?)ml/"
+    ]
   },
-  helmv3: {
-    managerFilePatterns: [
-      '/(.+)\\.y(a?)ml/',
-    ],
+  "helmv3": {
+    "managerFilePatterns": [
+      "/(.+)\\.y(a?)ml/"
+    ]
   },
-  rebaseWhen: 'auto',
-  packageRules: [
+  "packageRules": [
     {
-      automerge: false,
-      matchUpdateTypes: [
-        'major',
-        'minor',
+      "automerge": false,
+      "matchUpdateTypes": [
+        "major",
+        "minor"
       ],
-      matchPackageNames: [
-        '/toolkit.fluxcd.io/',
-        '/fluxcd/',
-      ],
+      "matchPackageNames": [
+        "/toolkit.fluxcd.io/",
+        "/fluxcd/"
+      ]
     },
     {
-      extends: [
-        'helpers:pinGitHubActionDigests',
+      "extends": [
+        "helpers:pinGitHubActionDigests"
       ],
-      extractVersion: '^(?<version>v?\\d+\\.\\d+\\.\\d+)$',
-      versioning: 'regex:^v?(?<major>\\d+)(\\.(?<minor>\\d+)\\.(?<patch>\\d+))?$',
-      recreateWhen: 'always',
+      "extractVersion": "^(?<version>v?\\d+\\.\\d+\\.\\d+)$",
+      "versioning": "regex:^v?(?<major>\\d+)(\\.(?<minor>\\d+)\\.(?<patch>\\d+))?$",
+      "recreateWhen": "always"
     },
     {
-      automerge: true,
-      pinDigests: false,
-      matchManagers: [
-        'github-actions',
+      "automerge": true,
+      "pinDigests": false,
+      "matchManagers": [
+        "github-actions"
       ],
-      matchUpdateTypes: [
-        'major',
-        'minor',
-        'patch',
-      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ]
     },
     {
-      matchDatasources: [
-        'helm',
+      "matchDatasources": [
+        "helm"
       ],
-      matchUpdateTypes: [
-        'minor',
+      "matchUpdateTypes": [
+        "minor"
       ],
-      additionalBranchPrefix: '{{depName}}-',
-      matchPackageNames: [
-        '*',
-      ],
+      "additionalBranchPrefix": "{{depName}}-",
+      "matchPackageNames": [
+        "*"
+      ]
     },
     {
-      matchDatasources: [
-        'helm',
-        'docker',
+      "matchDatasources": [
+        "helm",
+        "docker"
       ],
-      matchPackageNames: [
-        'cilium',
-        'cilium/cilium',
-        'quay.io/cilium/cilium',
-        'quay.io/cilium/operator',
-        'quay.io/cilium/operator-generic',
-        'quay.io/cilium/hubble-relay',
-        'quay.io/cilium/hubble-ui',
-        'quay.io/cilium/hubble-ui-backend',
+      "matchPackageNames": [
+        "cilium",
+        "cilium/cilium",
+        "quay.io/cilium/cilium",
+        "quay.io/cilium/operator",
+        "quay.io/cilium/operator-generic",
+        "quay.io/cilium/hubble-relay",
+        "quay.io/cilium/hubble-ui",
+        "quay.io/cilium/hubble-ui-backend"
       ],
-      groupName: 'cilium',
-      groupSlug: 'cilium',
-      automerge: false,
-    },
+      "groupName": "cilium",
+      "groupSlug": "cilium",
+      "automerge": false
+    }
   ],
-  customManagers: [
+  "customManagers": [
     {
-      customType: 'regex',
-      description: 'Catch image references with renovate comment',
-      managerFilePatterns: [
-        '/.*\\.ya?ml$/',
+      "customType": "regex",
+      "description": "Catch image references with renovate comment",
+      "managerFilePatterns": [
+        "/.*\\.ya?ml$/"
       ],
-      matchStrings: [
-        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)image:\\s+"?(?<depName2>[^\\s:@\\"]+)(?::(?<currentValue>[-a-zA-Z0-9.]+))?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?"?'
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)image:\\s+\"?(?<depName2>[^\\s:@\\\"]+)(?::(?<currentValue>[-a-zA-Z0-9.]+))?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?\"?"
       ],
-      autoReplaceStringTemplate: "# renovate: datasource={{{datasource}}} depName={{{depName}}}{{#if versioning}} versioning={{{versioning}}}{{/if}}{{{indentation}}}image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}",
+      "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}}{{#if versioning}} versioning={{{versioning}}}{{/if}}{{{indentation}}}image: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}"
     },
     {
-      customType: 'regex',
-      description: 'Catch image tags with renovate comment',
-      managerFilePatterns: [
-        '/.*\\.ya?ml$/',
+      "customType": "regex",
+      "description": "Catch image tags with renovate comment",
+      "managerFilePatterns": [
+        "/.*\\.ya?ml$/"
       ],
-      matchStrings: [
-        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)tag:\\s+"?(?<currentValue>[-a-zA-Z0-9.]+)?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?"?'
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)tag:\\s+\"?(?<currentValue>[-a-zA-Z0-9.]+)?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?\"?"
       ],
-      autoReplaceStringTemplate: "# renovate: datasource={{{datasource}}} depName={{{depName}}}{{#if versioning}} versioning={{{versioning}}}{{/if}}{{{indentation}}}tag: {{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}",
+      "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}}{{#if versioning}} versioning={{{versioning}}}{{/if}}{{{indentation}}}tag: {{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}"
     },
     {
-      customType: 'regex',
-      managerFilePatterns: [
-        '/^.github/.*\\.yaml$/',
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^.github/.*\\.yaml$/"
       ],
-      matchStrings: [
-        '(?<depName>[^\\s"\\\']+):\\s"?(?<currentValue>.[^"\'\\s]*)"?\\s+# renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<packageName>[^\\s]+)',
+      "matchStrings": [
+        "(?<depName>[^\\s\"\\']+):\\s\"?(?<currentValue>.[^\"'\\s]*)\"?\\s+# renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<packageName>[^\\s]+)"
       ],
-      datasourceTemplate: '{{{datasource}}}',
-      packageNameTemplate: '{{{packageName}}}',
-      versioningTemplate: 'semver',
-    },
-  ],
+      "datasourceTemplate": "{{{datasource}}}",
+      "packageNameTemplate": "{{{packageName}}}",
+      "versioningTemplate": "semver"
+    }
+  ]
 }

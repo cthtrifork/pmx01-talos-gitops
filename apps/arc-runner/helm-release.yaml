@@ -35,7 +35,7 @@ spec:
       spec:
         initContainers:
           - name: data-retention
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest@sha256:a7e282fc71d02d5382f8be159cc089913fb96143acd086e33802e0bb198559ab
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79@sha256:09c9e04d79d11d4e2496eeecb874b1bf92db20fef4f0ae47536ceffce4b00545
             imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0
@@ -58,7 +58,7 @@ spec:
               - name: tmp-cache
                 mountPath: /mnt/cache
           - name: fix-perms
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:latest@sha256:a7e282fc71d02d5382f8be159cc089913fb96143acd086e33802e0bb198559ab
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:0.1.79@sha256:09c9e04d79d11d4e2496eeecb874b1bf92db20fef4f0ae47536ceffce4b00545
             imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0

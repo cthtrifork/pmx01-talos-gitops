@@ -53,7 +53,7 @@ kubectl virt --kubeconfig ./kubeconfig.yaml -n kubevirt-system get dv homeserver
 kubectl virt --kubeconfig ./kubeconfig.yaml console -n kubevirt-system fedora-vm-test
 ```
 
-# install
+### Install Cilium
 
 ```sh
 kubectl --kubeconfig ./kubeconfig.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.podCIDR}{"\n"}{end}'
@@ -78,4 +78,35 @@ helm template cilium cilium/cilium \
   --set ipv4NativeRoutingCIDR="10.244.0.0/16" \
   | tee cilium.yaml
 kubectl --kubeconfig ./kubeconfig.yaml apply -f cilium.yaml
+```
+
+## Renovatebot
+
+### Testing
+
+```sh
+docker run -it --rm \
+  -v "$(pwd):/code" \
+  -w /code \
+  -e RENOVATE_PLATFORM=local \
+  -e RENOVATE_ONBOARDING=false \
+  -e RENOVATE_REQUIRE_CONFIG=optional \
+  -e RENOVATE_GITHUB_COM_TOKEN="$GITHUB_TOKEN" \
+  -e RENOVATE_DRY_RUN=full \
+  -e LOG_LEVEL=debug \
+  -v /tmp:/tmp \
+  ghcr.io/renovatebot/renovate:43 > renovatelog2.txt
+
+docker run -it --rm \
+  -v "$(pwd):/code" \
+  -w /code \
+  -e RENOVATE_PLATFORM=local \
+  -e RENOVATE_ONBOARDING=false \
+  -e RENOVATE_REQUIRE_CONFIG=optional \
+  -e RENOVATE_GITHUB_COM_TOKEN="$GITHUB_TOKEN" \
+  -e RENOVATE_DRY_RUN=full \
+  -e LOG_LEVEL=debug \
+  -v /tmp:/tmp \
+  ghcr.io/renovatebot/renovate:43 \
+  renovate-config-validator --strict
 ```
