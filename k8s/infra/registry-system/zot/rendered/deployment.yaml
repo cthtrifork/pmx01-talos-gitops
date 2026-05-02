@@ -22,6 +22,7 @@ spec:
   template:
     metadata:
       annotations:
+        checksum/config: 4c588a7156c6b8bce93d61bf8ccb4de49cad1f0c8e9c4205a4359f9d18683dd4
       labels:
         app.kubernetes.io/name: zot
         app.kubernetes.io/instance: zot
@@ -41,6 +42,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/registry
+            - mountPath: '/etc/zot'
+              name: zot-config
           livenessProbe:
             initialDelaySeconds: 5
             httpGet:
@@ -65,4 +68,7 @@ spec:
       volumes:
         - name: data
           emptyDir: {}
+        - name: zot-config
+          configMap:
+            name: zot-config
       dnsPolicy: ClusterFirst

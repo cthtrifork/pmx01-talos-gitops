@@ -35,3 +35,4 @@ spec:
       retries: 3
   # https://github.com/project-zot/helm-charts/blob/main/charts/zot/values.yaml
   values:
+    mountConfig: true

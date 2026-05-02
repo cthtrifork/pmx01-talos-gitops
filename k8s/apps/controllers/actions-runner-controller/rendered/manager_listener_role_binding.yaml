@@ -1,0 +1,15 @@
+---
+# Source: gha-runner-scale-set-controller/templates/manager_listener_role_binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gha-runner-scale-set-controller-gha-rs-controller-listener
+  namespace: arc-controller-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gha-runner-scale-set-controller-gha-rs-controller-listener
+subjects:
+  - kind: ServiceAccount
+    name: gha-runner-scale-set-controller-gha-rs-controller
+    namespace: arc-controller-system

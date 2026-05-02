@@ -3,3 +3,8 @@ kind: Kustomization
 resources:
   - helm-release.yaml
   - helm-repository.yaml
+configMapGenerator:
+  - name: zot-config
+    namespace: registry-system
+    files:
+      - zot.json
