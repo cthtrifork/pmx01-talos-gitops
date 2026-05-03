@@ -51,7 +51,6 @@ spec:
         cpu: 350m
         memory: 1024Mi
       limits:
-        cpu: 500m
         memory: 1024Mi
 
     env:

@@ -28,14 +28,7 @@ spec:
         app.kubernetes.io/instance: spegel
     spec:
       serviceAccountName: spegel
-      securityContext:
-        fsGroup: 0
-        fsGroupChangePolicy: OnRootMismatch
-        runAsGroup: 0
-        runAsNonRoot: false
-        runAsUser: 0
-        seccompProfile:
-          type: RuntimeDefault
+      securityContext: {}
       priorityClassName: system-node-critical
       initContainers:
         - name: configuration
