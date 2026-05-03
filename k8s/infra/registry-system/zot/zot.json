@@ -16,6 +16,12 @@
         "search": {
           "enable": true
         },
+        "metrics": {
+          "enable": true,
+          "prometheus": {
+            "path": "/metrics"
+          }
+        },
         "sync": {
           "enable": true,
           "registries": [

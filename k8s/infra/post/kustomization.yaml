@@ -7,3 +7,4 @@ resources:
   - kubevirt/cdi.yaml
   - metallb/l2announcement.yaml
   - kyverno-policies/
+  - talos/mirrors.yaml

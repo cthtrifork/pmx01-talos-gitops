@@ -35,7 +35,13 @@ spec:
           image: "ghcr.io/spegel-org/spegel@sha256:1109b33fabac86809b06f831eef7359b12232f5708554aef39efd036dce40748"
           imagePullPolicy: IfNotPresent
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           args:
             - configuration
             - --log-level=INFO
@@ -63,7 +69,13 @@ spec:
           image: "ghcr.io/spegel-org/spegel@sha256:1109b33fabac86809b06f831eef7359b12232f5708554aef39efd036dce40748"
           imagePullPolicy: IfNotPresent
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
             readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           args:
             - registry
             - --log-level=INFO
