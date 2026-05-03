@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zot-lb
+  namespace: registry-system
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.1.240
+spec:
+  type: LoadBalancer
+  ports:
+    - name: registry
+      port: 5000
+      targetPort: 5000
+  selector:
+    app.kubernetes.io/name: zo
