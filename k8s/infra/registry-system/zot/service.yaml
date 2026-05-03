@@ -11,8 +11,10 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-    - name: registry
-      port: 5000
-      targetPort: 5000
+    - port: 5000
+      targetPort: zot
+      protocol: TCP
+      name: zot
   selector:
-    app.kubernetes.io/name: zo
+    app.kubernetes.io/name: zot
+    app.kubernetes.io/instance: zot
