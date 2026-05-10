@@ -49,7 +49,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: trivy-server
-          image: "zot.lan:5000/docker-hub-cache/aquasec/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e"
+          image: "zot.lan:5000/ghcr-cache/aquasecurity/trivy:0.69.3"
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false

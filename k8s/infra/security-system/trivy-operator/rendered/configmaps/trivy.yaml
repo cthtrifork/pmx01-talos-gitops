@@ -12,8 +12,8 @@ metadata:
     app.kubernetes.io/version: "0.30.1"
     app.kubernetes.io/managed-by: Helm
 data:
-  trivy.repository: "zot.lan:5000/docker-hub-cache/aquasec/trivy"
-  trivy.tag: "0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e"
+  trivy.repository: "zot.lan:5000/ghcr-cache/aquasecurity/trivy"
+  trivy.tag: "0.69.3"
   trivy.imagePullPolicy: "IfNotPresent"
   trivy.additionalVulnerabilityReportFields: ""
   trivy.registry.mirror.docker.io: "zot.lan:5000/docker-hub-cache"
