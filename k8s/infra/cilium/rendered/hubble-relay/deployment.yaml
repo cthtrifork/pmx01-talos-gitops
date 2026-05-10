@@ -83,6 +83,13 @@ spec:
             failureThreshold: 20
             # Retry more frequently at startup so that it can be considered started more quickly.
             periodSeconds: 3
+          resources:
+            limits:
+              cpu: 100m
+              memory: 512Mi
+            requests:
+              cpu: 5m
+              memory: 64Mi
           volumeMounts:
             - name: config
               mountPath: /etc/hubble-relay
@@ -126,3 +133,10 @@ spec:
                       path: client.key
                     - key: ca.crt
                       path: hubble-server-ca.crt
+              - secret:
+                  name: hubble-relay-server-certs
+                  items:
+                    - key: tls.crt
+                      path: server.crt
+                    - key: tls.key
+                      path: server.key

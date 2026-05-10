@@ -30,8 +30,6 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/port: "9963"
-        prometheus.io/scrape: "true"
       labels:
         io.cilium/app: operator
         name: cilium-operator
@@ -102,6 +100,12 @@ spec:
             - name: cilium-config-path
               mountPath: /tmp/cilium/config-map
               readOnly: true
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

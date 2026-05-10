@@ -64,11 +64,24 @@ spec:
             - name: EVENTS_SERVER_PORT
               value: "8090"
             - name: FLOWS_API_ADDR
-              value: "hubble-relay:80"
+              value: "hubble-relay:443"
+            - name: TLS_TO_RELAY_ENABLED
+              value: "true"
+            - name: TLS_RELAY_SERVER_NAME
+              value: ui.hubble-relay.cilium.io
+            - name: TLS_RELAY_CA_CERT_FILES
+              value: /var/lib/hubble-ui/certs/hubble-relay-ca.crt
+            - name: TLS_RELAY_CLIENT_CERT_FILE
+              value: /var/lib/hubble-ui/certs/client.crt
+            - name: TLS_RELAY_CLIENT_KEY_FILE
+              value: /var/lib/hubble-ui/certs/client.key
           ports:
             - name: grpc
               containerPort: 8090
           volumeMounts:
+            - name: hubble-ui-client-certs
+              mountPath: /var/lib/hubble-ui/certs
+              readOnly: true
           terminationMessagePolicy: FallbackToLogsOnError
           securityContext:
             allowPrivilegeEscalation: false
@@ -81,3 +94,17 @@ spec:
           name: hubble-ui-nginx-conf
         - name: tmp-dir
           emptyDir: {}
+        - name: hubble-ui-client-certs
+          projected:
+            # note: the leading zero means this number is in octal representation: do not remove it
+            defaultMode: 0400
+            sources:
+              - secret:
+                  name: hubble-ui-client-certs
+                  items:
+                    - key: tls.crt
+                      path: client.crt
+                    - key: tls.key
+                      path: client.key
+                    - key: ca.crt
+                      path: hubble-relay-ca.crt

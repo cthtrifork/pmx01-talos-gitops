@@ -1,0 +1,18 @@
+---
+# Source: cilium/templates/cilium-operator/poddisruptionbudget.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cilium-operator
+  namespace: kube-system
+  labels:
+    io.cilium/app: operator
+    name: cilium-operator
+    app.kubernetes.io/name: cilium-operator
+    app.kubernetes.io/part-of: cilium
+spec:
+  maxUnavailable: 50%
+  selector:
+    matchLabels:
+      io.cilium/app: operator
+      name: cilium-operator

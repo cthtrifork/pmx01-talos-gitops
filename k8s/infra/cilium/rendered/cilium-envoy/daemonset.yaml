@@ -86,6 +86,12 @@ spec:
               value: "localhost"
             - name: KUBERNETES_SERVICE_PORT
               value: "7445"
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 20m
+              memory: 64Mi
           ports:
             - name: envoy-metrics
               containerPort: 9964

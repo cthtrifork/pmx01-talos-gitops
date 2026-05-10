@@ -9,8 +9,8 @@ spec:
   interval: 10m
   install:
     crds: CreateReplace
-    remediation:
-      retries: 3
+    strategy:
+      name: RetryOnFailure
   upgrade:
     crds: CreateReplace
     remediation:
@@ -22,54 +22,62 @@ spec:
     mode: enabled
   # https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml
   values:
+    cluster:
+      name: ${CLUSTER_NAME:=default}
+      id: ${CLUSTER_ID:=0}
+    # kubernetes-in-docker hacks
+    ipv4:
+      enabled: true
+    ipv6:
+      enabled: false
     ipam:
       mode: kubernetes
-    kubeProxyReplacement: true
-    securityContext:
-      capabilities:
-        ciliumAgent:
-          - CHOWN
-          - KILL
-          - NET_ADMIN
-          - NET_RAW
-          - IPC_LOCK
-          - SYS_ADMIN
-          - SYS_RESOURCE
-          - DAC_OVERRIDE
-          - FOWNER
-          - SETGID
-          - SETUID
-        cleanCiliumState:
-          - NET_ADMIN
-          - SYS_ADMIN
-          - SYS_RESOURCE
-    cgroup:
-      autoMount:
-        enabled: false
-      hostRoot: /sys/fs/cgroup
-    k8sServiceHost: localhost
-    k8sServicePort: 7445
-
-    # Multi-NIC: select all 'en*' devices across nodes (works with differing names)
-    #devices: "e+"
-    #nodePort:
-    #  directRoutingDevice: "e+"
-
-    # Reasonable bare-metal defaults
-    #tunnel: "disabled"
-    routingMode: "native"
-    autoDirectNodeRoutes: true
-
-    enableIPv4Masquerade: true
-    ipMasqAgent:
-      enabled: false
-    ipv4NativeRoutingCIDR: "10.244.0.0/16"
-
-    # Hubble (optional – observability)
+    # Agent rolling update strategy
+    updateStrategy:
+      rollingUpdate:
+        maxUnavailable: ${CILIUM_MAX_UNAVAILABLE:=2}
+    # Agent resource limits & requests
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        cpu: ${CILIUM_CPU_REQUEST:=1000m}
+        memory: ${CILIUM_MEMORY_REQUEST:=1Gi}
+    envoy:
+      updateStrategy:
+        rollingUpdate:
+          maxUnavailable: ${CILIUM_MAX_UNAVAILABLE:=2}
+      resources:
+        limits:
+          memory: 512Mi
+        requests:
+          cpu: 20m
+          memory: 64Mi
+    enableLBIPAM: false
     hubble:
-      enabled: true
+      metrics:
+        enabled:
+          #- dns:query;ignoreAAAA
+          - drop:destinationContext=dns|workload-name;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction
+        enableOpenMetrics: true
+        serviceMonitor:
+          enabled: true
+          interval: 60s
       relay:
-        enabled: true
+        enabled: ${CILIUM_HUBBLE_RELAY_ENABLED:=true}
+        podDisruptionBudget:
+          enabled: false
+        resources:
+          limits:
+            cpu: 100m
+            memory: 512Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+        tls:
+          server:
+            enabled: true
+            mtls: true
       ui:
         enabled: true
         service:
@@ -77,6 +85,76 @@ spec:
             omni-kube-service-exposer.sidero.dev/port: "50081"
             omni-kube-service-exposer.sidero.dev/label: Hubble
             omni-kube-service-exposer.sidero.dev/prefix: hubble
-
-    # -- Enable LoadBalancer IP Address Management
-    enableLBIPAM: false
+      tls:
+        auto:
+          enabled: true # enable automatic TLS certificate generation
+          method: certmanager #  auto generate certificates using cert-manager
+          certValidityDuration: 1095 #  certificates validity duration in days (default 3 years)
+          certManagerIssuerRef:
+            group: cert-manager.io # Reference to cert-manager's issuer
+            kind: ClusterIssuer
+            name: certificate-cluster-issuer # certificate-cluster-issuer
+    clustermesh:
+      apiserver:
+        podDisruptionBudget:
+          enabled: true
+          maxUnavailable: 1
+        tls:
+          auto:
+            enabled: true
+            method: certmanager #  auto generate certificates using cert-manager
+            certValidityDuration: 1095 #  certificates validity duration in days (default 3 years)
+            certManagerIssuerRef:
+              group: cert-manager.io # Reference to cert-manager's issuer
+              kind: ClusterIssuer
+              name: certificate-cluster-issuer # certificate-cluster-issuer
+    operator:
+      replicas: ${CILIUM_OPERATOR_REPLICAS:=2}
+      updateStrategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: ${CILIUM_MAX_UNAVAILABLE:=50%}
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 50%
+      prometheus:
+        metricsService: true
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          interval: 60s
+      resources:
+        limits:
+          memory: 512Mi
+        requests:
+          cpu: ${CILIUM_OPERATOR_CPU_REQUEST:=100m}
+          memory: ${CILIUM_OPERATOR_MEMORY_REQUEST:=256Mi}
+    prometheus:
+      metricsService: true
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        trustCRDsExist: true
+        interval: 60s
+    dashboards:
+      enabled: true
+    kubeProxyReplacement: true
+    encryption:
+      enabled: true
+      type: wireguard
+    k8sServiceHost: localhost # sidero specific
+    k8sServicePort: 7445 # sidero specific
+    egressGateway:
+      enabled: true
+    bpf:
+      masquerade: true
+    l2announcements:
+      enabled: false
+    externalIPs:
+      enabled: ${CILIUM_EXTERNAL_IPS_ENABLED:=false}
+    policyEnforcementMode: default
+    policyAuditMode: false # NEVER SET THIS TO TRUE IN PRODUCTION, as it will disable all network policies and allow all traffic
+    cgroup:
+      autoMount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
