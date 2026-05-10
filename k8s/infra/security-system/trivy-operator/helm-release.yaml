@@ -47,7 +47,8 @@ spec:
         kube-kraken.dk/with-https-proxy: "true"
         kube-kraken.dk/mount-root-ca: "true"
       image:
-        registry: zot.lan:5000/docker-hub-cache
+        registry: zot.lan:5000/ghcr-cache
+        repository: aquasecurity/trivy
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
         tag: 0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e
       dbRegistry: zot.lan:5000/docker-hub-cache
