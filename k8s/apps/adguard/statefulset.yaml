@@ -37,6 +37,7 @@ spec:
             - "-c"
           args:
             - |
+              set -e
               cp -f /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
           volumeMounts:
             - name: adguard-config
@@ -44,6 +45,15 @@ spec:
             - name: initial-config
               mountPath: /tmp/AdGuardHome.yaml
               subPath: AdGuardHome.yaml
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            privileged: false
+            runAsUser: 65534
+            runAsGroup: 65534
       containers:
         - name: adguard-home
           image: adguard/adguardhome:v0.107.74
