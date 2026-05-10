@@ -1,5 +1,12 @@
 # https://github.com/AdguardTeam/Adguardhome/wiki/Configuration
 ---
+bind_host: 0.0.0.0
+bind_port: 3000
+auth_attempts: 5
+block_auth_min: 15
+http_proxy: ""
+language: ""
+theme: auto
 http:
   pprof:
     port: 6060
@@ -11,17 +18,13 @@ users:
   - name: admin
     # docker run --rm mhenry07/apache2-utils htpasswd -B -C 10 -n -b admin <PASSWORD>
     password: "$2y$10$E0dbIpkBMftiVh50yagxCOrvtQbJLypPXe5MAUwMkYJ2p5ZJ5uwrS"
-
 dns:
-  #bind_hosts:
-  #  - 0.0.0.0
-  bind_host: 0.0.0.0
+  bind_hosts:
+    - 0.0.0.0
   port: 53
   upstream_dns:
     - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
-    - 1.1.1.1
-    - 8.8.8.8
   bootstrap_dns:
     - 1.1.1.1
     - 8.8.8.8
@@ -30,10 +33,10 @@ dns:
   cache_ttl_min: 300
   cache_ttl_max: 86400
 
-filtering:
-  filtering_enabled: true
-  safe_search:
-    enabled: false
+#filtering:
+#  filtering_enabled: true
+#  safe_search:
+#    enabled: false
 
 filters:
   - enabled: true
