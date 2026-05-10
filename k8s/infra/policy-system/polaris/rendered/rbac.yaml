@@ -1,0 +1,92 @@
+---
+# Source: polaris/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: polaris
+  labels:
+    app: polaris
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/instance: polaris
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: polaris
+    app.kubernetes.io/part-of: polaris
+    app.kubernetes.io/version: "5.19.0"
+    helm.sh/chart: polaris-5.19.0
+  namespace: policy-system
+rules:
+  # required by controller-runtime code doing a cluster wide lookup
+  # when it seems namespace would suffice
+  - apiGroups:
+      - ''
+    resources:
+      - 'nodes'
+    verbs:
+      - 'get'
+      - 'list'
+  - apiGroups:
+      - 'monitoring.coreos.com'
+    resources:
+      - 'prometheuses'
+      - 'alertmanagers'
+    verbs:
+      - 'get'
+      - 'list'
+  - apiGroups:
+      - 'rbac.authorization.k8s.io'
+    resources:
+      - 'clusterroles'
+      - 'clusterrolebindings'
+      - 'roles'
+      - 'rolebindings'
+    verbs:
+      - 'get'
+      - 'list'
+---
+# Source: polaris/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: polaris-view
+  labels:
+    app: polaris
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/instance: polaris
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: polaris
+    app.kubernetes.io/part-of: polaris
+    app.kubernetes.io/version: "5.19.0"
+    helm.sh/chart: polaris-5.19.0
+  namespace: policy-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: polaris
+    namespace: policy-system
+---
+# Source: polaris/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: polaris
+  labels:
+    app: polaris
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/instance: polaris
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: polaris
+    app.kubernetes.io/part-of: polaris
+    app.kubernetes.io/version: "5.19.0"
+    helm.sh/chart: polaris-5.19.0
+  namespace: policy-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: polaris
+subjects:
+  - kind: ServiceAccount
+    name: polaris
+    namespace: policy-system

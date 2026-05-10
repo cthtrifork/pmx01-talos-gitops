@@ -4,5 +4,6 @@ namespace: policy-system
 resources:
   - namespace.yaml
   #- kyverno/
+  - polaris/
   - reloader/
   # - reports-server-postgres/

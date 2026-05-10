@@ -1,0 +1,78 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: polaris
+  namespace: policy-system
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: polaris
+      version: 5.19.0
+      sourceRef:
+        name: fairwinds
+        kind: HelmRepository
+        namespace: polaris-system
+  driftDetection:
+    mode: enabled
+  # https://github.com/FairwindsOps/charts/blob/master/stable/polaris/values.yaml
+  values:
+    image:
+      pullPolicy: IfNotPresent
+      # renovate: datasource=docker depName=quay.io/fairwinds/polaris
+      tag: 10.1.8
+    rbac:
+      enabled: true
+    dashboard:
+      replicas: 1
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
+      containerSecurityContext:
+        seccompProfile:
+          type: RuntimeDefault
+    mergeConfig: true
+    config:
+      # This config file is merged with the default config file provided by Polaris
+      # You should only include the keys and values that you want to override
+      checks:
+        # reliability
+        priorityClassNotSet: ignore
+        missingPodDisruptionBudget: warning
+        pullPolicyNotAlways: ignore
+
+        # security
+        linuxHardening: danger
+        missingNetworkPolicy: ignore
+
+        # efficiency
+        cpuLimitsMissing: ignore
+      exemptions:
+        # Ignore checks for cilium and hubble
+        - namespace: kube-system
+          controllerNames:
+            - cilium
+            - hubble-ui
+            - hubble-relay
+          rules: []
+        # ignore checks for etcd, kube-apiserver, kube-controller-manager, kube-scheduler in kube-system namespace
+        - namespace: kube-system
+          containerNames:
+            - etcd
+            - kube-apiserver
+            - kube-controller-manager
+            - kube-scheduler
+          rules: []
+        # Ignore checks for flux
+        - namespace: flux-system
+          controllerNames:
+            - helm-controller
+            - kustomize-controller
+            - notification-controller
+            - source-controller
+          rules: []

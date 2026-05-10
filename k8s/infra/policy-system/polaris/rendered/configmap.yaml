@@ -1,0 +1,55 @@
+---
+# Source: polaris/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: polaris
+  labels:
+    app: polaris
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/instance: polaris
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: polaris
+    app.kubernetes.io/part-of: polaris
+    app.kubernetes.io/version: "5.19.0"
+    helm.sh/chart: polaris-5.19.0
+  namespace: policy-system
+data:
+  config.yaml: |
+    checks:
+      cpuLimitsMissing: ignore
+      linuxHardening: danger
+      missingNetworkPolicy: ignore
+      missingPodDisruptionBudget: warning
+      priorityClassNotSet: ignore
+      pullPolicyNotAlways: ignore
+    exemptions:
+      - controllerNames:
+        - cilium
+        - hubble-ui
+        - hubble-relay
+        namespace: kube-system
+        rules: []
+      - containerNames:
+        - etcd
+        - kube-apiserver
+        - kube-controller-manager
+        - kube-scheduler
+        namespace: kube-system
+        rules: []
+      - controllerNames:
+        - helm-controller
+        - image-automation-controller
+        - image-reflector-controller
+        - kustomize-controller
+        - notification-controller
+        - source-controller
+        namespace: flux-system
+        rules: []
+      - controllerNames:
+        - vault
+        namespace: vault-system
+        rules: []
+      - controllerNames:
+        - cluster-reconciler-flux-system
+        rules: []

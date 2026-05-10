@@ -1,0 +1,12 @@
+---
+# Migrate to OCIRepository when
+# https://github.com/FairwindsOps/charts/issues/1755
+# is resolved
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: fairwinds
+  namespace: policy-system
+spec:
+  interval: 30m0s
+  url: https://charts.fairwinds.com/stable

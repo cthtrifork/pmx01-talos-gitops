@@ -1,0 +1,104 @@
+---
+# Source: polaris/templates/dashboard.deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: polaris-dashboard
+  labels:
+    app: polaris
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/instance: polaris
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: polaris
+    app.kubernetes.io/part-of: polaris
+    app.kubernetes.io/version: "5.19.0"
+    helm.sh/chart: polaris-5.19.0
+    component: dashboard
+  namespace: policy-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: polaris
+      app.kubernetes.io/name: polaris
+      app.kubernetes.io/instance: polaris
+      component: dashboard
+  template:
+    metadata:
+      annotations:
+        checksum/config: 'c42bfc997dd66c333e312a0a031dbe6d579c2b443defa89880948487e7052ae8'
+      labels:
+        app: polaris
+        app.kubernetes.io/name: polaris
+        app.kubernetes.io/instance: polaris
+        component: dashboard
+    spec:
+      volumes:
+        - name: config
+          configMap:
+            name: polaris
+      containers:
+        - command:
+            - polaris
+            - dashboard
+            - --config
+            - /opt/app/config.yaml
+            - --port
+            - "8080"
+            - --log-level
+            - "Info"
+            - --merge-config
+          image: 'quay.io/fairwinds/polaris:10.1.8'
+          imagePullPolicy: 'IfNotPresent'
+          name: dashboard
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 25m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: config
+              mountPath: /opt/app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+      serviceAccountName: polaris
+      nodeSelector:
+      tolerations:
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              component: dashboard
+          maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+        - labelSelector:
+            matchLabels:
+              component: dashboard
+          maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway

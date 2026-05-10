@@ -1,0 +1,29 @@
+---
+# Source: polaris/templates/dashboard.service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: polaris-dashboard
+  labels:
+    app: polaris
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/instance: polaris
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: polaris
+    app.kubernetes.io/part-of: polaris
+    app.kubernetes.io/version: "5.19.0"
+    helm.sh/chart: polaris-5.19.0
+  annotations:
+  namespace: policy-system
+spec:
+  ports:
+    - name: http-dashboard
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: polaris
+    app.kubernetes.io/name: polaris
+    app.kubernetes.io/instance: polaris
+    component: dashboard
+  type: ClusterIP
