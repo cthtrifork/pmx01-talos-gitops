@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/fluxcd.controlplane.io/fluxinstance_v1.json
 apiVersion: fluxcd.controlplane.io/v1
 kind: FluxInstance
 metadata:
