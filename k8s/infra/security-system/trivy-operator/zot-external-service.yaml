@@ -26,7 +26,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: zot.lan
-  namespace: zot-system
+  namespace: security-system
 spec:
   type: ExternalName
   externalName: zot.registry-system.svc.cluster.local
