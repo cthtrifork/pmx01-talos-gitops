@@ -4,6 +4,8 @@ kind: StatefulSet
 metadata:
   name: adguard-statefulset
   namespace: adguard-system
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   serviceName: "adguard"
   replicas: 2

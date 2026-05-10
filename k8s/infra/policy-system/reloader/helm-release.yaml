@@ -18,6 +18,6 @@ spec:
       name: RetryOnFailure
   values:
     reloader:
-      matchLabels:
-        kyverno.io/watch: "true"
-        watchGlobally: false
+      #matchLabels:
+      #  kyverno.io/watch: "true"
+      watchGlobally: true

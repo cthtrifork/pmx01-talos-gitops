@@ -27,6 +27,8 @@ spec:
       retries: 3
   # https://github.com/project-zot/helm-charts/blob/main/charts/zot/values.yaml
   values:
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
     mountConfig: true
     service:
       type: ClusterIP
@@ -45,7 +47,7 @@ spec:
       # Name of the storage class to use if it is different than the default one
       storageClassName: ${DEFAULT_STORAGE_CLASS:=local-path}
     configFiles: ~
-# https://docs.giantswarm.io/tutorials/registry/zot/
+    # https://docs.giantswarm.io/tutorials/registry/zot/
     resources:
       requests:
         cpu: 350m
