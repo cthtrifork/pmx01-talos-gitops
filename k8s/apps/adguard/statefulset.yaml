@@ -47,7 +47,7 @@ spec:
               subPath: AdGuardHome.yaml
       containers:
         - name: adguard-home
-          image: adguard/adguardhome:latest # todo
+          image: adguard/adguardhome:v0.107.74
           ports:
             - containerPort: 53
               name: dns-tcp

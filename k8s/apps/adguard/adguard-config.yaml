@@ -17,9 +17,7 @@ dns:
     - https://dns.google/dns-query
     - 1.1.1.1
     - 8.8.8.8
-  bootstrap_dns:
-    - 1.1.1.1
-    - 8.8.8.8
+  bootstrap_dns: "1.1.1.1 8.8.8.8"
   all_servers: false
   cache_size: 4194304
   cache_ttl_min: 300

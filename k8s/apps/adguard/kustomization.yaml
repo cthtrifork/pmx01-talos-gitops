@@ -13,5 +13,8 @@ configMapGenerator:
       - AdGuardHome.yaml=adguard-config.yaml
     options:
       disableNameSuffixHash: true
+      labels:
+        kyverno.io/watch: "true"
+
 generatorOptions:
   disableNameSuffixHash: true
