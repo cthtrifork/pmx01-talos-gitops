@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: exporter
-          image: ebrianne/adguard-exporter:v1.14
+          image: ebrianne/adguard-exporter:v1.14@sha256:44bb9e0e98f490e7e40c84461a38a59a41e03a21837b70105e048121e7962cb6
           ports:
             - containerPort: 9617
           env:
