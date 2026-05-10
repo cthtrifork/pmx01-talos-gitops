@@ -31,7 +31,7 @@ spec:
             name: adguard-initial-config
       initContainers:
         - name: copy-config
-          image: busybox
+          image: busybox # todo: tag etc.
           command:
             - sh
             - -c
