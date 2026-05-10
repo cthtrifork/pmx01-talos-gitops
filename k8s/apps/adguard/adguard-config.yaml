@@ -10,7 +10,7 @@ http:
       - GET /dns-query/{ClientID}
       - POST /dns-query/{ClientID}
     insecure_enabled: false
-  address: 0.0.0.0:80
+  address: 0.0.0.0:3000
   session_ttl: 720h
 users:
   - name: admin
