@@ -4,6 +4,7 @@ resources:
   - statefulset.yaml
   - adguard-exporter.yaml
   - service.yaml
+  - secret.enc.yaml
   - namespace.yaml
 configMapGenerator:
   - name: adguard-initial-config

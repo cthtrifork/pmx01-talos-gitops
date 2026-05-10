@@ -26,7 +26,7 @@ spec:
             - name: adguard_protocol
               value: "http"
             - name: adguard_hostname
-              value: "adguard-web.adguard.svc"
+              value: "adguard-web.adguard-system.svc.cluster.local"
             - name: adguard_username
               value: "admin"
             - name: adguard_password

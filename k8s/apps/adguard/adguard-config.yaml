@@ -1,3 +1,4 @@
+# https://github.com/AdguardTeam/Adguardhome/wiki/Configuration
 http:
   pprof:
     port: 6060
@@ -6,7 +7,7 @@ http:
   session_ttl: 720h
 users:
   - name: admin
-    password: "$2y$10$changethishashaftersetup"
+    password: "$2y$10$E0dbIpkBMftiVh50yagxCOrvtQbJLypPXe5MAUwMkYJ2p5ZJ5uwrS" # docker run --rm mhenry07/apache2-utils htpasswd -B -C 10 -n -b admin <PASSWORD>
 dns:
   bind_hosts:
     - 0.0.0.0
