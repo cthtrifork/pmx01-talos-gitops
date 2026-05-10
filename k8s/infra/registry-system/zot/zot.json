@@ -27,12 +27,15 @@
           "registries": [
             {
               "urls": [
-                "https://docker.io/library"
+                "https://docker.io",
+                "https://docker.io/library",
+                "https://registry-1.docker.io/library",
+                "https://index.docker.io/library"
               ],
               "content": [
                 {
                   "prefix": "**",
-                  "destination": "/docker-images"
+                  "destination": "/docker-hub-cache"
                 }
               ],
               "onDemand": true,
@@ -47,7 +50,53 @@
               "content": [
                 {
                   "prefix": "**",
-                  "destination": "/ghcr-images"
+                  "destination": "/ghcr-cache"
+                }
+              ],
+              "onDemand": true,
+              "tlsVerify": true,
+              "maxRetries": 3,
+              "retryDelay": "5m"
+            },
+            {
+              "urls": [
+                "https://mirror.gcr.io",
+                "https://gcr.io"
+              ],
+              "content": [
+                {
+                  "prefix": "**",
+                  "destination": "/gcr-cache"
+                }
+              ],
+              "onDemand": true,
+              "tlsVerify": true,
+              "maxRetries": 3,
+              "retryDelay": "5m"
+            },
+            {
+              "urls": [
+                "https://quay.io"
+              ],
+              "content": [
+                {
+                  "prefix": "**",
+                  "destination": "/quay-cache"
+                }
+              ],
+              "onDemand": true,
+              "tlsVerify": true,
+              "maxRetries": 3,
+              "retryDelay": "5m"
+            },
+            {
+              "urls": [
+                "https://registry.k8s.io"
+              ],
+              "content": [
+                {
+                  "prefix": "**",
+                  "destination": "/k8s-cache"
                 }
               ],
               "onDemand": true,

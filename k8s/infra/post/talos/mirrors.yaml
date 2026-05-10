@@ -4,12 +4,12 @@ apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: docker.io
 endpoints:
-    - url: http://192.168.1.240:5000/v2/docker-images # zot-lb service endpoint from metallb
+    - url: http://192.168.1.240:5000/v2/docker-hub-cache # zot-lb service endpoint from metallb
       overridePath: true # Use endpoint path as supplied, without adding `/v2/` suffix.
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: ghcr.io
 endpoints:
-    - url: http://192.168.1.240:5000/v2/ghcr-images # zot-lb service endpoint from metallb
+    - url: http://192.168.1.240:5000/v2/ghcr-cache # zot-lb service endpoint from metallb
       overridePath: true # Use endpoint path as supplied, without adding `/v2/` suffix.
