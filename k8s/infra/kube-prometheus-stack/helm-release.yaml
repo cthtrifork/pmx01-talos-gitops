@@ -27,8 +27,13 @@ spec:
   values:
     fullnameOverride: kube-prom
     nameOverride: prom
+    kubeProxy:
+      enabled: false
     crds:
       enabled: false
+    defaultRules:
+      rules:
+        alertmanager: false
     alertmanager:
       enabled: false
     prometheusOperator:

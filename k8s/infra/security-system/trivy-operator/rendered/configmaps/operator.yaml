@@ -28,6 +28,6 @@ data:
   report.recordFailedChecksOnly: "true"
   trivy.serverURL: "http://trivy-service.security-system:4954"
   node.collector.imageRef: "zot.lan:5000/ghcr-cache/aquasecurity/node-collector:0.3.1"
-  policies.bundle.oci.ref: "zot.lan:5000/docker-hub-cache/aquasec/trivy-checks:1"
+  policies.bundle.oci.ref: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-checks:1"
   policies.bundle.insecure: "false"
   node.collector.nodeSelector: "true"
