@@ -11,11 +11,12 @@ metadata:
     app.kubernetes.io/instance: flux-operator
     app.kubernetes.io/name: flux-operator
 spec:
+  type: ClusterIP
   selector:
     app.kubernetes.io/instance: flux-operator
     app.kubernetes.io/name: flux-operator
   ports:
-  - name: http-web
-    port: 9080
-    protocol: TCP
-    targetPort: http-web
+    - name: http-web
+      port: 9080
+      protocol: TCP
+      targetPort: http-web

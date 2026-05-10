@@ -30,7 +30,7 @@ metadata:
     omni-kube-service-exposer.sidero.dev/port: "50086"
     omni-kube-service-exposer.sidero.dev/prefix: adguard
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: adguard-home
   ports:
