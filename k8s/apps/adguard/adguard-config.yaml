@@ -1,13 +1,17 @@
 # https://github.com/AdguardTeam/Adguardhome/wiki/Configuration
+---
 http:
   pprof:
     port: 6060
     enabled: false
   address: 0.0.0.0:3000
   session_ttl: 720h
+
 users:
   - name: admin
-    password: "$2y$10$E0dbIpkBMftiVh50yagxCOrvtQbJLypPXe5MAUwMkYJ2p5ZJ5uwrS" # docker run --rm mhenry07/apache2-utils htpasswd -B -C 10 -n -b admin <PASSWORD>
+    # docker run --rm mhenry07/apache2-utils htpasswd -B -C 10 -n -b admin <PASSWORD>
+    password: "$2y$10$E0dbIpkBMftiVh50yagxCOrvtQbJLypPXe5MAUwMkYJ2p5ZJ5uwrS"
+
 dns:
   bind_hosts:
     - 0.0.0.0
@@ -17,18 +21,25 @@ dns:
     - https://dns.google/dns-query
     - 1.1.1.1
     - 8.8.8.8
-  bootstrap_dns: "1.1.1.1 8.8.8.8"
+  bootstrap_dns:
+    - 1.1.1.1
+    - 8.8.8.8
   all_servers: false
   cache_size: 4194304
   cache_ttl_min: 300
   cache_ttl_max: 86400
+
 filtering:
-  enabled: true
-  url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+  filtering_enabled: true
+  safe_search:
+    enabled: false
+
 filters:
   - enabled: true
     url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
     name: AdGuard DNS filter
+    id: 1
   - enabled: true
     url: https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
     name: Steven Black Unified
+    id: 2
