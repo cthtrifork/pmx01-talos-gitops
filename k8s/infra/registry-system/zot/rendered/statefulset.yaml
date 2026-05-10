@@ -26,11 +26,12 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 8Gi
+            storage: 60Gi
         storageClassName: "local-path"
   template:
     metadata:
       annotations:
+        reloader.stakater.com/auto: "true"
       labels:
         app.kubernetes.io/name: zot
         app.kubernetes.io/instance: zot
@@ -40,13 +41,13 @@ spec:
       containers:
         - name: zot
           securityContext: null
-          image: "ghcr.io/project-zot/zot:v2.1.16"
+          image: "ghcr.io/project-zot/zot:v2.1.16@sha256:bf6264b4f89b1b313fe64661b9eb9adf9fa851a5b66e15d5128976b3becabe0b"
           imagePullPolicy: IfNotPresent
           env:
             - name: GOGC
               value: "50"
             - name: GOMEMLIMIT
-              value: 800MiB
+              value: 1600MiB
           ports:
             - name: zot
               containerPort: 5000
@@ -78,7 +79,7 @@ spec:
               scheme: HTTP
           resources:
             limits:
-              memory: 1024Mi
+              memory: 2Gi
             requests:
               cpu: 350m
               memory: 1024Mi

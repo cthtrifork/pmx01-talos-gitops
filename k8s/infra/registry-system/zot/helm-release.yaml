@@ -60,3 +60,7 @@ spec:
       - name: GOMEMLIMIT
         # Set this to about 80% of the memory limit.
         value: 1600MiB
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true

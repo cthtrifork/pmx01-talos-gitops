@@ -1,0 +1,28 @@
+---
+# Source: zot/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: zot
+  namespace: registry-system
+  labels:
+    app.kubernetes.io/component: metrics
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zot
+      app.kubernetes.io/instance: zot
+  endpoints:
+    - port: zot
+      interval: 30s
+      path: /metrics
+      basicAuth:
+        password:
+          name: basic-auth
+          key: password
+        username:
+          name: basic-auth
+          key: username
+  namespaceSelector:
+    matchNames:
+      - registry-system
