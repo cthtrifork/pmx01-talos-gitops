@@ -40,7 +40,7 @@ spec:
                 cp /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
               fi
           volumeMounts:
-            - name: config
+            - name: adguard-config
               mountPath: /opt/adguardhome/conf
             - name: initial-config
               mountPath: /tmp/AdGuardHome.yaml
