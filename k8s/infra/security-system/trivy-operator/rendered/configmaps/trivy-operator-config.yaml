@@ -55,6 +55,3 @@ data:
   OPERATOR_CLUSTER_COMPLIANCE_ENABLED: "true"
   OPERATOR_LEADER_ELECTION_ENABLED: "true"
   OPERATOR_LEADER_ELECTION_ID: "trivyoperator-lock"
-  HTTP_PROXY: ""
-  HTTPS_PROXY: ""
-  NO_PROXY: ",trivy-service.trivy-operator-system"

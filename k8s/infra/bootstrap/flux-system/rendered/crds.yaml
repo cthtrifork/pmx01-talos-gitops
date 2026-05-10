@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/instance: 'flux-operator'
     app.kubernetes.io/managed-by: 'Helm'
     app.kubernetes.io/name: 'flux-operator'
-    app.kubernetes.io/version: 'v0.45.1'
-    helm.sh/chart: 'flux-operator-0.45.1'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
   name: fluxinstances.fluxcd.controlplane.io
   namespace: flux-system
 spec:
@@ -615,8 +615,8 @@ metadata:
     app.kubernetes.io/instance: 'flux-operator'
     app.kubernetes.io/managed-by: 'Helm'
     app.kubernetes.io/name: 'flux-operator'
-    app.kubernetes.io/version: 'v0.45.1'
-    helm.sh/chart: 'flux-operator-0.45.1'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
   name: fluxreports.fluxcd.controlplane.io
   namespace: flux-system
 spec:
@@ -910,8 +910,8 @@ metadata:
     app.kubernetes.io/instance: 'flux-operator'
     app.kubernetes.io/managed-by: 'Helm'
     app.kubernetes.io/name: 'flux-operator'
-    app.kubernetes.io/version: 'v0.45.1'
-    helm.sh/chart: 'flux-operator-0.45.1'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
   name: resourcesetinputproviders.fluxcd.controlplane.io
   namespace: flux-system
 spec:
@@ -1287,8 +1287,8 @@ metadata:
     app.kubernetes.io/instance: 'flux-operator'
     app.kubernetes.io/managed-by: 'Helm'
     app.kubernetes.io/name: 'flux-operator'
-    app.kubernetes.io/version: 'v0.45.1'
-    helm.sh/chart: 'flux-operator-0.45.1'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
   name: resourcesets.fluxcd.controlplane.io
   namespace: flux-system
 spec:
@@ -1394,6 +1394,15 @@ spec:
                     input provider objects are used. Defaults to flattening all inputs
                     from all providers into a single list of input sets.
                   properties:
+                    includeEmptyProviders:
+                      description: |-
+                        IncludeEmptyProviders controls how input providers that export no
+                        inputs are treated. Only applies when Name is Permute. When true, if
+                        any provider has zero inputs the resulting permutation set is empty
+                        (mathematically correct Cartesian product behavior). When false or
+                        unset (default), providers with zero inputs are silently skipped and
+                        the remaining providers still permute among themselves.
+                      type: boolean
                     name:
                       description: |-
                         Name defines how the inputs are combined when multiple
@@ -1416,6 +1425,9 @@ spec:
                   required:
                     - name
                   type: object
+                  x-kubernetes-validations:
+                    - message: includeEmptyProviders only applies when name is Permute
+                      rule: '!has(self.includeEmptyProviders) || self.name == ''Permute'''
                 inputs:
                   description: Inputs contains the list of ResourceSet inputs.
                   items:
@@ -1586,6 +1598,16 @@ spec:
                       - status
                       - type
                     type: object
+                  type: array
+                externalChecksumRefs:
+                  description: |-
+                    ExternalChecksumRefs lists the ConfigMap and Secret references
+                    discovered in checksumFrom annotations on the last reconciliation
+                    that point to objects not rendered by this ResourceSet. Each entry
+                    has the form "Kind/namespace/name". It is used to trigger a
+                    reconciliation when one of the referenced objects changes.
+                  items:
+                    type: string
                   type: array
                 history:
                   description: |-
