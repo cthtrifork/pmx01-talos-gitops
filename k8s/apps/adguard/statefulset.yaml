@@ -31,7 +31,7 @@ spec:
             name: adguard-initial-config
       initContainers:
         - name: copy-config
-          image: busybox # todo: tag etc.
+          image: busybox@sha256:1487d0af5f52b4ba31c7e465126ee2123fe3f2305d638e7827681e7cf6c83d5e # todo: tag etc.
           command:
             - sh
             - -c
@@ -47,7 +47,7 @@ spec:
               subPath: AdGuardHome.yaml
       containers:
         - name: adguard-home
-          image: adguard/adguardhome:latest # todo
+          image: adguard/adguardhome:latest@sha256:f29c58a91f79387cbbbb042e140814f58e830d457d44af03d662c8df43db9dea # todo
           ports:
             - containerPort: 53
               name: dns-tcp
