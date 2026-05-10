@@ -8,6 +8,7 @@ resources:
   - namespace.yaml
 configMapGenerator:
   - name: adguard-initial-config
+    namespace: adguard-system
     files:
       - AdGuardHome.yaml=adguard-config.yaml
     options:
