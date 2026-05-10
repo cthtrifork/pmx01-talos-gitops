@@ -1,106 +1,99 @@
-    {
-      "storage": {
-        "rootDirectory": "/var/lib/registry"
-      },
-      "http": {
-        "address": "0.0.0.0",
-        "port": "5000"
-      },
-      "log": {
-        "level": "debug"
-      },
-      "extensions": {
-        "ui": {
-          "enable": true
-        },
-        "search": {
-          "enable": true
-        },
-        "metrics": {
-          "enable": true,
-          "prometheus": {
-            "path": "/metrics"
-          }
-        },
-        "sync": {
-          "enable": true,
-          "registries": [
-            {
-              "urls": [
-                "https://docker.io/library"
-              ],
-              "content": [
-                {
-                  "prefix": "**",
-                  "destination": "/docker-hub-cache"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": true,
-              "maxRetries": 3,
-              "retryDelay": "5m"
-            },
-            {
-              "urls": [
-                "https://ghcr.io"
-              ],
-              "content": [
-                {
-                  "prefix": "**",
-                  "destination": "/ghcr-cache"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": true,
-              "maxRetries": 3,
-              "retryDelay": "5m"
-            },
-            {
-              "urls": [
-                "https://gcr.io"
-              ],
-              "content": [
-                {
-                  "prefix": "**",
-                  "destination": "/gcr-cache"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": true,
-              "maxRetries": 3,
-              "retryDelay": "5m"
-            },
-            {
-              "urls": [
-                "https://quay.io"
-              ],
-              "content": [
-                {
-                  "prefix": "**",
-                  "destination": "/quay-cache"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": true,
-              "maxRetries": 3,
-              "retryDelay": "5m"
-            },
-            {
-              "urls": [
-                "https://registry.k8s.io"
-              ],
-              "content": [
-                {
-                  "prefix": "**",
-                  "destination": "/k8s-cache"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": true,
-              "maxRetries": 3,
-              "retryDelay": "5m"
-            }
-          ]
-        }
+{
+  "storage": {
+    "rootDirectory": "/var/lib/registry"
+  },
+  "http": {
+    "address": "0.0.0.0",
+    "port": "5000"
+  },
+  "log": {
+    "level": "debug"
+  },
+  "extensions": {
+    "ui": {
+      "enable": true
+    },
+    "search": {
+      "enable": true
+    },
+    "metrics": {
+      "enable": true,
+      "prometheus": {
+        "path": "/metrics"
       }
+    },
+    "sync": {
+      "enable": true,
+      "registries": [
+        {
+          "urls": [
+            "https://docker.io/library",
+            "https://mirror.gcr.io/library"
+          ],
+          "content": [
+            {
+              "prefix": "**",
+              "destination": "/docker-hub-cache"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://ghcr.io"],
+          "content": [
+            {
+              "prefix": "**",
+              "destination": "/ghcr-cache"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://gcr.io"],
+          "content": [
+            {
+              "prefix": "**",
+              "destination": "/gcr-cache"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://quay.io"],
+          "content": [
+            {
+              "prefix": "**",
+              "destination": "/quay-cache"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://registry.k8s.io"],
+          "content": [
+            {
+              "prefix": "**",
+              "destination": "/k8s-cache"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        }
+      ]
     }
+  }
+}
