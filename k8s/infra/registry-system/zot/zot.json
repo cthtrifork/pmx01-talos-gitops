@@ -92,6 +92,19 @@
           "tlsVerify": true,
           "maxRetries": 3,
           "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://us-docker.pkg.dev"],
+          "content": [
+            {
+              "prefix": "**",
+              "destination": "/google-ar-cache"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
         }
       ]
     }
