@@ -61,7 +61,7 @@ spec:
           "docker.io": zot.lan:5000/docker-hub-cache
           "quay.io": zot.lan:5000/quay-cache
           "registry.k8s.io": zot.lan:5000/k8s-cache
-      storageSize: ${TRIVY_STORAGE_SIZE:=5Gi}
+      storageSize: "${TRIVY_STORAGE_SIZE:=5Gi}"
       ignoreFileName: /etc/trivy/.trivyignore.yaml
       configFile:
         vulnerability:
