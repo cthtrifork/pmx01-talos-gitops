@@ -51,17 +51,17 @@ spec:
         repository: aquasecurity/trivy
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
         tag: 0.69.3
-      dbRegistry: zot.lan:5000/docker-hub-cache
-      javaDbRegistry: zot.lan:5000/docker-hub-cache
+      dbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+      javaDbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
       registry:
         mirror:
-          "ghcr.io": zot.lan:5000/ghcr-cache
-          "mirror.gcr.io": zot.lan:5000/docker-hub-cache
-          "registry-1.docker.io": zot.lan:5000/docker-hub-cache
-          "index.docker.io": zot.lan:5000/docker-hub-cache
-          "docker.io": zot.lan:5000/docker-hub-cache
-          "quay.io": zot.lan:5000/quay-cache
-          "registry.k8s.io": zot.lan:5000/k8s-cache
+          "ghcr.io": zot.registry-system.svc.cluster.local:5000/ghcr-cache
+          "mirror.gcr.io": zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+          "registry-1.docker.io": zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+          "index.docker.io": zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+          "docker.io": zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+          "quay.io": zot.registry-system.svc.cluster.local:5000/quay-cache
+          "registry.k8s.io": zot.registry-system.svc.cluster.local:5000/k8s-cache
       storageSize: "${TRIVY_STORAGE_SIZE:=5Gi}"
       ignoreFileName: /etc/trivy/.trivyignore.yaml
       configFile:
