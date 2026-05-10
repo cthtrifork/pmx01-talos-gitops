@@ -104,9 +104,9 @@ spec:
       service:
         enabled: true
         annotations:
-            omni-kube-service-exposer.sidero.dev/label: Grafana
-            omni-kube-service-exposer.sidero.dev/port: "50082"
-            omni-kube-service-exposer.sidero.dev/prefix: grafana
+          omni-kube-service-exposer.sidero.dev/label: Grafana
+          omni-kube-service-exposer.sidero.dev/port: "50082"
+          omni-kube-service-exposer.sidero.dev/prefix: grafana
       ingress:
         annotations:
           cert-manager.io/cluster-issuer: certificate-cluster-issuer
@@ -177,6 +177,11 @@ spec:
             secretName: prometheus.pmx01.portableinfo.cloud-tls
       podDisruptionBudget:
         enabled: false
+      service:
+        annotations:
+          omni-kube-service-exposer.sidero.dev/label: Prometheus
+          omni-kube-service-exposer.sidero.dev/port: "50087"
+          omni-kube-service-exposer.sidero.dev/prefix: prometheus
       serviceMonitor:
         selfMonitor: true
       prometheusSpec:
@@ -204,7 +209,7 @@ spec:
         serviceMonitorSelectorNilUsesHelmValues: false
         serviceMonitorNamespaceSelector: {}
         podMonitorSelectorNilUsesHelmValues: false
-        podMonitorNamespaceSelector:  {}
+        podMonitorNamespaceSelector: {}
         additionalConfig:
           storage:
             volumeClaimTemplate:

@@ -1,6 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    omni-kube-service-exposer.sidero.dev/label: Prometheus
+    omni-kube-service-exposer.sidero.dev/port: "50087"
+    omni-kube-service-exposer.sidero.dev/prefix: prometheus
   labels:
     app: prom-prometheus
     app.kubernetes.io/instance: kube-prometheus-stack
