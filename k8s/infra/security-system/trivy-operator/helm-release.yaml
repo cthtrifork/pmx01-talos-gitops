@@ -124,9 +124,9 @@ spec:
       replicas: 2
       scanJobsInSameNamespace: true
       logDevMode: false
-      httpProxy: ""
-      httpsProxy: "${HTTPS_PROXY}"
-      noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
+      #httpProxy: ""
+      #httpsProxy: "${HTTPS_PROXY}"
+      #noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
       podLabels:
         kube-kraken.dk/mount-root-ca: "true" # todo
       # Setting this option to true will enable the Client Server mode, managed by the Trivy Operator.
@@ -149,7 +149,7 @@ spec:
         cpu: 100m
         memory: 512Mi
     trivyOperator:
-      scanJobPodTemplateLabels: "kube-kraken.dk/with-https-proxy=true,kube-kraken.dk/mount-root-ca=true"
+      #scanJobPodTemplateLabels: "my-label/mount-root-ca=true"
       scanJobTolerations:
         - key: "kube-kraken/role"
           operator: "Equal"
