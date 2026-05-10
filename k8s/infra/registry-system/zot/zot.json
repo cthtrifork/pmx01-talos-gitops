@@ -57,7 +57,7 @@
             },
             {
               "urls": [
-                "https://mirror.gcr.io/library"
+                "https://gcr.io"
               ],
               "content": [
                 {
