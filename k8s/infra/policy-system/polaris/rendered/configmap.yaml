@@ -39,17 +39,8 @@ data:
         rules: []
       - controllerNames:
         - helm-controller
-        - image-automation-controller
-        - image-reflector-controller
         - kustomize-controller
         - notification-controller
         - source-controller
         namespace: flux-system
-        rules: []
-      - controllerNames:
-        - vault
-        namespace: vault-system
-        rules: []
-      - controllerNames:
-        - cluster-reconciler-flux-system
         rules: []

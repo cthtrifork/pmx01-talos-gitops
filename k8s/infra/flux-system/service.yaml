@@ -19,4 +19,4 @@ spec:
     - name: http-web
       port: 9080
       protocol: TCP
-      targetPort: http-web
+      targetPort: 9080

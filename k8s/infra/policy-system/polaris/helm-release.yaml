@@ -27,6 +27,11 @@ spec:
       enabled: true
     dashboard:
       replicas: 1
+      service:
+        annotations:
+          omni-kube-service-exposer.sidero.dev/label: "Polaris"
+          omni-kube-service-exposer.sidero.dev/port: "50088"
+          omni-kube-service-exposer.sidero.dev/prefix: polaris
       resources:
         requests:
           cpu: 25m

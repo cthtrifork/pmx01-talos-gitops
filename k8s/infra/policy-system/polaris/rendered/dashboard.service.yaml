@@ -14,6 +14,9 @@ metadata:
     app.kubernetes.io/version: "5.19.0"
     helm.sh/chart: polaris-5.19.0
   annotations:
+    omni-kube-service-exposer.sidero.dev/label: "Polaris"
+    omni-kube-service-exposer.sidero.dev/port: "50088"
+    omni-kube-service-exposer.sidero.dev/prefix: "polaris"
   namespace: policy-system
 spec:
   ports:
