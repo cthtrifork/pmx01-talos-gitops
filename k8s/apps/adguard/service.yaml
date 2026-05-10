@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: adguard-dns
+  namespace: adguard-system
+  annotations:
+    metallb.io/loadBalancerIPs: "192.168.1.53" # todo
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  selector:
+    app: adguard-home
+  ports:
+    - port: 53
+      targetPort: 53
+      name: dns-tcp
+      protocol: TCP
+    - port: 53
+      targetPort: 53
+      name: dns-udp
+      protocol: UDP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adguard-web
+  namespace: adguard-system
+  annotations:
+    omni-kube-service-exposer.sidero.dev/label: "Adguard web portal"
+    omni-kube-service-exposer.sidero.dev/port: "50086"
+    omni-kube-service-exposer.sidero.dev/prefix: adguard-web
+spec:
+  type: LoadBalancer
+  selector:
+    app: adguard-home
+  ports:
+    - port: 80
+      targetPort: 3000
+      name: http
+    - port: 443
+      targetPort: 443
+      name: https
+    - port: 853
+      targetPort: 853
+      name: dns-tls

@@ -1,0 +1,38 @@
+# adguard-exporter.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adguard-exporter
+  namespace: adguard-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adguard-exporter
+  template:
+    metadata:
+      labels:
+        app: adguard-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9617"
+    spec:
+      containers:
+        - name: exporter
+          image: ebrianne/adguard-exporter:v1.14
+          ports:
+            - containerPort: 9617
+          env:
+            - name: adguard_protocol
+              value: "http"
+            - name: adguard_hostname
+              value: "adguard-web.adguard.svc"
+            - name: adguard_username
+              value: "admin"
+            - name: adguard_password
+              valueFrom:
+                secretKeyRef:
+                  name: adguard-credentials
+                  key: password
+            - name: adguard_port
+              value: "80"

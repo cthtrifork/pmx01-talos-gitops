@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - arc-runner/
   - controllers/actions-runner-controller/
+  - adguard/

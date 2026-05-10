@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - statefulset.yaml
+  - adguard-exporter.yaml
+  - service.yaml
+  - namespace.yaml
+configMapGenerator:
+  - name: adguard-initial-config
+    files:
+      - AdGuardHome.yaml=adguard-config.yaml
+    options:
+      disableNameSuffixHash: true
+generatorOptions:
+  disableNameSuffixHash: true
