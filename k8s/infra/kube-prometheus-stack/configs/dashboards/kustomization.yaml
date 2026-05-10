@@ -6,11 +6,10 @@ resources: []
 configMapGenerator:
   - name: infrastructure-dashboards
     files:
-      - infrastructure/cilium.json
       - infrastructure/zot.json
     options:
       labels:
-        grafana_dashboard: '1'
+        grafana_dashboard: "1"
         app.kubernetes.io/part-of: flux
         kustomize.toolkit.fluxcd.io/substitute: disabled
       annotations:
