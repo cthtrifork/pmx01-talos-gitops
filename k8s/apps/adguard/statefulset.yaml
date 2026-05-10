@@ -32,6 +32,7 @@ spec:
       initContainers:
         - name: copy-config
           image: busybox:1.37
+          imagePullPolicy: IfNotPresent
           command:
             - sh
             - -c
