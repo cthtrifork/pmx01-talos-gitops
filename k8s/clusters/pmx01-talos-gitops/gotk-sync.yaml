@@ -15,7 +15,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../infra/bootstrap
+  path: ../../k8s/infra/bootstrap
   postBuild:
     substitute:
       var_substitution_enabled: "true"
@@ -34,7 +34,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../infra
+  path: ../../k8s/infra
   postBuild:
     substitute:
       var_substitution_enabled: "true"
@@ -53,7 +53,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../infra/post
+  path: ../../k8s/infra/post
   postBuild:
     substitute:
       var_substitution_enabled: "true"
@@ -72,7 +72,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../virtualmachines
+  path: ../../k8s/virtualmachines
   postBuild:
     substitute:
       var_substitution_enabled: "true"
@@ -95,7 +95,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../apps/controllers
+  path: ../../k8s/apps/controllers
   postBuild:
     substitute:
       var_substitution_enabled: "true"
@@ -119,7 +119,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
-  path: ../apps
+  path: ../../k8s/apps
   postBuild:
     substitute:
       var_substitution_enabled: "true"
