@@ -30,7 +30,7 @@ spec:
       registry: zot.lan:5000/docker-hub-cache
     excludeNamespaces: "local-path-storage"
     policiesBundle:
-      registry: zot.lan:5000/docker-hub-cache
+      registry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
     trivy:
       debug: "false"
       slow: ${TRIVY_SLOW:=false} # set to true to enable slow mode which reduces load on the trivy server
