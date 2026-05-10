@@ -1,4 +1,4 @@
-# adguard-exporter.yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,3 +36,18 @@ spec:
                   key: password
             - name: adguard_port
               value: "80"
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 128Mi
+              cpu: 10m
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            privileged: false
+            runAsUser: 65534
+            runAsGroup: 65534
