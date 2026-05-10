@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   #- cilium/l2announcement.yaml
   - cert-manager/certificate-cluster-issuer.yaml
-  - kubevirt/kubevirt.yaml
-  - kubevirt/cdi.yaml
+  #- kubevirt/kubevirt.yaml
+  #- kubevirt/cdi.yaml
   - metallb/l2announcement.yaml
   #- kyverno-policies/
