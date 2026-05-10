@@ -170,7 +170,7 @@ spec:
       enabled: false
     ipv4NativeRoutingCIDR: "10.244.0.0/16"
     egressGateway:
-      enabled: true
+      enabled: false
     bpf:
       masquerade: true
     policyEnforcementMode: default
