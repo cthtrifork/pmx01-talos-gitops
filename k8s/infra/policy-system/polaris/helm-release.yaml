@@ -14,7 +14,7 @@ spec:
       sourceRef:
         name: fairwinds
         kind: HelmRepository
-        namespace: polaris-system
+        namespace: policy-system
   driftDetection:
     mode: enabled
   # https://github.com/FairwindsOps/charts/blob/master/stable/polaris/values.yaml
