@@ -28,7 +28,7 @@ metadata:
   annotations:
     omni-kube-service-exposer.sidero.dev/label: "Adguard web portal"
     omni-kube-service-exposer.sidero.dev/port: "50086"
-    omni-kube-service-exposer.sidero.dev/prefix: adguard-web
+    omni-kube-service-exposer.sidero.dev/prefix: adguard
 spec:
   type: LoadBalancer
   selector:
