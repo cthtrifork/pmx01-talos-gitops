@@ -27,10 +27,10 @@ spec:
   # https://github.com/aquasecurity/trivy-operator/blob/main/deploy/helm/values.yaml
   values:
     image:
-      registry: zot.lan:5000/gcr-cache
+      registry: zot.lan:5000/docker-hub-cache
     excludeNamespaces: "local-path-storage"
     policiesBundle:
-      registry: zot.lan:5000/gcr-cache
+      registry: zot.lan:5000/docker-hub-cache
     trivy:
       debug: "false"
       slow: ${TRIVY_SLOW:=false} # set to true to enable slow mode which reduces load on the trivy server
@@ -47,15 +47,15 @@ spec:
         kube-kraken.dk/with-https-proxy: "true"
         kube-kraken.dk/mount-root-ca: "true"
       image:
-        registry: zot.lan:5000/gcr-cache
+        registry: zot.lan:5000/docker-hub-cache
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
         tag: 0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e
-      dbRegistry: zot.lan:5000/gcr-cache
-      javaDbRegistry: zot.lan:5000/gcr-cache
+      dbRegistry: zot.lan:5000/docker-hub-cache
+      javaDbRegistry: zot.lan:5000/docker-hub-cache
       registry:
         mirror:
           "ghcr.io": zot.lan:5000/ghcr-cache
-          "mirror.gcr.io": zot.lan:5000/gcr-cache
+          "mirror.gcr.io": zot.lan:5000/docker-hub-cache
           "registry-1.docker.io": zot.lan:5000/docker-hub-cache
           "index.docker.io": zot.lan:5000/docker-hub-cache
           "docker.io": zot.lan:5000/docker-hub-cache
