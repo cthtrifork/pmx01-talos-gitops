@@ -123,7 +123,7 @@ data:
   #   - disabled
   #   - vxlan (default)
   #   - geneve
-  routing-mode: "tunnel"
+  routing-mode: "native"
   tunnel-protocol: "vxlan"
   tunnel-source-port-range: "0-0"
   service-no-backend-response: "reject"
@@ -143,8 +143,9 @@ data:
   enable-xt-socket-fallback: "true"
   install-no-conntrack-iptables-rules: "false"
   iptables-random-fully: "false"
-  auto-direct-node-routes: "false"
+  auto-direct-node-routes: "true"
   direct-routing-skip-unreachable: "false"
+  ipv4-native-routing-cidr: 10.244.0.0/16
   kube-proxy-replacement: "true"
   kube-proxy-replacement-healthz-bind-address: ""
   enable-no-service-endpoints-routable: "true"

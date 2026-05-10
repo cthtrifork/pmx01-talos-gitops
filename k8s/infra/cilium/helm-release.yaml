@@ -54,6 +54,24 @@ spec:
           cpu: 20m
           memory: 64Mi
     enableLBIPAM: false
+    securityContext:
+      capabilities:
+        ciliumAgent:
+          - CHOWN
+          - KILL
+          - NET_ADMIN
+          - NET_RAW
+          - IPC_LOCK
+          - SYS_ADMIN
+          - SYS_RESOURCE
+          - DAC_OVERRIDE
+          - FOWNER
+          - SETGID
+          - SETUID
+        cleanCiliumState:
+          - NET_ADMIN
+          - SYS_ADMIN
+          - SYS_RESOURCE
     hubble:
       metrics:
         enabled:
@@ -144,14 +162,17 @@ spec:
       type: wireguard
     k8sServiceHost: localhost # sidero specific
     k8sServicePort: 7445 # sidero specific
+    routingMode: "native"
+    autoDirectNodeRoutes: true
+
+    enableIPv4Masquerade: true
+    ipMasqAgent:
+      enabled: false
+    ipv4NativeRoutingCIDR: "10.244.0.0/16"
     egressGateway:
       enabled: true
     bpf:
       masquerade: true
-    l2announcements:
-      enabled: false
-    externalIPs:
-      enabled: ${CILIUM_EXTERNAL_IPS_ENABLED:=false}
     policyEnforcementMode: default
     policyAuditMode: false # NEVER SET THIS TO TRUE IN PRODUCTION, as it will disable all network policies and allow all traffic
     cgroup:
