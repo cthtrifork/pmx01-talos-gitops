@@ -141,7 +141,7 @@ spec:
               memory: 1Gi
             requests:
               cpu: 100m
-              memory: 1Gi
+              memory: 256Mi
           ports:
             - name: health
               containerPort: 9879
