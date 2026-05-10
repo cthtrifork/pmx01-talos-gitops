@@ -42,7 +42,7 @@ spec:
         memory: 1Gi
       requests:
         cpu: ${CILIUM_CPU_REQUEST:=100m}
-        memory: ${CILIUM_MEMORY_REQUEST:=1Gi}
+        memory: ${CILIUM_MEMORY_REQUEST:=256Mi}
     envoy:
       updateStrategy:
         rollingUpdate:
