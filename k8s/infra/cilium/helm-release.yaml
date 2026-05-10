@@ -41,7 +41,7 @@ spec:
       limits:
         memory: 1Gi
       requests:
-        cpu: ${CILIUM_CPU_REQUEST:=1000m}
+        cpu: ${CILIUM_CPU_REQUEST:=100m}
         memory: ${CILIUM_MEMORY_REQUEST:=1Gi}
     envoy:
       updateStrategy:
@@ -87,7 +87,6 @@ spec:
           enabled: false
         resources:
           limits:
-            cpu: 100m
             memory: 512Mi
           requests:
             cpu: 5m
