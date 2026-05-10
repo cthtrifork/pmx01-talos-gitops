@@ -12,9 +12,9 @@ http:
     insecure_enabled: false
   address: 0.0.0.0:3000
   session_ttl: 720h
-users:
-  - name: admin
-    password: $2y$10$E0dbIpkBMftiVh50yagxCOrvtQbJLypPXe5MAUwMkYJ2p5ZJ5uwrS
+#users:
+#  - name: admin
+#    password: $2y$10$E0dbIpkBMftiVh50yagxCOrvtQbJLypPXe5MAUwMkYJ2p5ZJ5uwrS
 auth_attempts: 5
 block_auth_min: 15
 http_proxy: ""
