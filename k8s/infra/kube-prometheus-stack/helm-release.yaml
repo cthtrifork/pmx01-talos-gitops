@@ -34,6 +34,8 @@ spec:
     defaultRules:
       rules:
         alertmanager: false
+      labels:
+        type: rule
     alertmanager:
       enabled: false
     prometheusOperator:
@@ -223,9 +225,7 @@ spec:
                 resources:
                   requests:
                     storage: 5Gi
-    defaultRules:
-      labels:
-        type: rule
+
     kubernetesServiceMonitors:
       enabled: true
     global:
