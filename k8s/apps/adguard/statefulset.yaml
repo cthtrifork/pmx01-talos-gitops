@@ -31,11 +31,10 @@ spec:
             name: adguard-initial-config
       initContainers:
         - name: copy-config
-          image: gcr.io/distroless/static-debian13:debug-nonroot
+          image: busybox:1.37
           command:
-            - "/bin/sh"
-            - "-c"
-          args:
+            - sh
+            - -c
             - |
               set -e
               cp -f /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
