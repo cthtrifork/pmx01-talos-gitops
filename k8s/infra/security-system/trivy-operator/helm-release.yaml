@@ -166,7 +166,7 @@ spec:
                 labels:
                   app: trivy-operator-scanjob-cache
               spec:
-                storageClassName: "${DEFAULT_STORAGE_CLASS:=local-path}"
+                storageClassName: local-path
                 accessModes:
                   - ReadWriteOnce
                 resources:
