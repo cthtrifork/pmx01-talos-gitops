@@ -7,6 +7,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  prune: true
   decryption:
     provider: sops
     secretRef:
@@ -27,6 +28,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  prune: true
   dependsOn:
     - name: gitops-infra-bootstrap
   sourceRef:
@@ -45,6 +47,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  prune: true
   dependsOn:
     - name: gitops-infra
   sourceRef:
@@ -63,6 +66,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  prune: true
   dependsOn:
     - name: gitops-infra-post
   sourceRef:
@@ -81,6 +85,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  prune: true
   decryption:
     provider: sops
     secretRef:
@@ -103,6 +108,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  prune: true
   decryption:
     provider: sops
     secretRef:
