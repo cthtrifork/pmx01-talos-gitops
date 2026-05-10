@@ -3,5 +3,6 @@ kind: Kustomization
 namespace: policy-system
 resources:
   - namespace.yaml
-  - kyverno/
- # - reports-server-postgres/
+  #- kyverno/
+  - reloader/
+  # - reports-server-postgres/

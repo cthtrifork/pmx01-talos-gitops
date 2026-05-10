@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: reloader
+  namespace: policy-system
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: reloader
+  driftDetection:
+    mode: enabled
+  # https://github.com/stakater/Reloader/blob/master/deployments/kubernetes/chart/reloader/values.yaml
+  install:
+    strategy:
+      name: RetryOnFailure
+  values:
+    reloader:
+      matchLabels:
+        kyverno.io/watch: "true"
+        watchGlobally: false
