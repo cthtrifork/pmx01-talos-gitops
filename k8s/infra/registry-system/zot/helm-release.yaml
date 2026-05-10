@@ -41,9 +41,9 @@ spec:
     pvc:
       create: true
       accessModes: ["ReadWriteOnce"]
-      storage: 8Gi
+      storage: 60Gi
       # Name of the storage class to use if it is different than the default one
-      storageClassName: "local-path"
+      storageClassName: ${DEFAULT_STORAGE_CLASS:=local-path}
     configFiles: ~
 # https://docs.giantswarm.io/tutorials/registry/zot/
     resources:
@@ -51,11 +51,10 @@ spec:
         cpu: 350m
         memory: 1024Mi
       limits:
-        memory: 1024Mi
-
+        memory: 2Gi
     env:
       - name: GOGC
         value: "50"
       - name: GOMEMLIMIT
         # Set this to about 80% of the memory limit.
-        value: 800MiB
+        value: 1600MiB
