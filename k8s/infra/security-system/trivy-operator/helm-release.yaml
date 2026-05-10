@@ -132,9 +132,9 @@ spec:
       # Setting this option to true will enable the Client Server mode, managed by the Trivy Operator.
       builtInTrivyServer: true
       exposedSecretScannerEnabled: false # we do not use this feature
-      scannerReportTTL: ${TRIVY_SCANNER_TTL:=24h}
+      scannerReportTTL: "${TRIVY_SCANNER_TTL:=24h}"
       scanJobTTL: "5m" # set to 1m to keep jobs for a little while for troubleshooting
-      scanJobsConcurrentLimit: ${TRIVY_SCANNER_CONCURRENTLIMIT:=5}
+      scanJobsConcurrentLimit: "${TRIVY_SCANNER_CONCURRENTLIMIT:=5}"
       sbomGenerationEnabled: true
       clusterComplianceEnabled: true
       infraAssessmentScannerEnabled: false # requires priviledges that we do not like
@@ -166,12 +166,12 @@ spec:
                 labels:
                   app: trivy-operator-scanjob-cache
               spec:
-                storageClassName: ${DEFAULT_STORAGE_CLASS:=local-path}
+                storageClassName: "${DEFAULT_STORAGE_CLASS:=local-path}"
                 accessModes:
                   - ReadWriteOnce
                 resources:
                   requests:
-                    storage: 10Gi # some pods have several images that are quite large. timescaledb is 7 GiB!
+                    storage: "${TRIVY_STORAGE_SIZE:=10Gi}" # some pods have several images that are quite large. timescaledb is 7 GiB!
       scanJobPodTemplatePodSecurityContext:
         runAsNonRoot: true
         runAsUser: 65534
