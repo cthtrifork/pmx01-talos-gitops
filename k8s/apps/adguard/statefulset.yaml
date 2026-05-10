@@ -38,7 +38,7 @@ spec:
             - -c
             - |
               set -e
-              cp -f /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
+              cp -vf /tmp/AdGuardHome.yaml /opt/adguardhome/conf/AdGuardHome.yaml
           volumeMounts:
             - name: adguard-config
               mountPath: /opt/adguardhome/conf
