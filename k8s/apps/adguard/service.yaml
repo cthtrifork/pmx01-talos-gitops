@@ -4,7 +4,7 @@ metadata:
   name: adguard-dns
   namespace: adguard-system
   annotations:
-    metallb.io/loadBalancerIPs: "192.168.1.53" # todo
+    metallb.io/loadBalancerIPs: "192.168.1.153" # todo
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
