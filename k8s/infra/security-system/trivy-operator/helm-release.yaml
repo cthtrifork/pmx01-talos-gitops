@@ -27,10 +27,10 @@ spec:
   # https://github.com/aquasecurity/trivy-operator/blob/main/deploy/helm/values.yaml
   values:
     image:
-      registry: zot.registry-system.svc.cluster.local/gcr-cache
+      registry: 192.168.1.240:5000/gcr-cache
     excludeNamespaces: "local-path-storage"
     policiesBundle:
-      registry: zot.registry-system.svc.cluster.local/gcr-cache
+      registry: 192.168.1.240:5000/gcr-cache
     trivy:
       debug: "false"
       slow: ${TRIVY_SLOW:=false} # set to true to enable slow mode which reduces load on the trivy server
@@ -47,20 +47,20 @@ spec:
         kube-kraken.dk/with-https-proxy: "true"
         kube-kraken.dk/mount-root-ca: "true"
       image:
-        registry: zot.registry-system.svc.cluster.local:5000/gcr-cache
+        registry: 192.168.1.240:5000/gcr-cache
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
         tag: 0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e
-      dbRegistry: zot.registry-system.svc.cluster.local/gcr-cache
-      javaDbRegistry: zot.registry-system.svc.cluster.local/gcr-cache
+      dbRegistry: 192.168.1.240:5000/gcr-cache
+      javaDbRegistry: 192.168.1.240:5000/gcr-cache
       registry:
         mirror:
-          "ghcr.io": zot.registry-system.svc.cluster.local/ghcr-cache
-          "mirror.gcr.io": zot.registry-system.svc.cluster.local/gcr-cache
-          "registry-1.docker.io": zot.registry-system.svc.cluster.local/docker-hub-cache
-          "index.docker.io": zot.registry-system.svc.cluster.local/docker-hub-cache
-          "docker.io": zot.registry-system.svc.cluster.local/docker-hub-cache
-          "quay.io": zot.registry-system.svc.cluster.local/quay-cache
-          "registry.k8s.io": zot.registry-system.svc.cluster.local/k8s-cache
+          "ghcr.io": 192.168.1.240:5000/ghcr-cache
+          "mirror.gcr.io": 192.168.1.240:5000/gcr-cache
+          "registry-1.docker.io": 192.168.1.240:5000/docker-hub-cache
+          "index.docker.io": 192.168.1.240:5000/docker-hub-cache
+          "docker.io": 192.168.1.240:5000/docker-hub-cache
+          "quay.io": 192.168.1.240:5000/quay-cache
+          "registry.k8s.io": 192.168.1.240:5000/k8s-cache
       storageSize: ${TRIVY_STORAGE_SIZE:=5Gi}
       ignoreFileName: /etc/trivy/.trivyignore.yaml
       configFile:
@@ -194,7 +194,7 @@ spec:
         value: "tool"
         effect: "NoSchedule"
     nodeCollector:
-      registry: zot.registry-system.svc.cluster.local/ghcr-cache
+      registry: 192.168.1.240:5000/ghcr-cache
       tolerations:
         # Allow the node collector to run on control plane nodes
         - key: node-role.kubernetes.io/control-plane
