@@ -9,5 +9,5 @@ spec:
   interval: 12h
   url: oci://ghcr.io/project-zot/helm-charts/zot
   ref:
-    tag: 0.1.112
-    digest: sha256:2fba558977e17efcd2ec301a39868a35a8b72a59634686560b67fb2a62bdd743
+    tag: 0.1.113
+    digest: sha256:700377efd5c6f20385de63ada21a73741ce12cbc8a23358dd336c2e93c1b610e
