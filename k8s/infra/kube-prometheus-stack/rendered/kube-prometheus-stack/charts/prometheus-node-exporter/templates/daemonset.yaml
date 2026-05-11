@@ -91,6 +91,9 @@ spec:
         resources:
           limits:
             memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 32Mi
         securityContext:
           readOnlyRootFilesystem: true
         volumeMounts:

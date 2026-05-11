@@ -21,3 +21,10 @@ spec:
       #matchLabels:
       #  kyverno.io/watch: "true"
       watchGlobally: true
+      deployment:
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 25m
+            memory: 64Mi

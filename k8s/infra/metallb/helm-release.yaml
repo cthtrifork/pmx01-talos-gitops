@@ -7,17 +7,26 @@ metadata:
 spec:
   interval: 30m
   timeout: 10m
-  chart:
-    spec:
-      chart: metallb
-      version: 0.15.3
-      sourceRef:
-        kind: HelmRepository
-        name: metallb
-      interval: 12h
+  chartRef:
+    kind: OCIRepository
+    name: metallb
   driftDetection:
     mode: enabled
   # https://github.com/metallb/metallb/blob/main/charts/metallb/values.yaml
   values:
     crds:
       enabled: true
+    controller:
+      resources:
+        limits:
+          memory: 256Mi
+        requests:
+          cpu: 10m
+          memory: 128Mi
+    speaker:
+      resources:
+        limits:
+          memory: 256Mi
+        requests:
+          cpu: 25m
+          memory: 128Mi

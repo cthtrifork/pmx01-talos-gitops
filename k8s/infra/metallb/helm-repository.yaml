@@ -1,9 +1,13 @@
 ---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+kind: OCIRepository
 metadata:
   name: metallb
   namespace: metallb-system
 spec:
-  interval: 24h
-  url: https://metallb.github.io/metallb
+  interval: 12h
+  url: oci://quay.io/metallb/chart/metallb
+  ref:
+    tag: 0.15.3
+    digest: "sha256:81d00af37289801a847bfeb28bfcb0e5255a097b586948c27b900387fcdb449e" # 0.15.3

@@ -60,6 +60,13 @@ spec:
               memory: 128Mi
     kubeStateMetrics:
       enabled: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
     grafana:
       image:
         registry: mirror.gcr.io
@@ -159,6 +166,9 @@ spec:
         kubelet: true
     prometheus-node-exporter:
       resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
         limits:
           memory: 128Mi
     prometheusConfigReloader:

@@ -50,3 +50,9 @@ spec:
         drop: ["ALL"]
       seccompProfile:
         type: RuntimeDefault
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 50m
+        memory: 256Mi

@@ -58,9 +58,10 @@ spec:
                   fieldPath: status.hostIP
           resources:
             limits:
-              memory: 128Mi
+              memory: 512Mi
             requests:
-              memory: 128Mi
+              cpu: 50m
+              memory: 256Mi
           volumeMounts:
             - name: containerd-config
               mountPath: /etc/cri/conf.d/hosts
@@ -137,9 +138,10 @@ spec:
               readOnly: true
           resources:
             limits:
-              memory: 128Mi
+              memory: 512Mi
             requests:
-              memory: 128Mi
+              cpu: 50m
+              memory: 256Mi
       volumes:
         - name: spegel-data
           hostPath:
