@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: polaris
-      version: 5.19.0
+      version: 6.0.0
       sourceRef:
         name: fairwinds
         kind: HelmRepository
