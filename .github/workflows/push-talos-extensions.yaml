@@ -95,8 +95,8 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: |
           docker load -i ./_out/installer-${ARCH}.tar
-          docker tag ghcr.io/siderolabs/installer:${{ env.TALOS_VERSION }} ${IMAGE}/installer:${{ env.TALOS_VERSION }}-${{ env.ARCH }}
-          docker push ${IMAGE}/installer:${{ env.TALOS_VERSION }}-${{ env.ARCH }}
+          docker tag ghcr.io/siderolabs/installer:${{ env.TALOS_VERSION }} ${IMAGE}/installer:${TALOS_VERSION}
+          docker push ${IMAGE}/installer:${TALOS_VERSION}
 
       - name: Create ISO
         if: false
