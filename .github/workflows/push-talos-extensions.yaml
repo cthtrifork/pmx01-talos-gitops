@@ -40,6 +40,9 @@ jobs:
             echo "revision=${GITHUB_SHA}"
           } >> "${GITHUB_OUTPUT}"
 
+      - name: replace VERSION in ext manifest
+        run: sed -i "s/VERSION/${{ env.ZOT_VERSION }}/g" images/talos-zot-extension/manifest.yaml
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
