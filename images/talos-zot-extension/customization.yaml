@@ -1,0 +1,4 @@
+machine:
+  install:
+    extensions:
+      - image: ghcr.io/cthtrifork/pmx01-talos-gitops/talos-zot-extension/installer:2.1.16-v1.13.0-amd64

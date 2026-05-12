@@ -62,6 +62,7 @@ jobs:
 
       - name: Build and push extension image
         uses: docker/build-push-action@v6
+        id: build
         with:
           context: images/talos-zot-extension
           platforms: linux/amd64
