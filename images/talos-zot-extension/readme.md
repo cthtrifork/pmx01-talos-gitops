@@ -25,3 +25,7 @@ customization:
     extraExtensions:
       - image: ghcr.io/casperthygesen/talos-zot-extension:2.1.14
 ```
+
+## References
+
+<https://a-cup-of.coffee/blog/talos-ext/>
