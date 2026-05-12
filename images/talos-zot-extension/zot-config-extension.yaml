@@ -1,0 +1,23 @@
+apiVersion: v1alpha1
+kind: ExtensionServiceConfig
+name: zot
+configFiles:
+  - mountPath: /etc/zot/config.json
+    content: |
+      {
+        "distSpecVersion": "1.1.1",
+        "storage": {
+          "rootDirectory": "/var/zot/storage",
+          "dedupe": true,
+          "gc": true,
+          "gcDelay": "1h",
+          "gcInterval": "24h"
+        },
+        "http": {
+          "address": "0.0.0.0",
+          "port": "5000"
+        },
+        "log": {
+          "level": "info"
+        }
+      }
