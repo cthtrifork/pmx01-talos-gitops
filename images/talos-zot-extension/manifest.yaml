@@ -1,8 +1,8 @@
 version: v1alpha1
 metadata:
   name: zot
-  version: "2.1.14"
-  author: casper
+  version: "VERSION"
+  author: caspertdk
   description: zot OCI registry as a Talos system extension
   compatibility:
     talos:
