@@ -1,0 +1,75 @@
+name: Push Talos zot extension
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: talos-zot-extension
+  ZOT_VERSION: "2.1.14"
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image metadata
+        id: meta
+        run: |
+          OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_NAME}"
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${ZOT_VERSION}"
+          fi
+
+          {
+            echo "image=${IMAGE}"
+            echo "version=${VERSION}"
+            echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "revision=${GITHUB_SHA}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push extension image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            ZOT_VERSION=${{ steps.meta.outputs.version }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.title=Talos zot system extension
+            org.opencontainers.image.description=zot OCI registry packaged as a Talos system extension
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.revision }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
