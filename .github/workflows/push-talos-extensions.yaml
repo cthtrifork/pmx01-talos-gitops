@@ -14,7 +14,7 @@ permissions:
 
 env:
   IMAGE_NAME: talos-zot-extension
-  ZOT_VERSION: "2.1.14"
+  ZOT_VERSION: "2.1.14" # todo renovatebot
   IMAGE: ghcr.io/${{ github.repository }}/talos-zot-extension
 
 jobs:
@@ -55,7 +55,9 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             ZOT_VERSION=${{ steps.meta.outputs.version }}
           tags: |
