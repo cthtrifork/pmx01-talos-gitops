@@ -80,7 +80,7 @@ jobs:
 
       - name: Create Installer
         env:
-          IMAGE_EXT: ${IMAGE}/app:${{ env.ZOT_VERSION }}-${{ env.TALOS_VERSION }}-${{ env.ARCH }}@${{ steps.build.outputs.digest }}
+          IMAGE_EXT: ${{env.IMAGE}}/app:${{ env.ZOT_VERSION }}-${{ env.TALOS_VERSION }}-${{ env.ARCH }}@${{ steps.build.outputs.digest }}
           PROFILE: installer
         run: |
           docker run --rm -t -v /dev:/dev --privileged -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v "$PWD/_out:/out" \
