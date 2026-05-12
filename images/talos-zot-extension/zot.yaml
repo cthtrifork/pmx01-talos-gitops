@@ -1,0 +1,31 @@
+name: zot
+
+depends:
+  - network:
+      ready: true
+
+container:
+  entrypoint: /zot
+  args:
+    - serve
+    - /etc/zot/config.json
+
+  mounts:
+    # Injected by ExtensionServiceConfig below.
+    - source: /etc/zot/config.json
+      destination: /etc/zot/config.json
+      type: bind
+      options:
+        - bind
+        - ro
+
+    # Persistent registry storage on the Talos STATE partition.
+    - source: /var/zot
+      destination: /var/zot
+      type: bind
+      options:
+        - rbind
+        - rshared
+        - rw
+
+restart: always

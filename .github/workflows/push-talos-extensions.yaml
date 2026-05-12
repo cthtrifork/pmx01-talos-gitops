@@ -1,0 +1,117 @@
+name: Push Talos zot extension
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - images/talos-zot-extension/**
+  push:
+    branches:
+      - main
+    paths:
+      - images/talos-zot-extension/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: talos-zot-extension
+  ZOT_VERSION: v2.1.16 # renovate: datasource=github-releases depName=project-zot/zot
+  TALOS_VERSION: v1.13.0 # renovate: datasource=github-releases depName=siderolabs/talos
+  ARCH: amd64
+  IMAGE: ghcr.io/${{ github.repository }}/talos-zot-extension
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image metadata
+        id: meta
+        run: |
+          VERSION="${ZOT_VERSION#v}"
+
+          {
+            echo "image=${IMAGE}/app"
+            echo "version=${VERSION}"
+            echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "revision=${GITHUB_SHA}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: replace VERSION in ext manifest
+        run: sed -i "s/VERSION/${ZOT_VERSION#v}/g" images/talos-zot-extension/manifest.yaml
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push extension image
+        uses: docker/build-push-action@v6
+        with:
+          context: images/talos-zot-extension
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            ZOT_VERSION=${{ steps.meta.outputs.version }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.title=Talos zot system extension
+            org.opencontainers.image.description=zot OCI registry packaged as a Talos system extension
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.meta.outputs.revision }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+
+      - name: Create Installer
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          IMAGE_EXT: ${{env.IMAGE}}/app:${{ steps.meta.outputs.version }}-${{ env.TALOS_VERSION }}-${{ env.ARCH }}@${{ steps.build.outputs.digest }}
+          PROFILE: installer
+        run: |
+          docker run --rm -t -v /dev:/dev --privileged -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v "$PWD/_out:/out" \
+            "ghcr.io/siderolabs/imager:${{ env.TALOS_VERSION }}" --arch "${ARCH}" \
+            --system-extension-image ${IMAGE_EXT} "${PROFILE}"
+
+      - name: Push installer
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          docker load -i ./_out/installer-${ARCH}.tar
+          docker tag ghcr.io/siderolabs/installer:${{ env.TALOS_VERSION }} ${IMAGE}/installer:${{ env.TALOS_VERSION }}-${{ env.ARCH }}
+          docker push ${IMAGE}/installer:${{ env.TALOS_VERSION }}-${{ env.ARCH }}
+
+      - name: Create ISO
+        if: false
+        #if: ${{ github.event_name != 'pull_request' }}
+        env:
+          IMAGE_EXT: ${{env.IMAGE}}/app:${{ env.TALOS_VERSION }}-${{ env.ARCH }}
+          PROFILE: iso
+        run: |
+          docker run --rm -t -v /dev:/dev --privileged -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v "$PWD/_out:/out" \
+            "ghcr.io/siderolabs/imager:${{ env.TALOS_VERSION }}" --arch "${ARCH}" \
+            --system-extension-image ${IMAGE_EXT} "${PROFILE}"
+
+      - name: Upload a Build Artifact
+        if: false
+        #if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: "${{ env.TALOS_VERSION }}-${{ env.ARCH }}.iso"
+          path: "_out/metal-${{ env.ARCH }}.iso"
