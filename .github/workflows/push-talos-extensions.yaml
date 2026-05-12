@@ -18,7 +18,7 @@ permissions:
 env:
   IMAGE_NAME: talos-zot-extension
   ZOT_VERSION: "2.1.14" # todo renovatebot
-  TALOS_VERSION: 1.13.0
+  TALOS_VERSION: v1.13.0
   ARCH: amd64
   IMAGE: ghcr.io/${{ github.repository }}/talos-zot-extension
 
