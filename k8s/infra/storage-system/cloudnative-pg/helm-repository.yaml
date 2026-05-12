@@ -9,5 +9,5 @@ spec:
   interval: 12h
   url: oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg
   ref:
-    tag: 0.28.1
-    digest: sha256:afa2aef55c6bf4297a0b8cbeb601a326d21892de94e92594657ec334e923fa67
+    tag: 0.28.2
+    digest: sha256:484e812908daeac1b84614df333040ffe2eb868f3a7169ffe6c003d566f554e6
