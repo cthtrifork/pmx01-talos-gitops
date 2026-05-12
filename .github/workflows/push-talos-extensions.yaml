@@ -15,6 +15,7 @@ permissions:
 env:
   IMAGE_NAME: talos-zot-extension
   ZOT_VERSION: "2.1.14"
+  IMAGE: ghcr.io/${{ github.repository }}/talos-zot-extension
 
 jobs:
   push:
@@ -27,14 +28,7 @@ jobs:
       - name: Set image metadata
         id: meta
         run: |
-          OWNER_LC="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          IMAGE="ghcr.io/${OWNER_LC}/${IMAGE_NAME}"
-
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          else
-            VERSION="${ZOT_VERSION}"
-          fi
+          VERSION="${ZOT_VERSION}"
 
           {
             echo "image=${IMAGE}"
