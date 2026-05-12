@@ -1,14 +1,16 @@
 name: Push Talos zot extension
 
 on:
-  pull_request: 
-    branches: 
+  pull_request:
+    branches:
       - main
+    paths:
+      - images/talos-zot-extension/**
   push:
     branches:
       - main
-    tags:
-      - "v*"
+    paths:
+      - images/talos-zot-extension/**
   workflow_dispatch:
 
 permissions:
@@ -17,8 +19,8 @@ permissions:
 
 env:
   IMAGE_NAME: talos-zot-extension
-  ZOT_VERSION: "2.1.14" # todo renovatebot
-  TALOS_VERSION: v1.13.0
+  ZOT_VERSION: v2.1.16 # renovate: datasource=github-releases depName=project-zot/zot
+  TALOS_VERSION: v1.13.0 # renovate: datasource=github-releases depName=siderolabs/talos
   ARCH: amd64
   IMAGE: ghcr.io/${{ github.repository }}/talos-zot-extension
 
@@ -33,7 +35,7 @@ jobs:
       - name: Set image metadata
         id: meta
         run: |
-          VERSION="${ZOT_VERSION}"
+          VERSION="${ZOT_VERSION#v}"
 
           {
             echo "image=${IMAGE}/app"
@@ -43,7 +45,7 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
       - name: replace VERSION in ext manifest
-        run: sed -i "s/VERSION/${{ env.ZOT_VERSION }}/g" images/talos-zot-extension/manifest.yaml
+        run: sed -i "s/VERSION/${ZOT_VERSION#v}/g" images/talos-zot-extension/manifest.yaml
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -79,14 +81,15 @@ jobs:
             org.opencontainers.image.created=${{ steps.meta.outputs.created }}
 
       - name: Create Installer
+        if: ${{ github.event_name != 'pull_request' }}
         env:
-          IMAGE_EXT: ${{env.IMAGE}}/app:${{ env.ZOT_VERSION }}-${{ env.TALOS_VERSION }}-${{ env.ARCH }}@${{ steps.build.outputs.digest }}
+          IMAGE_EXT: ${{env.IMAGE}}/app:${{ steps.meta.outputs.version }}-${{ env.TALOS_VERSION }}-${{ env.ARCH }}@${{ steps.build.outputs.digest }}
           PROFILE: installer
         run: |
           docker run --rm -t -v /dev:/dev --privileged -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} -v "$PWD/_out:/out" \
             "ghcr.io/siderolabs/imager:${{ env.TALOS_VERSION }}" --arch "${ARCH}" \
             --system-extension-image ${IMAGE_EXT} "${PROFILE}"
-          
+
       - name: Push installer
         if: ${{ github.event_name != 'pull_request' }}
         run: |
@@ -95,7 +98,8 @@ jobs:
           docker push ${IMAGE}/installer:${{ env.TALOS_VERSION }}-${{ env.ARCH }}
 
       - name: Create ISO
-        if: ${{ github.event_name != 'pull_request' }}
+        if: false
+        #if: ${{ github.event_name != 'pull_request' }}
         env:
           IMAGE_EXT: ${{env.IMAGE}}/app:${{ env.TALOS_VERSION }}-${{ env.ARCH }}
           PROFILE: iso
@@ -105,7 +109,8 @@ jobs:
             --system-extension-image ${IMAGE_EXT} "${PROFILE}"
 
       - name: Upload a Build Artifact
-        if: ${{ github.event_name != 'pull_request' }}
+        if: false
+        #if: ${{ github.event_name != 'pull_request' }}
         uses: actions/upload-artifact@v6.0.0
         with:
           name: "${{ env.TALOS_VERSION }}-${{ env.ARCH }}.iso"
