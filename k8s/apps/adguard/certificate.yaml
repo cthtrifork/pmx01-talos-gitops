@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/certificate_v1.json
+# cert for AdGuard DNS-over-HTTPS
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: adguard-tls
+  namespace: adguard-system
+spec:
+  secretName: adguard-tls-cert
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+  dnsNames:
+    - dns.portableinfo.cloud

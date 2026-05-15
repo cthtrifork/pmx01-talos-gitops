@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - pdb.yaml
+  - certificate.yaml
   - adguard-exporter.yaml
   - service.yaml
   - secret.enc.yaml
