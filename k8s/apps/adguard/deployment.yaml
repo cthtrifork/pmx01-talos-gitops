@@ -1,14 +1,19 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/statefulset-apps-v1.json
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: adguard-statefulset
+  name: adguard-deployment
   namespace: adguard-system
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  serviceName: "adguard"
-  replicas: 2
+  replicas: 1
+  strategy: # always have atleast 1 available pod during updates
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: adguard-home
@@ -27,10 +32,7 @@ spec:
                     values:
                       - adguard-home
               topologyKey: "kubernetes.io/hostname" # Ensure 1 pod per node
-      volumes:
-        - name: initial-config
-          configMap:
-            name: adguard-initial-config
+
       initContainers:
         - name: copy-config
           image: busybox:1.37@sha256:1487d0af5f52b4ba31c7e465126ee2123fe3f2305d638e7827681e7cf6c83d5e
@@ -97,30 +99,27 @@ spec:
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 5
-  volumeClaimTemplates:
-    - metadata:
-        name: adguard-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 1Gi
-        storageClassName: "local-path"
-    - metadata:
-        name: adguard-config
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 1Gi
-        storageClassName: "local-path"
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: adguard-pdb
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: adguard-home
+      volumes:
+      - name: initial-config
+        configMap:
+          name: adguard-initial-config
+      - name: adguard-data
+        ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 10Gi
+      - name: adguard-config
+        ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 1Gi
