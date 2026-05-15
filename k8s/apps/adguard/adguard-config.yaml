@@ -31,12 +31,14 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-        - https://dns.cloudflare.com/dns-query
-        - https://dns.google/dns-query
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
   bootstrap_dns:
     - 1.1.1.1
     - 8.8.8.8
-  fallback_dns: []
+  fallback_dns:
+    - 1.1.1.1
+    - 8.8.8.8
   upstream_mode: load_balance
   fastest_timeout: 1s
   allowed_clients: []
@@ -118,21 +120,21 @@ filters:
     id: 2
 whitelist_filters: []
 user_rules:
-  - '@@||0.client-channel.google.com^$important # In order for users on your network to access Google Drive and Google Docs editors this domain must be whitelisted - https://support.google.com/a/answer/2589954?hl=en'
-  - '@@||1drv.com^$important # It is actually a legitimate Microsoft owned domain and used as a short link for OneDrive documents.'
-  - '@@||2.android.pool.ntp.org^$important # This domain is a part of The pool.ntp.org project which is a big virtual cluster of timeservers providing reliable time. This domain is used in Android devices'
-  - '@@||akamaihd.net^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN).'
-  - '@@||akamaitechnologies.com^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN).'
-  - '@@||akamaized.net^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN).'
-  - '@@||amazonaws.com^$important # Amazon Web Services (AWS) is a subsidiary of Amazon providing on-demand cloud computing platforms and APIs. This domain is used to serve files and other static resources which are hosted on Amazon AWS'
-  - '@@||android.clients.google.com^$important # Google Play Store and few devices (especially Android One devices) depends on this domain for system updates.'
-  - '@@||api.ipify.org^$important # It is used to get your public IP address programmatically. ipify is completely opensource.'
-  - '@@||app-api.ted.com^$important # Used by ted.com streams.'
-  - '@@||api.rlje.net^$important # Used to deliver contents on video straming apps on hulu etc.'
-  - '@@||appleid.apple.com^$important # Used to sign in t your Apple account.'
-  - '@@||apps.skype.com^$important # Used to make group calls, group chats etc. on Skype.'
-  - '@@||appsbackup-pa.clients6.google.com^$important # Used to backup device settings and app data.'
-  - '@@||appsbackup-pa.googleapis.com^$important # Used to backup device settings and app data.'
+  - "@@||0.client-channel.google.com^$important # In order for users on your network to access Google Drive and Google Docs editors this domain must be whitelisted - https://support.google.com/a/answer/2589954?hl=en"
+  - "@@||1drv.com^$important # It is actually a legitimate Microsoft owned domain and used as a short link for OneDrive documents."
+  - "@@||2.android.pool.ntp.org^$important # This domain is a part of The pool.ntp.org project which is a big virtual cluster of timeservers providing reliable time. This domain is used in Android devices"
+  - "@@||akamaihd.net^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN)."
+  - "@@||akamaitechnologies.com^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN)."
+  - "@@||akamaized.net^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN)."
+  - "@@||amazonaws.com^$important # Amazon Web Services (AWS) is a subsidiary of Amazon providing on-demand cloud computing platforms and APIs. This domain is used to serve files and other static resources which are hosted on Amazon AWS"
+  - "@@||android.clients.google.com^$important # Google Play Store and few devices (especially Android One devices) depends on this domain for system updates."
+  - "@@||api.ipify.org^$important # It is used to get your public IP address programmatically. ipify is completely opensource."
+  - "@@||app-api.ted.com^$important # Used by ted.com streams."
+  - "@@||api.rlje.net^$important # Used to deliver contents on video straming apps on hulu etc."
+  - "@@||appleid.apple.com^$important # Used to sign in t your Apple account."
+  - "@@||apps.skype.com^$important # Used to make group calls, group chats etc. on Skype."
+  - "@@||appsbackup-pa.clients6.google.com^$important # Used to backup device settings and app data."
+  - "@@||appsbackup-pa.googleapis.com^$important # Used to backup device settings and app data."
 
 dhcp:
   enabled: false
@@ -150,8 +152,8 @@ filtering:
   parental_block_host: family-block.dns.adguard.com
   safebrowsing_block_host: standard-block.dns.adguard.com
   rewrites:
-  - domain: dns.portableinfo.cloud
-    answer: 192.168.1.253
+    - domain: dns.portableinfo.cloud
+      answer: 192.168.1.253
   safe_fs_patterns:
     - /opt/adguardhome/work/userfilters/*
   safebrowsing_cache_size: 1048576
