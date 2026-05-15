@@ -16,7 +16,6 @@ spec:
     app.kubernetes.io/instance: flux-operator
     app.kubernetes.io/name: flux-operator
   ports:
-    - name: http-web
-      port: 9080
-      protocol: TCP
+    - port: 9080
       targetPort: 9080
+      name: http
