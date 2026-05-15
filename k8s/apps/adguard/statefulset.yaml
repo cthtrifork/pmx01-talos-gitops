@@ -114,3 +114,13 @@ spec:
           requests:
             storage: 1Gi
         storageClassName: "local-path"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: adguard-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: adguard-home
