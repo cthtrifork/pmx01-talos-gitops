@@ -19,6 +19,12 @@ spec:
       targetPort: 53
       name: dns-udp
       protocol: UDP
+    - port: 443
+      targetPort: 443
+      name: https
+    - port: 853
+      targetPort: 853
+      name: dns-tls
 ---
 apiVersion: v1
 kind: Service
@@ -37,9 +43,3 @@ spec:
     - port: 80
       targetPort: 3000
       name: http
-    - port: 443
-      targetPort: 443
-      name: https
-    - port: 853
-      targetPort: 853
-      name: dns-tls
