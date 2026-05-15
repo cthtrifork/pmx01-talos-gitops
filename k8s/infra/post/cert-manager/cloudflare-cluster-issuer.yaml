@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/clusterissuer_v1.json
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -15,3 +16,5 @@ spec:
             apiTokenSecretRef:
               name: cloudflare-api-token-secret
               key: api-token
+            email: caspert@gmail.com
+
