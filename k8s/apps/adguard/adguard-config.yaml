@@ -31,10 +31,8 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - https://dns10.quad9.net/dns-query
-    - https://dns.cloudflare.com/dns-query
-    - https://dns.google/dns-query
-  upstream_dns_file: ""
+        - https://dns.cloudflare.com/dns-query
+        - https://dns.google/dns-query
   bootstrap_dns:
     - 1.1.1.1
     - 8.8.8.8
@@ -51,7 +49,7 @@ dns:
     - 127.0.0.0/8
     - ::1/128
   cache_enabled: true
-  cache_size: 4194304
+  cache_size: 4194304 # 4mb
   cache_ttl_min: 0
   cache_ttl_max: 0
   cache_optimistic: false
@@ -119,24 +117,25 @@ filters:
     name: AdAway Default Blocklist
     id: 2
 whitelist_filters: []
-user_rules: []
+user_rules:
+  - '@@||0.client-channel.google.com^$important # In order for users on your network to access Google Drive and Google Docs editors this domain must be whitelisted - https://support.google.com/a/answer/2589954?hl=en'
+  - '@@||1drv.com^$important # It is actually a legitimate Microsoft owned domain and used as a short link for OneDrive documents.'
+  - '@@||2.android.pool.ntp.org^$important # This domain is a part of The pool.ntp.org project which is a big virtual cluster of timeservers providing reliable time. This domain is used in Android devices'
+  - '@@||akamaihd.net^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN).'
+  - '@@||akamaitechnologies.com^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN).'
+  - '@@||akamaized.net^$important # This domain is owned by Akamai Technologies which is a is a global content delivery network (CDN).'
+  - '@@||amazonaws.com^$important # Amazon Web Services (AWS) is a subsidiary of Amazon providing on-demand cloud computing platforms and APIs. This domain is used to serve files and other static resources which are hosted on Amazon AWS'
+  - '@@||android.clients.google.com^$important # Google Play Store and few devices (especially Android One devices) depends on this domain for system updates.'
+  - '@@||api.ipify.org^$important # It is used to get your public IP address programmatically. ipify is completely opensource.'
+  - '@@||app-api.ted.com^$important # Used by ted.com streams.'
+  - '@@||api.rlje.net^$important # Used to deliver contents on video straming apps on hulu etc.'
+  - '@@||appleid.apple.com^$important # Used to sign in t your Apple account.'
+  - '@@||apps.skype.com^$important # Used to make group calls, group chats etc. on Skype.'
+  - '@@||appsbackup-pa.clients6.google.com^$important # Used to backup device settings and app data.'
+  - '@@||appsbackup-pa.googleapis.com^$important # Used to backup device settings and app data.'
+
 dhcp:
   enabled: false
-  interface_name: ""
-  local_domain_name: lan
-  dhcpv4:
-    gateway_ip: ""
-    subnet_mask: ""
-    range_start: ""
-    range_end: ""
-    lease_duration: 86400
-    icmp_timeout_msec: 1000
-    options: []
-  dhcpv6:
-    range_start: ""
-    lease_duration: 86400
-    ra_slaac_only: false
-    ra_allow_slaac: false
 filtering:
   blocking_ipv4: ""
   blocking_ipv6: ""
@@ -147,13 +146,6 @@ filtering:
   protection_disabled_until: null
   safe_search:
     enabled: false
-    bing: true
-    duckduckgo: true
-    ecosia: true
-    google: true
-    pixabay: true
-    yandex: true
-    youtube: true
   blocking_mode: default
   parental_block_host: family-block.dns.adguard.com
   safebrowsing_block_host: standard-block.dns.adguard.com
