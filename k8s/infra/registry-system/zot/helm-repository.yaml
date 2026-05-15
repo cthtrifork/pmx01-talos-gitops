@@ -11,3 +11,6 @@ spec:
   ref:
     tag: 0.1.113
     digest: sha256:700377efd5c6f20385de63ada21a73741ce12cbc8a23358dd336c2e93c1b610e
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: extract
