@@ -83,6 +83,8 @@ spec:
               mountPath: /opt/adguardhome/work/ # AdGuard Runtime data
             - name: adguard-config
               mountPath: /opt/adguardhome/conf/ # AdGuard configuration
+            - name: adguard-tls-cert
+              mountPath: /opt/adguardhome/conf/tls/ # TLS certs
           resources:
             requests:
               cpu: 100m
@@ -105,6 +107,9 @@ spec:
       - name: initial-config
         configMap:
           name: adguard-initial-config
+      - name: adguard-tls-cert
+        secret:
+          secretName: adguard-tls-cert
       - name: adguard-data
         ephemeral:
           volumeClaimTemplate:

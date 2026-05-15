@@ -82,8 +82,8 @@ dns:
   pending_requests:
     enabled: true
 tls:
-  enabled: false
-  server_name: ""
+  enabled: true
+  server_name: "dns.portableinfo.cloud"
   force_https: false
   port_https: 443
   port_dns_over_tls: 853
@@ -92,8 +92,10 @@ tls:
   dnscrypt_config_file: ""
   certificate_chain: ""
   private_key: ""
-  certificate_path: ""
-  private_key_path: ""
+  allow_unencrypted_doh: false
+  # A path accessible to the container or installation directory
+  certificate_path: /opt/adguardhome/conf/tls/tls.crt
+  private_key_path: /opt/adguardhome/conf/tls/tls.key
   strict_sni_check: false
 querylog:
   dir_path: ""
