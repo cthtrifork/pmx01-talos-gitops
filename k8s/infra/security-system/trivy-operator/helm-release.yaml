@@ -27,7 +27,7 @@ spec:
   # https://github.com/aquasecurity/trivy-operator/blob/main/deploy/helm/values.yaml
   values:
     image:
-      registry: zot.lan:5000/docker-hub-cache
+      registry: mirror.gcr.io
     excludeNamespaces: "local-path-storage"
     policiesBundle:
       registry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
@@ -47,7 +47,7 @@ spec:
         kube-kraken.dk/with-https-proxy: "true"
         kube-kraken.dk/mount-root-ca: "true"
       image:
-        registry: zot.lan:5000/ghcr-cache
+        registry: ghcr.io
         repository: aquasecurity/trivy
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
         tag: 0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e
@@ -195,7 +195,7 @@ spec:
         value: "tool"
         effect: "NoSchedule"
     nodeCollector:
-      registry: zot.lan:5000/ghcr-cache
+      registry: ghcr.io
       tolerations:
         # Allow the node collector to run on control plane nodes
         - key: node-role.kubernetes.io/control-plane
