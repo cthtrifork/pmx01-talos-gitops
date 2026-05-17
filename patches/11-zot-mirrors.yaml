@@ -41,3 +41,10 @@ name: quay.io
 endpoints:
   - url: http://192.168.1.240:5000/v2/quay-cache
     overridePath: true
+---
+apiVersion: v1alpha1
+kind: RegistryMirrorConfig
+name: us-docker.pkg.dev
+endpoints:
+  - url: http://192.168.1.240:5000/v2/google-ar-cache
+    overridePath: true

@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/instance: kube-prometheus-stack
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: prom
-    app.kubernetes.io/version: 84.5.0
-    chart: kube-prometheus-stack-84.5.0
+    app.kubernetes.io/version: 85.1.2
+    chart: kube-prometheus-stack-85.1.2
     heritage: Helm
     release: kube-prometheus-stack
   name: kube-prom-prometheus
@@ -37,7 +37,7 @@ spec:
   enableRemoteWriteReceiver: true
   externalUrl: http://kube-prom-prometheus.kube-prometheus-stack-system:9090
   hostNetwork: false
-  image: quay.io/prometheus/prometheus:v3.11.3
+  image: quay.io/prometheus/prometheus:v3.11.3-distroless
   imagePullPolicy: IfNotPresent
   listenLocal: false
   logFormat: logfmt
@@ -98,5 +98,5 @@ spec:
         storageClassName: local-path
   tsdb:
     outOfOrderTimeWindow: 0s
-  version: v3.11.3
+  version: v3.11.3-distroless
   walCompression: true

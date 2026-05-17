@@ -275,6 +275,13 @@ defaultRules:
   additionalAggregationLabels: []
   ## Prefix for runbook URLs. Use this to override the first part of the runbookURLs that is common to all rules.
   runbookUrl: "https://runbooks.prometheus-operator.dev/runbooks"
+  ## Thresholds for kubelet certificate expiration alerts (in seconds)
+  kubeletServerCertificateExpiration:
+    warning: 604800 # 7 days
+    critical: 86400 # 1 day
+  kubeletClientCertificateExpiration:
+    warning: 604800 # 7 days
+    critical: 86400 # 1 day
   node:
     fsSelector: 'fstype!=""'
     # fsSelector: 'fstype=~"ext[234]|btrfs|xfs|zfs"'
@@ -2323,6 +2330,8 @@ prometheus-node-exporter:
       ipFamilyPolicy: "PreferDualStack"
     labels:
       jobLabel: node-exporter
+  image:
+    distroless: true
   prometheus:
     monitor:
       enabled: true
@@ -3639,7 +3648,7 @@ prometheus:
     image:
       registry: quay.io
       repository: prometheus/prometheus
-      tag: v3.11.3
+      tag: v3.11.3-distroless
       sha: ""
       pullPolicy: IfNotPresent
     ## Tolerations for use with node taints

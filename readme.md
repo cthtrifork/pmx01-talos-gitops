@@ -6,21 +6,51 @@ Remember to install cilium directly and delete flannel + kubeproxy daemonsets, b
 ## Installation
 
 ```sh
+# Install flux operator
+kubectl apply -f https://github.com/controlplaneio-fluxcd/flux-operator/releases/latest/download/install.yaml
+# Ensure SOPS support
 cat "$HOME/sops/age/keys.txt" | kubectl --kubeconfig ./kubeconfig.yaml create secret generic sops-age --namespace=flux-system --from-file=age.agekey=/dev/stdin
+# Configure flux instance
+kubectl --kubeconfig ./kubeconfig.yaml apply -f k8s/clusters/pmx01-talos-gitops/flux-instance.yaml
+```
+
+### Install Cilium
+
+```sh
+helm install cilium oci://quay.io/cilium/charts/cilium \
+  --version 1.19.4 \
+  --namespace kube-system \
+  --set ipam.mode=kubernetes \
+  --set kubeProxyReplacement=true \
+  --set securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}" \
+  --set securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}" \
+  --set cgroup.autoMount.enabled=false \
+  --set cgroup.hostRoot=/sys/fs/cgroup \
+  --set k8sServiceHost=localhost \
+  --set k8sServicePort=7445 \
+  --set routingMode="native" \
+  --set autoDirectNodeRoutes=true \
+  --set enableIPv4Masquerade=true \
+  --set ipMasqAgent.enabled=false \
+  --set ipv4NativeRoutingCIDR="10.244.0.0/16" \
+  --kubeconfig ./kubeconfig.yaml
+```
+
+### Delete flannel + kubeproxy daemonsets
+
+```sh
+kubectl --kubeconfig ./kubeconfig.yaml delete daemonset kube-proxy -n kube-system
+kubectl --kubeconfig ./kubeconfig.yaml delete daemonset kube-flannel -n kube-system
+kubectl --kubeconfig ./kubeconfig.yaml delete configmap kube-flannel-cfg -n kube-system
 ```
 
 ## Debugging
 
 ```sh
-kubectl --kubeconfig ./kubeconfig.yaml get nodes
-kubectl --kubeconfig ./kubeconfig.yaml apply -f infra/cilium/helm-release.yaml
-
+kubectl --kubeconfig ./kubeconfig.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.podCIDR}{"\n"}{end}'
 ssh -L 8000:localhost:8000 -N caspertdk@192.168.1.132
-talos-tmd-e0p
 
 talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p  get links
-talosctl --talosconfig ./talosconfig.yaml  --nodes talos-ska-6at  get links
-
 talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p read /proc/net/route
 ```
 
@@ -51,33 +81,6 @@ kubectl virt --kubeconfig ./kubeconfig.yaml image-upload dv homeserver-installer
 kubectl virt --kubeconfig ./kubeconfig.yaml -n kubevirt-system get dv homeserver-installer-dv -o yaml | grep phase:
 
 kubectl virt --kubeconfig ./kubeconfig.yaml console -n kubevirt-system fedora-vm-test
-```
-
-### Install Cilium
-
-```sh
-kubectl --kubeconfig ./kubeconfig.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.podCIDR}{"\n"}{end}'
-
-helm template cilium cilium/cilium \
-  --version 1.18.0 \
-  --namespace kube-system \
-  --set ipam.mode=kubernetes \
-  --set kubeProxyReplacement=true \
-  --set securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}" \
-  --set securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}" \
-  --set cgroup.autoMount.enabled=false \
-  --set cgroup.hostRoot=/sys/fs/cgroup \
-  --set k8sServiceHost=localhost \
-  --set k8sServicePort=7445 \
-  --set devices="en+" \
-  --set nodePort.directRoutingDevice="en+" \
-  --set routingMode="native" \
-  --set autoDirectNodeRoutes=true \
-  --set enableIPv4Masquerade=true \
-  --set ipMasqAgent.enabled=false \
-  --set ipv4NativeRoutingCIDR="10.244.0.0/16" \
-  | tee cilium.yaml
-kubectl --kubeconfig ./kubeconfig.yaml apply -f cilium.yaml
 ```
 
 ## Renovatebot

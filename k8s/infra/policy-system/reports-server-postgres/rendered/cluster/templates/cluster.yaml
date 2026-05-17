@@ -6,7 +6,7 @@ metadata:
   name: reports-server-postgres-cluster
   namespace: policy-system
   labels:
-    helm.sh/chart: cluster-0.6.0
+    helm.sh/chart: cluster-0.6.1
     app.kubernetes.io/name: cluster
     app.kubernetes.io/instance: reports-server-postgres
     app.kubernetes.io/part-of: cloudnative-pg

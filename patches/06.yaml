@@ -1,8 +1,0 @@
-apiVersion: v1alpha1
-kind: UserVolumeConfig
-name: local-storage
-provisioning:
-  diskSelector:
-    match: "!system_disk"
-  minSize: 2GB
-  maxSize: 40GB

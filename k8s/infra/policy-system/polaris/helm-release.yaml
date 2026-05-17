@@ -20,6 +20,7 @@ spec:
   # https://github.com/FairwindsOps/charts/blob/master/stable/polaris/values.yaml
   values:
     image:
+      repository: quay.io/fairwinds/polaris
       pullPolicy: IfNotPresent
       # renovate: datasource=docker depName=quay.io/fairwinds/polaris versioning=docker
       tag: 10.1.8@sha256:7af688527df75c3825395ded8aeb3775fad2027228aa06c9959d39ae6c00e999

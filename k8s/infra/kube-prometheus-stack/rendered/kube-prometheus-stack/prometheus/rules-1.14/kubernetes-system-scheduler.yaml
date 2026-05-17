@@ -8,8 +8,8 @@ metadata:
     app.kubernetes.io/instance: kube-prometheus-stack
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: prom
-    app.kubernetes.io/version: 84.5.0
-    chart: kube-prometheus-stack-84.5.0
+    app.kubernetes.io/version: 85.1.2
+    chart: kube-prometheus-stack-85.1.2
     heritage: Helm
     release: kube-prometheus-stack
     type: rule
@@ -28,3 +28,13 @@ spec:
       for: 15m
       labels:
         severity: critical
+    - alert: KubeSchedulerInstanceUnreachable
+      annotations:
+        description: A KubeScheduler instance has been unreachable for more than 15
+          minutes.
+        runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubeschedulerinstanceunreachable
+        summary: KubeScheduler instance is unreachable.
+      expr: up{job="kube-scheduler"} == 0
+      for: 15m
+      labels:
+        severity: warning

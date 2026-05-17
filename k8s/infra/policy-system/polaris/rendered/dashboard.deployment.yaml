@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: polaris
     app.kubernetes.io/part-of: polaris
-    app.kubernetes.io/version: "5.19.0"
-    helm.sh/chart: polaris-5.19.0
+    app.kubernetes.io/version: "6.0.0"
+    helm.sh/chart: polaris-6.0.0
     component: dashboard
   namespace: policy-system
 spec:
@@ -26,7 +26,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: '0ca7777aa32e980ee163fe82aca7f2a1c00581f80e10c6ec171b0e85443602eb'
+        checksum/config: '74bf8fbb82be9fd52bd12a27b3252ad13d4b86032aa6fe893f636a67f97a84c8'
       labels:
         app: polaris
         app.kubernetes.io/name: polaris
@@ -48,7 +48,7 @@ spec:
             - --log-level
             - "Info"
             - --merge-config
-          image: 'quay.io/fairwinds/polaris:10.1.8'
+          image: 'quay.io/fairwinds/polaris:10.1.8@sha256:7af688527df75c3825395ded8aeb3775fad2027228aa06c9959d39ae6c00e999'
           imagePullPolicy: 'IfNotPresent'
           name: dashboard
           ports:

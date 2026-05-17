@@ -1,8 +1,9 @@
-context: portableinfo
+context: portableinfo-homeserver
 contexts:
-    portableinfo:
-        endpoints:
-            - https://portableinfo.eu-central-1.omni.siderolabs.io
-        auth:
-            siderov1:
-                identity: caspert@gmail.com
+  portableinfo-homeserver:
+    endpoints:
+      - https://portableinfo.eu-central-1.omni.siderolabs.io
+    auth:
+      siderov1:
+        identity: caspert@gmail.com
+    cluster: homeserver

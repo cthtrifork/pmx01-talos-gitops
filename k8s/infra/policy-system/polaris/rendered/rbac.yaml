@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: polaris
     app.kubernetes.io/part-of: polaris
-    app.kubernetes.io/version: "5.19.0"
-    helm.sh/chart: polaris-5.19.0
+    app.kubernetes.io/version: "6.0.0"
+    helm.sh/chart: polaris-6.0.0
   namespace: policy-system
 rules:
   # required by controller-runtime code doing a cluster wide lookup
@@ -55,8 +55,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: polaris
     app.kubernetes.io/part-of: polaris
-    app.kubernetes.io/version: "5.19.0"
-    helm.sh/chart: polaris-5.19.0
+    app.kubernetes.io/version: "6.0.0"
+    helm.sh/chart: polaris-6.0.0
   namespace: policy-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -79,8 +79,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: polaris
     app.kubernetes.io/part-of: polaris
-    app.kubernetes.io/version: "5.19.0"
-    helm.sh/chart: polaris-5.19.0
+    app.kubernetes.io/version: "6.0.0"
+    helm.sh/chart: polaris-6.0.0
   namespace: policy-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io

@@ -6,10 +6,10 @@ metadata:
   name: flux-operator
   namespace: flux-system
   labels:
-    helm.sh/chart: flux-operator-0.48.0
+    helm.sh/chart: flux-operator-0.49.0
     app.kubernetes.io/name: flux-operator
     app.kubernetes.io/instance: flux-operator
-    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/version: "v0.49.0"
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:
@@ -23,10 +23,10 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
       labels:
-        helm.sh/chart: flux-operator-0.48.0
+        helm.sh/chart: flux-operator-0.49.0
         app.kubernetes.io/name: flux-operator
         app.kubernetes.io/instance: flux-operator
-        app.kubernetes.io/version: "v0.48.0"
+        app.kubernetes.io/version: "v0.49.0"
         app.kubernetes.io/managed-by: Helm
     spec:
       serviceAccountName: flux-operator
@@ -52,7 +52,7 @@ spec:
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
-          image: "ghcr.io/controlplaneio-fluxcd/flux-operator:v0.48.0"
+          image: "ghcr.io/controlplaneio-fluxcd/flux-operator:v0.49.0"
           imagePullPolicy: "IfNotPresent"
           ports:
             - name: http-metrics
