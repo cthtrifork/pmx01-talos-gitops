@@ -27,8 +27,8 @@
       "registries": [
         {
           "urls": [
-            "https://docker.io/library",
-            "https://mirror.gcr.io/library"
+            "https://mirror.gcr.io/library",
+            "https://docker.io/library"
           ],
           "content": [
             {
