@@ -48,8 +48,8 @@ spec:
             - --authorization-always-allow-paths=/metrics
             - --kubelet-insecure-tls
             - --kubelet-preferred-address-types=InternalIP
-            - --metric-resolution=1m
-            - --kubelet-request-timeout=30s
+            - --metric-resolution=30s
+            - --kubelet-request-timeout=20s
           ports:
             - name: https
               protocol: TCP
@@ -85,3 +85,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+          operator: Exists

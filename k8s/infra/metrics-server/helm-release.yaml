@@ -22,8 +22,8 @@ spec:
     args:
       - --kubelet-insecure-tls
       - --kubelet-preferred-address-types=InternalIP
-      - --metric-resolution=1m
-      - --kubelet-request-timeout=30s
+      - --metric-resolution=30s
+      - --kubelet-request-timeout=20s
     serviceMonitor:
       enabled: false
     metrics:
@@ -43,3 +43,8 @@ spec:
       failureThreshold: 15
       initialDelaySeconds: 60
       timeoutSeconds: 10
+    tolerations:
+      # Tolerate the control plane taint
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule

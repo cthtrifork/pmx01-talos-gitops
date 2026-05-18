@@ -22,11 +22,16 @@ spec:
       labels:
         app: adguard-home
     spec:
+      tolerations:
+        # Tolerate the control plane taint
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
+            - weight: 100
+              podAffinityTerm:
                 labelSelector:
                   matchExpressions:
                     - key: app
@@ -104,29 +109,29 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
-      - name: initial-config
-        configMap:
-          name: adguard-initial-config
-      - name: adguard-tls-cert
-        secret:
-          secretName: adguard-tls-cert
-      - name: adguard-data
-        ephemeral:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-                - ReadWriteOnce
-              storageClassName: local-path
-              resources:
-                requests:
-                  storage: 10Gi
-      - name: adguard-config
-        ephemeral:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-                - ReadWriteOnce
-              storageClassName: local-path
-              resources:
-                requests:
-                  storage: 1Gi
+        - name: initial-config
+          configMap:
+            name: adguard-initial-config
+        - name: adguard-tls-cert
+          secret:
+            secretName: adguard-tls-cert
+        - name: adguard-data
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                storageClassName: local-path
+                resources:
+                  requests:
+                    storage: 10Gi
+        - name: adguard-config
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                storageClassName: local-path
+                resources:
+                  requests:
+                    storage: 1Gi

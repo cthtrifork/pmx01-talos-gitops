@@ -17,6 +17,11 @@ spec:
     crds:
       enabled: true
     controller:
+      tolerations:
+        # Tolerate the control plane taint
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       resources:
         limits:
           memory: 256Mi
@@ -24,6 +29,11 @@ spec:
           cpu: 10m
           memory: 128Mi
     speaker:
+      tolerations:
+        # Tolerate the control plane taint
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       resources:
         limits:
           memory: 256Mi

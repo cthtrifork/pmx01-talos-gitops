@@ -10,8 +10,6 @@ Remember to install cilium directly and delete flannel + kubeproxy daemonsets, b
 kubectl apply -f https://github.com/controlplaneio-fluxcd/flux-operator/releases/latest/download/install.yaml
 # Ensure SOPS support
 cat "$HOME/sops/age/keys.txt" | kubectl --kubeconfig ./kubeconfig.yaml create secret generic sops-age --namespace=flux-system --from-file=age.agekey=/dev/stdin
-# Configure flux instance
-kubectl --kubeconfig ./kubeconfig.yaml apply -f k8s/clusters/pmx01-talos-gitops/flux-instance.yaml
 ```
 
 ### Install Cilium
@@ -42,6 +40,12 @@ helm install cilium oci://quay.io/cilium/charts/cilium \
 kubectl --kubeconfig ./kubeconfig.yaml delete daemonset kube-proxy -n kube-system
 kubectl --kubeconfig ./kubeconfig.yaml delete daemonset kube-flannel -n kube-system
 kubectl --kubeconfig ./kubeconfig.yaml delete configmap kube-flannel-cfg -n kube-system
+```
+
+### Configure flux instance
+
+```sh
+kubectl --kubeconfig ./kubeconfig.yaml apply -f k8s/clusters/pmx01-talos-gitops/flux-instance.yaml
 ```
 
 ## Debugging
@@ -113,3 +117,12 @@ docker run -it --rm \
   ghcr.io/renovatebot/renovate:43 \
   renovate-config-validator --strict
 ```
+
+## Todos
+
+- Cilium network policies
+- polaris scoreboard to green for resource request, limits, security context etc.
+- Trivy scanning on renovatebot PRs
+- render manifests on renovatebot PRs
+- Remove insecure-tls from metrics-server
+- Finish air-gapped compatability

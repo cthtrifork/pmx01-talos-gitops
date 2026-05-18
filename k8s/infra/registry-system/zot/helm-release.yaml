@@ -64,3 +64,16 @@ spec:
       enabled: true
       serviceMonitor:
         enabled: true
+  postRenderers:
+    - kustomize:
+        patches: # Tolerate the control plane taint
+          - target:
+              kind: StatefulSet
+              name: zot
+            patch: |
+              - op: add
+                path: /spec/template/spec/tolerations
+                value:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
+                    effect: NoSchedule
