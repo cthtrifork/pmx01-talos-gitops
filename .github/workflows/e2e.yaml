@@ -92,7 +92,7 @@ jobs:
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
 
       - name: Setup Flux CLI
-        uses: fluxcd/flux2/action@9d9e56208cc2bea093951f3c088396dbf158fc00 # main
+        uses: fluxcd/flux2/action@v2.8.8
         with:
           version: 'latest'
 
