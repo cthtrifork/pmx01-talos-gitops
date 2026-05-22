@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-reports-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.8.0
-    helm.sh/chart: kyverno-3.8.0
+    app.kubernetes.io/version: 3.8.1
+    helm.sh/chart: kyverno-3.8.1
 spec:
   replicas: 1
   revisionHistoryLimit: 10
@@ -34,8 +34,8 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: kyverno-reports-controller
         app.kubernetes.io/part-of: kyverno
-        app.kubernetes.io/version: 3.8.0
-        helm.sh/chart: kyverno-3.8.0
+        app.kubernetes.io/version: 3.8.1
+        helm.sh/chart: kyverno-3.8.1
     spec:
       nodeSelector:
         kubernetes.io/os: linux
@@ -44,7 +44,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: controller
-          image: "ghcr.io/kyverno/reports-controller:v1.18.0"
+          image: "ghcr.io/kyverno/reports-controller:v1.18.1"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9443

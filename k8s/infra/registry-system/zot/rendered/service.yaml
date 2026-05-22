@@ -5,8 +5,8 @@ metadata:
     app.kubernetes.io/instance: zot
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: zot
-    app.kubernetes.io/version: v2.1.16
-    helm.sh/chart: zot-0.1.114
+    app.kubernetes.io/version: v2.1.17
+    helm.sh/chart: zot-0.1.116
   name: zot
   namespace: registry-system
 spec:

@@ -6,10 +6,10 @@ metadata:
   name: flux-operator
   namespace: flux-system
   labels:
-    helm.sh/chart: flux-operator-0.49.0
+    helm.sh/chart: flux-operator-0.50.0
     app.kubernetes.io/name: flux-operator
     app.kubernetes.io/instance: flux-operator
-    app.kubernetes.io/version: "v0.49.0"
+    app.kubernetes.io/version: "v0.50.0"
     app.kubernetes.io/managed-by: Helm
 spec:
   namespaceSelector:

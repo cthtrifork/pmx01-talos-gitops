@@ -7,10 +7,10 @@ metadata:
   namespace: registry-system
   labels:
     app.kubernetes.io/component: cleanup
-    helm.sh/chart: spegel-0.7.0
+    helm.sh/chart: spegel-0.7.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/version: "v0.7.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     helm.sh/hook: "post-delete"
@@ -36,10 +36,10 @@ metadata:
   namespace: registry-system
   labels:
     app.kubernetes.io/component: cleanup
-    helm.sh/chart: spegel-0.7.0
+    helm.sh/chart: spegel-0.7.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/version: "v0.7.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     helm.sh/hook: "post-delete"
@@ -62,7 +62,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
         - name: cleanup
-          image: "ghcr.io/spegel-org/spegel@sha256:1109b33fabac86809b06f831eef7359b12232f5708554aef39efd036dce40748"
+          image: "ghcr.io/spegel-org/spegel@sha256:bfb81b01f3cb0512044f7af2f8dd4aae9163ca36a35253a2d91c30c1b5dcf626"
           imagePullPolicy: IfNotPresent
           args:
             - cleanup
@@ -100,10 +100,10 @@ metadata:
   namespace: registry-system
   labels:
     app.kubernetes.io/component: cleanup-wait
-    helm.sh/chart: spegel-0.7.0
+    helm.sh/chart: spegel-0.7.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/version: "v0.7.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     helm.sh/hook: "post-delete"
@@ -112,7 +112,7 @@ metadata:
 spec:
   containers:
     - name: cleanup-wait
-      image: "ghcr.io/spegel-org/spegel@sha256:1109b33fabac86809b06f831eef7359b12232f5708554aef39efd036dce40748"
+      image: "ghcr.io/spegel-org/spegel@sha256:bfb81b01f3cb0512044f7af2f8dd4aae9163ca36a35253a2d91c30c1b5dcf626"
       imagePullPolicy: IfNotPresent
       args:
         - cleanup-wait

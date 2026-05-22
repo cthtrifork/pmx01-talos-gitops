@@ -7,10 +7,10 @@ metadata:
   namespace: registry-system
   labels:
     app.kubernetes.io/component: metrics
-    helm.sh/chart: spegel-0.7.0
+    helm.sh/chart: spegel-0.7.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/version: "v0.7.1"
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:
@@ -30,10 +30,10 @@ metadata:
   name: spegel-registry
   namespace: registry-system
   labels:
-    helm.sh/chart: spegel-0.7.0
+    helm.sh/chart: spegel-0.7.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/version: "v0.7.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     service.kubernetes.io/topology-mode: "auto"
@@ -57,10 +57,10 @@ metadata:
   name: spegel-bootstrap
   namespace: registry-system
   labels:
-    helm.sh/chart: spegel-0.7.0
+    helm.sh/chart: spegel-0.7.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.0"
+    app.kubernetes.io/version: "v0.7.1"
     app.kubernetes.io/managed-by: Helm
 spec:
   selector:

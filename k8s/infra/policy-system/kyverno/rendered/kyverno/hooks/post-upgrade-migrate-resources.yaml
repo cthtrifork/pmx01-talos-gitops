@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.8.0
-    helm.sh/chart: kyverno-3.8.0
+    app.kubernetes.io/version: 3.8.1
+    helm.sh/chart: kyverno-3.8.1
   annotations:
     helm.sh/hook: post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
@@ -30,8 +30,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.8.0
-    helm.sh/chart: kyverno-3.8.0
+    app.kubernetes.io/version: 3.8.1
+    helm.sh/chart: kyverno-3.8.1
   annotations:
     helm.sh/hook: post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
@@ -78,8 +78,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.8.0
-    helm.sh/chart: kyverno-3.8.0
+    app.kubernetes.io/version: 3.8.1
+    helm.sh/chart: kyverno-3.8.1
   annotations:
     helm.sh/hook: post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
@@ -106,8 +106,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.8.0
-    helm.sh/chart: kyverno-3.8.0
+    app.kubernetes.io/version: 3.8.1
+    helm.sh/chart: kyverno-3.8.1
   annotations:
     helm.sh/hook: post-upgrade
     # helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
@@ -121,7 +121,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kyverno-cli
-          image: "ghcr.io/kyverno/kyverno-cli:v1.18.0"
+          image: "ghcr.io/kyverno/kyverno-cli:v1.18.1"
           imagePullPolicy: IfNotPresent
           args:
             - migrate
