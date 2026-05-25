@@ -6,8 +6,8 @@ resources:
   - cert-manager/
   - flux-system/
   - kubevirt/
-  #- metrics-server/
-  - metallb/
+  - metrics-server/
+  #- metallb/
   - kube-prometheus-stack
   - storage-system/
   - policy-system/
