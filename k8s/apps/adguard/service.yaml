@@ -5,6 +5,7 @@ metadata:
   namespace: adguard-system
   annotations:
     metallb.io/loadBalancerIPs: "192.168.1.253"
+    lbipam.cilium.io/ips: "192.168.1.253"
 spec:
   type: LoadBalancer
   externalTrafficPolicy: Local
