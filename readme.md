@@ -87,6 +87,12 @@ kubectl virt --kubeconfig ./kubeconfig.yaml -n kubevirt-system get dv homeserver
 kubectl virt --kubeconfig ./kubeconfig.yaml console -n kubevirt-system fedora-vm-test
 ```
 
+### Troubleshooting
+
+```sh
+kubectl --kubeconfig kubeconfig.yaml -n kube-system exec ds/cilium -- cilium-dbg shell -- db/show devices
+```
+
 ## Renovatebot
 
 ### Testing
