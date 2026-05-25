@@ -32,6 +32,8 @@ spec:
       enabled: false
     ipam:
       mode: kubernetes
+    l2announcements:
+      enabled: true
     # Agent rolling update strategy
     updateStrategy:
       rollingUpdate:
