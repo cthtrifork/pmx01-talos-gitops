@@ -91,14 +91,13 @@ spec:
               - name: container-rootless-storage
                 mountPath: /mnt/rootless
           - name: init-dind-externals
-            image: docker.io/library/busybox:1.38@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.2.0@sha256:c72a6fe83b3e0ba38acff0d39cd2ffb004ed1aa9cb274a8f1dea6ab7fcffe537
             imagePullPolicy: IfNotPresent
             command:
-              - sh
-              - -c
-              - |
-                set -eux
-                cp -r /home/runner/externals/. /home/runner/tmpDir/
+              - "cp"
+              - "-r"
+              - "/home/runner/externals/."
+              - "/home/runner/tmpDir/"
             volumeMounts:
               - name: dind-externals
                 mountPath: /home/runner/tmpDir
@@ -282,10 +281,10 @@ spec:
               claimName: container-shared-storage2
           - name: container-shared-registry
             persistentVolumeClaim:
-              claimName: container-shared-registry2
+             claimName: container-shared-registry2
           - name: tmp-cache
             persistentVolumeClaim:
-              claimName: tmp-cache
+             claimName: tmp-cache
           # - name: container-shared-registry
           #   ephemeral:
           #     volumeClaimTemplate:
