@@ -35,31 +35,15 @@ spec:
       spec:
         initContainers:
           - name: data-retention
-            image: mirror.gcr.io/library/busybox:1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+            image: docker.io/library/busybox:1.38@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
             imagePullPolicy: IfNotPresent
-            securityContext:
-              runAsUser: 0
-              runAsGroup: 0
-              privileged: true
-              allowPrivilegeEscalation: true
-            resources:
-              limits:
-                memory: 128Mi
-              requests:
-                cpu: 25m
-                memory: 128Mi
-            command: ["/bin/sh","-c"]
-            args:
+            command:
+              - sh
+              - -c
               - |
                 set -e
                 find /mnt/cache -type f -mtime +14 -print -delete
                 find /mnt/cache -type d -empty -mtime +14 -print -delete || true
-            volumeMounts:
-              - name: tmp-cache
-                mountPath: /mnt/cache
-          - name: fix-perms
-            image: mirror.gcr.io/library/busybox:1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
-            imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0
               runAsGroup: 0
@@ -71,8 +55,15 @@ spec:
               requests:
                 cpu: 25m
                 memory: 128Mi
-            command: ["/bin/sh", "-c"]
-            args:
+            volumeMounts:
+              - name: tmp-cache
+                mountPath: /mnt/cache
+          - name: fix-perms
+            image: docker.io/library/busybox:1.38@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+            imagePullPolicy: IfNotPresent
+            command:
+              - sh
+              - -c
               - |
                 set -eux
                 # Create if missing and set perms/ownership (idempotent)
@@ -83,18 +74,31 @@ spec:
                 chmod 0775 /mnt/dnf /mnt/rootless || true
                 # Feed existing data into the mounted volumes
                 cp -r /home/runner/.local/share/containers /mnt/rootless || true
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              privileged: true
+              allowPrivilegeEscalation: true
+            resources:
+              limits:
+                memory: 128Mi
+              requests:
+                cpu: 25m
+                memory: 128Mi
             volumeMounts:
               - name: dnf-cache
                 mountPath: /mnt/dnf
               - name: container-rootless-storage
                 mountPath: /mnt/rootless
           - name: init-dind-externals
-            image: mirror.gcr.io/library/busybox:1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+            image: docker.io/library/busybox:1.38@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+            imagePullPolicy: IfNotPresent
             command:
-              - "cp"
-              - "-r"
-              - "/home/runner/externals/."
-              - "/home/runner/tmpDir/"
+              - sh
+              - -c
+              - |
+                set -eux
+                cp -r /home/runner/externals/. /home/runner/tmpDir/
             volumeMounts:
               - name: dind-externals
                 mountPath: /home/runner/tmpDir
@@ -278,10 +282,10 @@ spec:
               claimName: container-shared-storage2
           - name: container-shared-registry
             persistentVolumeClaim:
-             claimName: container-shared-registry2
+              claimName: container-shared-registry2
           - name: tmp-cache
             persistentVolumeClaim:
-             claimName: tmp-cache
+              claimName: tmp-cache
           # - name: container-shared-registry
           #   ephemeral:
           #     volumeClaimTemplate:
