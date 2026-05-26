@@ -35,7 +35,7 @@ spec:
       spec:
         initContainers:
           - name: data-retention
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.2.0@sha256:c72a6fe83b3e0ba38acff0d39cd2ffb004ed1aa9cb274a8f1dea6ab7fcffe537
+            image: mirror.gcr.io/library/busybox:1.37.0sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
             imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0
@@ -44,7 +44,7 @@ spec:
               allowPrivilegeEscalation: true
             resources:
               limits:
-                memory: 2Gi
+                memory: 128Mi
               requests:
                 cpu: 25m
                 memory: 128Mi
@@ -58,7 +58,7 @@ spec:
               - name: tmp-cache
                 mountPath: /mnt/cache
           - name: fix-perms
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.2.0@sha256:c72a6fe83b3e0ba38acff0d39cd2ffb004ed1aa9cb274a8f1dea6ab7fcffe537
+            image: mirror.gcr.io/library/busybox:1.37.0sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
             imagePullPolicy: IfNotPresent
             securityContext:
               runAsUser: 0
@@ -67,7 +67,7 @@ spec:
               allowPrivilegeEscalation: true
             resources:
               limits:
-                memory: 2Gi
+                memory: 128Mi
               requests:
                 cpu: 25m
                 memory: 128Mi
@@ -89,7 +89,7 @@ spec:
               - name: container-rootless-storage
                 mountPath: /mnt/rootless
           - name: init-dind-externals
-            image: ghcr.io/actions/actions-runner:2.334.0@sha256:b6614fce332517f74d0a76e7c762fb08e4f2ff13dcf333183397c8a5725b6e8e
+            image: mirror.gcr.io/library/busybox:1.37.0sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
             command:
               - "cp"
               - "-r"
@@ -100,7 +100,7 @@ spec:
                 mountPath: /home/runner/tmpDir
             resources:
               limits:
-                memory: 2Gi
+                memory: 128Mi
               requests:
                 cpu: 25m
                 memory: 128Mi
@@ -159,7 +159,6 @@ spec:
                 cpu: 500m
                 memory: 2Gi
               limits:
-                cpu: 4000m
                 memory: 16Gi
             securityContext:
               seLinuxOptions:
