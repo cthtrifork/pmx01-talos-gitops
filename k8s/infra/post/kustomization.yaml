@@ -1,9 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - cilium/l2announcement.yaml
+  #- cilium/l2announcement.yaml
   - cert-manager/
   #- kubevirt/kubevirt.yaml
   #- kubevirt/cdi.yaml
-  #- metallb/l2announcement.yaml
+  - metallb/l2announcement.yaml
   #- kyverno-policies/

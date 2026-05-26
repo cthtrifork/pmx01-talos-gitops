@@ -32,8 +32,9 @@ spec:
       enabled: false
     ipam:
       mode: kubernetes
+    enableLBIPAM: false
     l2announcements:
-      enabled: true
+      enabled: false
     # Agent rolling update strategy
     updateStrategy:
       rollingUpdate:
@@ -55,7 +56,6 @@ spec:
         requests:
           cpu: 20m
           memory: 64Mi
-    enableLBIPAM: false
     securityContext:
       capabilities:
         ciliumAgent:
