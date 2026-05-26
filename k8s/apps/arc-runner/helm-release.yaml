@@ -22,7 +22,7 @@ spec:
     githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
     runnerScaleSetName: arc-ubuntu
 
-    maxRunners: 3
+    maxRunners: 1 # only 1 runner due to pvc design
     minRunners: 0
 
     nodeSelector:
