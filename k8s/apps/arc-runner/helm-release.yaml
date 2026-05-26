@@ -22,7 +22,7 @@ spec:
     githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
     runnerScaleSetName: arc-ubuntu
 
-    maxRunners: 1
+    maxRunners: 3
     minRunners: 0
 
     nodeSelector:
@@ -126,7 +126,7 @@ spec:
             resources:
               requests:
                 cpu: 200m
-                memory: 1Gi
+                memory: 2Gi
               limits:
                 memory: 5Gi
             securityContext:
@@ -157,7 +157,7 @@ spec:
             resources:
               requests:
                 cpu: 500m
-                memory: 2Gi
+                memory: 4Gi
               limits:
                 memory: 16Gi
             securityContext:
