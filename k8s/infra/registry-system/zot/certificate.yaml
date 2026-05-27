@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/certificate_v1.json
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: zot-tls
+  namespace: registry-system
+spec:
+  secretName: zot-tls-cert
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: certificate-cluster-issuer
+  commonName: zot.registry-system.svc
+  dnsNames:
+    - zot.registry-system.svc
+    - zot.registry-system.svc.cluster.local
+  privateKey:
+    rotationPolicy: Always
+  isCA: false
