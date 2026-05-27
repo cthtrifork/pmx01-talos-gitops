@@ -27,6 +27,10 @@ metadata:
   name: gitops-infra
   namespace: flux-system
 spec:
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
   interval: 10m
   prune: true
   dependsOn:
