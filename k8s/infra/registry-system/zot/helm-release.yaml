@@ -75,7 +75,7 @@ spec:
     extraVolumes:
       - name: zot-certs
         secret:
-          secretName: zot-certs
+          secretName: zot-tls-cert
     extraVolumeMounts:
       - name: zot-certs
         mountPath: /etc/zot/certs
