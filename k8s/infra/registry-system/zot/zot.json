@@ -44,6 +44,20 @@
         },
         {
           "urls": ["https://ghcr.io"],
+          "pollInterval": "12h",
+          "content": [
+            {
+              "prefix": "/cthtrifork/**",
+              "destination": "/ghcr-private"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 3,
+          "retryDelay": "5m"
+        },
+        {
+          "urls": ["https://ghcr.io"],
           "content": [
             {
               "prefix": "**",
