@@ -5,3 +5,4 @@ resources:
   - helm-repository.yaml
   - namespace.yaml
   - secret.enc.yaml
+  - certificate.yaml

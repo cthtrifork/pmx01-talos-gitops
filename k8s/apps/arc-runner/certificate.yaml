@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/certificate_v1.json
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: arc-runner-cert
+  namespace: arc-runners-system
+spec:
+  secretName: arc-runner-cert
+  usages:
+    - client auth
+    - digital signature
+  commonName: arc-runners # user name
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: certificate-cluster-issuer

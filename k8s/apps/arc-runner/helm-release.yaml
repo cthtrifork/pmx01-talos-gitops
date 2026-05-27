@@ -180,6 +180,10 @@ spec:
                 value: chroot
               - name: BUILDAH_LAYERS
                 value: "true"
+              - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
+                value: /var/lib/registry
+              - name: RUNNER_UPDATE_CA_CERTS
+                value: "1"
               #- name: HTTP_PROXY
               #  value: "http://192.168.1.135:3128"
               #- name: HTTPS_PROXY
@@ -195,6 +199,9 @@ spec:
               #- name: _CONTAINERS_USERNS_CONFIGURED
               #  value: ""
             volumeMounts:
+              - name: ca-certs
+                mountPath: /usr/local/share/ca-certificates/private-ca.crt
+                subPath: ca.crt
               - name: container-storage
                 mountPath: /var/lib/containers
               - name: work
@@ -220,6 +227,12 @@ spec:
         securityContext:
           fsGroup: 1001
         volumes:
+          - name: ca-certs
+            configMap:
+              name: arc-runner-cert
+              items:
+                - key: ca.crt
+                  path: ca.crt
           - name: work
             ephemeral:
               volumeClaimTemplate:
@@ -278,13 +291,13 @@ spec:
               type: DirectoryOrCreate
           - name: container-shared-storage
             persistentVolumeClaim:
-              claimName: container-shared-storage2
+              claimName: container-shared-storage
           - name: container-shared-registry
             persistentVolumeClaim:
-             claimName: container-shared-registry2
+              claimName: container-shared-registry
           - name: tmp-cache
             persistentVolumeClaim:
-             claimName: tmp-cache
+              claimName: tmp-cache
           # - name: container-shared-registry
           #   ephemeral:
           #     volumeClaimTemplate:
@@ -332,7 +345,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: container-shared-registry2
+  name: container-shared-registry
   namespace: arc-runners-system
 spec:
   accessModes:
@@ -345,7 +358,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: container-shared-storage2
+  name: container-shared-storage # additionalimagestores
   namespace: arc-runners-system
 spec:
   accessModes:
