@@ -56,6 +56,7 @@ spec:
         memory: 2Gi
     env:
       - name: GOGC
+        # Keep it around 50, cannot be increased beyond 100
         value: "50"
       - name: GOMEMLIMIT
         # Set this to about 80% of the memory limit.
