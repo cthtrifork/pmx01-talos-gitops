@@ -228,8 +228,8 @@ spec:
           fsGroup: 1001
         volumes:
           - name: ca-certs
-            configMap:
-              name: arc-runner-cert
+            secret:
+              secretName: arc-runner-cert
               items:
                 - key: ca.crt
                   path: ca.crt
