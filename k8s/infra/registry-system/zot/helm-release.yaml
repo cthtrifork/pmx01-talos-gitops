@@ -70,6 +70,8 @@ spec:
     externalSecrets:
       - secretName: zot-sync-creds
         mountPath: /etc/zot/sync
+    strategy:
+      type: Recreate
   postRenderers:
     - kustomize:
         patches: # Tolerate the control plane taint

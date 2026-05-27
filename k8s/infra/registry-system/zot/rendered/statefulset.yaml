@@ -30,6 +30,8 @@ spec:
           value: "50"
         - name: GOMEMLIMIT
           value: 1600MiB
+        - name: ZOT_CREDENTIALS_FILE
+          value: /run/secrets/github_auth
         image: ghcr.io/project-zot/zot:v2.1.17@sha256:48b0c11c8c61a07246e047f22e02aad615816683fd8d8073b2862fb7ed0a3cc0
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -53,8 +55,8 @@ spec:
           limits:
             memory: 2Gi
           requests:
-            cpu: 350m
-            memory: 1024Mi
+            cpu: 600m
+            memory: 2Gi
         securityContext: null
         startupProbe:
           failureThreshold: 3
@@ -69,6 +71,8 @@ spec:
           name: zot-pvc
         - mountPath: /etc/zot
           name: zot-config
+        - mountPath: /etc/zot/sync
+          name: zot-sync-creds
       dnsPolicy: ClusterFirst
       securityContext: null
       serviceAccountName: zot
@@ -80,6 +84,9 @@ spec:
       - configMap:
           name: zot-config
         name: zot-config
+      - name: zot-sync-creds
+        secret:
+          secretName: zot-sync-creds
   volumeClaimTemplates:
   - metadata:
       name: zot-pvc
