@@ -1,13 +1,52 @@
 {
-  "storage": {
-    "rootDirectory": "/var/lib/registry"
-  },
   "http": {
     "address": "0.0.0.0",
     "port": "5000"
   },
   "log": {
     "level": "info"
+  },
+  "storage": {
+    "rootDirectory": "/var/lib/registry",
+    "retention": {
+      "dryRun": false,
+      "delay": "24h",
+      "policies": [
+        {
+          "repositories": ["buildcache/**"],
+          "deleteReferrers": false,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "patterns": ["latest"]
+            },
+            {
+              "patterns": [".*"],
+              "mostRecentlyPushedCount": 1,
+              "mostRecentlyPulledCount": 1,
+              "pulledWithin": "72h",
+              "pushedWithin": "72h"
+            }
+          ]
+        },
+        {
+          "repositories": ["**"],
+          "deleteReferrers": true,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "patterns": ["latest"]
+            },
+            {
+              "mostRecentlyPushedCount": 3,
+              "mostRecentlyPulledCount": 3,
+              "pulledWithin": "720h",
+              "pushedWithin": "720h"
+            }
+          ]
+        }
+      ]
+    }
   },
   "extensions": {
     "ui": {
