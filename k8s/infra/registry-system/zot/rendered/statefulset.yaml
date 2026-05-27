@@ -73,6 +73,9 @@ spec:
           name: zot-config
         - mountPath: /etc/zot/sync
           name: zot-sync-creds
+        - mountPath: /etc/zot/certs
+          name: zot-certs
+          readOnly: true
       dnsPolicy: ClusterFirst
       securityContext: null
       serviceAccountName: zot
@@ -87,6 +90,9 @@ spec:
       - name: zot-sync-creds
         secret:
           secretName: zot-sync-creds
+      - name: zot-certs
+        secret:
+          secretName: zot-certs
   volumeClaimTemplates:
   - metadata:
       name: zot-pvc

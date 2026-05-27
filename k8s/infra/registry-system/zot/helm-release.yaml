@@ -72,6 +72,14 @@ spec:
         mountPath: /etc/zot/sync
     strategy:
       type: Recreate
+    extraVolumes:
+      - name: zot-certs
+        secret:
+          secretName: zot-certs
+    extraVolumeMounts:
+      - name: zot-certs
+        mountPath: /etc/zot/certs
+        readOnly: true
   postRenderers:
     - kustomize:
         patches: # Tolerate the control plane taint
