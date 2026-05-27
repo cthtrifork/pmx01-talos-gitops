@@ -1,0 +1,18 @@
+{
+	"ghcr.io": {
+		"username": "ENC[AES256_GCM,data:KzMxaXPCw9g+,iv:R/vWGLJqSZDT+Tf4yRTC4mMKxibeYMPZxFy/ejJEYd4=,tag:f/+yrC3id81YatvmhJZt2w==,type:str]",
+		"password": "ENC[AES256_GCM,data:Ab8wrE87PcnDZdtE9TgV/rYcc4jFtnJcCGWF3VAsDjqkkSh5yaaUrw==,iv:+vVBYiXC8wItsLG/NYAi8og1XxAEnNDqi/ml4jDFGvE=,tag:tRa+Ljh0Kw9WERsSK9Z1hA==,type:str]"
+	},
+	"sops": {
+		"age": [
+			{
+				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBqZUhyVEF0SktreGJqVXFZ\nVnlJcGltUy90dUQ2Q1k4T0VZQWZjaDc3WVZNCkFySEZEWHVPMlVCTktSYkR0dno2\ncXIrN29NYkMzbUd2R3YwaWJlSld1dVEKLS0tIDRhY013MFNkRDFrU0pzbWUyZGxr\nR1dCZTU2amNnMmpiSnRCa29BT2xUZTgKEaMS7x6KVd39oK3yIepr4ZK+2treTDTR\nyV5U0HhL9Y5kJX+CYeNY2KDOYH81nI6a0MqIGJ39fi0CiAeW1qgpYQ==\n-----END AGE ENCRYPTED FILE-----\n",
+				"recipient": "age1qth3nzg27zdmlzpjl2gedzmt0e5nly84q82knja3fcq365kw6u9qeecy6j"
+			}
+		],
+		"lastmodified": "2026-05-27T10:50:34Z",
+		"mac": "ENC[AES256_GCM,data:JUa86a+tpVrKsE/8tWHjj/6VmCARNMkRcxoyVXa0pZ0aPEtHEEaRW5IuGYwcd7BKj0Uev/ZNjPX6a6VR9tuNP/PCj+5zIHr7zFLezT+XdkaCTDQ0LUJuDtSAOWmw0oso0uMOzTSJsO1oia2Ll4Ax5SABcxqfBsHsJzBK8j2ZwVo=,iv:ii9Ys5YrCFBjQMRtNLn1HbQyphiyVQO07cOy5I5MloQ=,tag:KTDfVnnKfaMegvYEIKRq7w==,type:str]",
+		"unencrypted_suffix": "_unencrypted",
+		"version": "3.13.0"
+	}
+}

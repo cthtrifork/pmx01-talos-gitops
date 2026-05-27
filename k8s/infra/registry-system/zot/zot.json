@@ -24,6 +24,7 @@
     },
     "sync": {
       "enable": true,
+      "credentialsFile": "/etc/zot/sync/creds.json",
       "registries": [
         {
           "urls": [

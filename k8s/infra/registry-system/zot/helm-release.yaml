@@ -60,10 +60,15 @@ spec:
       - name: GOMEMLIMIT
         # Set this to about 80% of the memory limit.
         value: 1600MiB
+      - name: ZOT_CREDENTIALS_FILE
+        value: "/run/secrets/github_auth"
     metrics:
       enabled: true
       serviceMonitor:
         enabled: true
+    externalSecrets:
+      - secretName: zot-sync-creds
+        mountPath: /etc/zot/sync
   postRenderers:
     - kustomize:
         patches: # Tolerate the control plane taint
