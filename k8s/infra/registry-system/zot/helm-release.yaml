@@ -80,6 +80,9 @@ spec:
       - name: zot-certs
         mountPath: /etc/zot/certs
         readOnly: true
+    httpGet:
+      scheme: HTTPS
+      port: 5000
   postRenderers:
     - kustomize:
         patches: # Tolerate the control plane taint
