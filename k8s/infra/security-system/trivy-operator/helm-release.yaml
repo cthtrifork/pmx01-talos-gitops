@@ -50,7 +50,7 @@ spec:
         registry: ghcr.io
         repository: aquasecurity/trivy
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
-        tag: 0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e
+        tag: 0.71.0@sha256:016eae51fdcf989332a5404af7e8f625cd5d95d7c0907a221d080a996f556500
       dbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
       javaDbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
       registry:
