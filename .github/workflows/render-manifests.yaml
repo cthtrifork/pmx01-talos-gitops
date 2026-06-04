@@ -1,0 +1,125 @@
+name: Render manifests on schedule
+
+on:
+  # This will render manifest in chosen branch
+  workflow_dispatch:
+  # This exists as some helm charts receive changes without patches. This will help catch these changes.
+  schedule:
+    - cron: "0 0/1 * * *" # Run every hour
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "k8s/**"
+      - "scripts/ci/render-manifests.sh"
+      - "Makefile"
+
+jobs:
+  render-manifests:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Check if files have changed
+        timeout-minutes: 1
+        id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            k8s/**
+            scripts/ci/render-manifests.sh
+            Makefile
+
+      - name: Set should-run to true
+        id: should-run
+        if: ${{ steps.changed-files.outputs.any_changed == 'true' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        run: echo "SHOULD_RUN=true" >> $GITHUB_OUTPUT
+
+      - name: Find and execute render.sh
+        if: ${{ steps.should-run.outputs.SHOULD_RUN == 'true' }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4
+        with: # give up to 3x5 minutes
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_on: timeout
+          command: make render-manifests -j $(nproc)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Changes found
+        id: changes-found
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for changes
+        if: ${{ steps.changes-found.outputs.changes == 'true' && github.event_name == 'pull_request' }}
+        id: git_diff
+        run: |- #sh
+          # check if there are any changes and fail if there are
+          git diff --exit-code || (echo "There are changes in the rendered manifests. Please run 'make render-manifests' locally and commit the changes." && exit 1)
+
+      - name: Create Pull Request
+        # only run if changes were committed and we are running schedule (in main branch)
+        if: ${{ steps.changes-found.outputs.changes == 'true' && github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="render-manifests"
+          git checkout -b "${BRANCH}"
+          git add .
+          git commit -m "chore(deps): Render detected manifests changes"
+          git push origin "${BRANCH}"
+          PR_RESPONSE=$(gh api repos/${REPO}/pulls \
+            --method POST \
+            --field title="chore(deps): Render detected manifests changes" \
+            --field body="This PR was automatically created to update the manifests changes that were detected." \
+            --field base="${BASE_BRANCH}" \
+            --field head="${BRANCH}")
+          echo "Pull Request Number - $(echo "${PR_RESPONSE}" | jq -r '.number')"
+          echo "Pull Request URL - $(echo "${PR_RESPONSE}" | jq -r '.html_url')"
+
+      - name: Setup git and add changes
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          branch_name: ${{ github.head_ref || github.ref_name }}
+        run: | #sh
+          git checkout -B $branch_name
+          git add .
+
+      - uses: qoomon/actions--create-commit@7102b1a8b3cb8716dc70dbeb6d774c375d779d2f # v1.2.5
+        id: commit
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        with:
+          message: rendered new manifests
+          skip-empty: true
+
+      - name: Push changes
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.commit.outputs.commit }}
+        run: | #sh
+          git push origin ${{ github.head_ref || github.ref_name }}
