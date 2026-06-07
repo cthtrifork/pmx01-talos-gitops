@@ -5,10 +5,10 @@ kind: ClusterRole
 metadata:
   name: metallb:controller
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
   namespace: metallb-system
 rules:
@@ -57,10 +57,10 @@ kind: ClusterRole
 metadata:
   name: metallb:speaker
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
   namespace: metallb-system
 rules:
@@ -92,10 +92,10 @@ kind: ClusterRoleBinding
 metadata:
   name: metallb:controller
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
   namespace: metallb-system
 subjects:
@@ -113,10 +113,10 @@ kind: ClusterRoleBinding
 metadata:
   name: metallb:speaker
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
   namespace: metallb-system
 subjects:
@@ -135,10 +135,10 @@ metadata:
   name: metallb-pod-lister
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups: [""]
@@ -179,10 +179,10 @@ metadata:
   name: metallb-controller
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups: [""]
@@ -228,10 +228,10 @@ metadata:
   name: metallb-pod-lister
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -250,10 +250,10 @@ metadata:
   name: metallb-controller
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io

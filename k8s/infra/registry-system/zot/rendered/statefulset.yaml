@@ -38,7 +38,7 @@ spec:
           httpGet:
             path: /livez
             port: 5000
-            scheme: HTTP
+            scheme: HTTPS
           initialDelaySeconds: 5
         name: zot
         ports:
@@ -49,7 +49,7 @@ spec:
           httpGet:
             path: /readyz
             port: 5000
-            scheme: HTTP
+            scheme: HTTPS
           initialDelaySeconds: 5
         resources:
           limits:
@@ -63,7 +63,7 @@ spec:
           httpGet:
             path: /startupz
             port: 5000
-            scheme: HTTP
+            scheme: HTTPS
           initialDelaySeconds: 5
           periodSeconds: 10
         volumeMounts:
@@ -92,7 +92,7 @@ spec:
           secretName: zot-sync-creds
       - name: zot-certs
         secret:
-          secretName: zot-certs
+          secretName: zot-tls-cert
   volumeClaimTemplates:
   - metadata:
       name: zot-pvc

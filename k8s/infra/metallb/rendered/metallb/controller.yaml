@@ -6,10 +6,10 @@ metadata:
   name: metallb-controller
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: metallb-0.16.0
+    helm.sh/chart: metallb-0.16.1
     app.kubernetes.io/name: metallb
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.16.0"
+    app.kubernetes.io/version: "v0.16.1"
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: controller
 spec:
@@ -35,7 +35,7 @@ spec:
         runAsUser: 65534
       containers:
         - name: controller
-          image: quay.io/metallb/controller:v0.16.0
+          image: quay.io/metallb/controller:v0.16.1
           args:
             - --port=9120
             - --log-level=info
@@ -65,7 +65,6 @@ spec:
             httpGet:
               path: /healthz
               port: 17472
-              host: 127.0.0.1
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 1
@@ -75,7 +74,6 @@ spec:
             httpGet:
               path: /readyz
               port: 17472
-              host: 127.0.0.1
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 1

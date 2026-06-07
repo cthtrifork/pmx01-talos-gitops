@@ -1040,7 +1040,7 @@ alertmanager:
       seccompProfile:
         type: RuntimeDefault
     ## Use the host's user namespace for Alertmanager pods.
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
     hostUsers: ~
     ## DNS configuration for Alertmanager.
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api-reference/api.md#monitoring.coreos.com/v1.PodDNSConfig
@@ -1394,21 +1394,23 @@ grafana:
     enabled: true
     # Path to use for scraping metrics. Might be different if server.root_url is set
     # in grafana.ini
-    path: "/metrics"
+    # path: /metrics
+
     #  namespace: monitoring  (defaults to use the namespace this chart is deployed to)
 
     # labels for the ServiceMonitor
-    labels: {}
-    # Scrape interval. If not set, the Prometheus default scrape interval is used.
-    #
-    interval: ""
-    scheme: http
-    tlsConfig: {}
-    scrapeTimeout: 30s
+    # labels: {}
+
+    # Extra scrape settings.
+    # interval: ""
+    # scheme: http
+    # tlsConfig: {}
+    # scrapeTimeout: 30s
+
     ## RelabelConfigs to apply to samples before scraping
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api-reference/api.md#relabelconfig
     ##
-    relabelings: []
+    # relabelings: []
     # - sourceLabels: [__meta_kubernetes_pod_node_name]
     #   separator: ;
     #   regex: ^(.*)$
@@ -2565,6 +2567,12 @@ prometheusOperator:
       ## Decrease log verbosity to errors only
       # logLevel: error
 
+      ## PromQL parser options to enable for the admission webhook when validating PrometheusRule resources.
+      ## The options are passed to the prometheus-operator admission-webhook binary as a comma-separated --promql-options value.
+      ## Requires prometheus-operator admission-webhook v0.91.0 or newer.
+      ## Valid values: experimental-functions, duration-expression-parsing, extended-range-selectors, binop-fill-modifiers.
+      ##
+      promqlOptions: []
       ## Liveness probe
       ##
       livenessProbe:
@@ -2960,7 +2968,7 @@ prometheusOperator:
     seccompProfile:
       type: RuntimeDefault
   ## Setup hostUsers for prometheus-operator
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
   hostUsers: ~
   ## Container-specific security context configuration
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -3648,7 +3656,7 @@ prometheus:
     image:
       registry: quay.io
       repository: prometheus/prometheus
-      tag: v3.11.3-distroless
+      tag: v3.12.0-distroless
       sha: ""
       pullPolicy: IfNotPresent
     ## Tolerations for use with node taints
@@ -4226,7 +4234,7 @@ prometheus:
     # When hostNetwork is enabled, this will set dnsPolicy to ClusterFirstWithHostNet automatically.
     hostNetwork: false
     ## Use the host's user namespace for Prometheus pods.
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
     hostUsers: ~
     # HostAlias holds the mapping between IP and hostnames that will be injected
     # as an entry in the pod's hosts file.
@@ -4891,7 +4899,7 @@ thanosRuler:
       seccompProfile:
         type: RuntimeDefault
     ## Use the host's user namespace for ThanosRuler pods.
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
     hostUsers: ~
     ## ListenLocal makes the ThanosRuler server listen on loopback, so that it does not bind against the Pod IP.
     ## Note this is only for the ThanosRuler UI, not the gossip communication.
