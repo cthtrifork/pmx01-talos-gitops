@@ -52,6 +52,9 @@ jobs:
         if: ${{ steps.changed-files.outputs.any_changed == 'true' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         run: echo "SHOULD_RUN=true" >> $GITHUB_OUTPUT
 
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@main
+
       - name: Find and execute render.sh
         if: ${{ steps.should-run.outputs.SHOULD_RUN == 'true' }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4
