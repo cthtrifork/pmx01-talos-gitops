@@ -30,7 +30,7 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
       - name: Setup Flux Operator CLI
-        uses: controlplaneio-fluxcd/flux-operator/actions/setup@5836c14559f39a466a7c413e55e0ee35480a0250 # v0.50.0
+        uses: controlplaneio-fluxcd/flux-operator/actions/setup@e957afa6dd422978f64f704f73000c740de309a2 # v0.51.0
       - name: Setup Kubernetes Kind
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
