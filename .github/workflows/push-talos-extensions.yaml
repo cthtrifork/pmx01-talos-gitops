@@ -20,7 +20,7 @@ permissions:
 env:
   IMAGE_NAME: talos-zot-extension
   ZOT_VERSION: v2.1.17 # renovate: datasource=github-releases depName=project-zot/zot
-  TALOS_VERSION: v1.13.3 # renovate: datasource=github-releases depName=siderolabs/talos
+  TALOS_VERSION: v1.13.4 # renovate: datasource=github-releases depName=siderolabs/talos
   ARCH: amd64
   IMAGE: ghcr.io/${{ github.repository }}/talos-zot-extension
 
