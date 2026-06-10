@@ -10,7 +10,7 @@ spec:
   url: oci://ghcr.io/cloudnative-pg/charts/cluster
   ref:
     tag: 0.6.1
-    digest: sha256:be555a65d42c14281809f2e021668f37cdc86e1006c70b96f0b5f0be345e6fb4
+    digest: sha256:e88e577631455fcf3f42b26450a22f9681d7ff73449bdb8b95dac5e0e9047f9c
   layerSelector:
     mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
     operation: extract # can be 'extract' or 'copy', defaults to 'extract'
