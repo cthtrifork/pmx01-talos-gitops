@@ -10,4 +10,4 @@ spec:
   url: oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg
   ref:
     tag: 0.28.2
-    digest: sha256:484e812908daeac1b84614df333040ffe2eb868f3a7169ffe6c003d566f554e6
+    digest: sha256:fb74f401206b350d690edd4f5b738346cca1ff5fa026c495c6ad70d10b192a81
