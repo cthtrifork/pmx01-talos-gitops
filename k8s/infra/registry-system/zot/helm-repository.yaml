@@ -9,8 +9,8 @@ spec:
   interval: 12h
   url: oci://ghcr.io/project-zot/helm-charts/zot
   ref:
-    tag: 0.1.116
-    digest: sha256:8e83bfff8018aa306ca820eb74a7f2024b518be5254beaef16780e5543395cc7
+    tag: 0.1.117
+    digest: sha256:add82b08a25acd3fa4428db9f73a068e55c155ad91d6226564da7b57c805a59f
   layerSelector:
     mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
     operation: extract
