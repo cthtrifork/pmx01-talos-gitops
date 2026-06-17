@@ -9,5 +9,5 @@ spec:
   interval: 12h
   url: oci://quay.io/cilium/charts/cilium
   ref:
-    tag: 1.19.4
-    digest: "sha256:2ae196af6b06d14ee680ef66553ba0419da4595b12786942a2655997ac0527db" # 1.19.3
+    tag: 1.19.5
+    digest: "sha256:557ea3b67b2380bdf91f3006ecea924e10e2963dbaf6085887652311e581460b" # 1.19.3
