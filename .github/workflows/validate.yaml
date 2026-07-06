@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Setup yq
-        uses: fluxcd/pkg/actions/yq@ae1046960bf700baebc328562a7be8ccee8c7078 # main
+        uses: fluxcd/pkg/actions/yq@b98e2b0975e0863f32790229ce7c9f097ed67706 # main
       - name: Setup kubeconform
         uses: fluxcd/pkg/actions/kubeconform@ae1046960bf700baebc328562a7be8ccee8c7078 # main
       - name: Setup kustomize
