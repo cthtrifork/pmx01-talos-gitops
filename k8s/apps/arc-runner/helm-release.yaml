@@ -42,8 +42,8 @@ spec:
               - -c
               - |
                 set -e
-                find /mnt/cache -type f -mtime +14 -print -delete
-                find /mnt/cache -type d -empty -mtime +14 -print -delete || true
+                find /tmp/arc-cache -type f -mtime +14 -print -delete
+                find /tmp/arc-cache -type d -empty -mtime +14 -print -delete || true
             securityContext:
               runAsUser: 0
               runAsGroup: 0
@@ -57,7 +57,7 @@ spec:
                 memory: 128Mi
             volumeMounts:
               - name: tmp-cache
-                mountPath: /mnt/cache
+                mountPath: /tmp/arc-cache
           - name: fix-perms
             image: docker.io/library/busybox:1.38@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
             imagePullPolicy: IfNotPresent
@@ -67,13 +67,14 @@ spec:
               - |
                 set -eux
                 # Create if missing and set perms/ownership (idempotent)
-                install -d -m 0775 -o 1001 -g 1001 /mnt/dnf
-                install -d -m 0775 -o 1001 -g 1001 /mnt/rootless
+                install -d -m 0775 -o 1001 -g 1001 /tmp/dnf
+                install -d -m 0775 -o 1001 -g 1001 /tmp/rootless
                 # Also fix subpaths if they already exist
-                chown -R 1001:1001 /mnt/dnf /mnt/rootless || true
-                chmod 0775 /mnt/dnf /mnt/rootless || true
+                chown -R 1001:1001 /tmp/dnf /tmp/rootless || true
+                chmod 0775 /tmp/dnf /tmp/rootless || true
                 # Feed existing data into the mounted volumes
-                cp -r /home/runner/.local/share/containers /mnt/rootless || true
+                mkdir -p home/runner/.local/share/containers
+                cp -r /home/runner/.local/share/containers /tmp/rootless || true
             securityContext:
               runAsUser: 0
               runAsGroup: 0
@@ -87,9 +88,9 @@ spec:
                 memory: 128Mi
             volumeMounts:
               - name: dnf-cache
-                mountPath: /mnt/dnf
+                mountPath: /tmp/dnf
               - name: container-rootless-storage
-                mountPath: /mnt/rootless
+                mountPath: /tmp/rootless
           - name: init-dind-externals
             image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.3.0@sha256:bd7d92d46c8bc066a295626ba818f1976ef9f3bdd63e58b6b26aa0aadea91855
             imagePullPolicy: IfNotPresent
@@ -287,7 +288,7 @@ spec:
             hostPath:
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get volumestatus u-local-storage-cache
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get mountstatus u-local-storage-cache
-              path: /var/mnt/local-storage-cache/gha-cache/dnf
+              path: /var/tmp/local-storage-cache/gha-cache/dnf
               type: DirectoryOrCreate
           - name: container-shared-storage
             persistentVolumeClaim:
