@@ -3,6 +3,8 @@ on:
   pull_request: 
     branches: 
       - main
+    paths:
+      - images/github-actions-runner/*
   push:
     tags:
       - 'v*'
