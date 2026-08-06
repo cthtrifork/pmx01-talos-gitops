@@ -9,8 +9,8 @@ spec:
   interval: 12h
   url: oci://quay.io/jetstack/charts/cert-manager
   ref:
-    tag: v1.20.2
-    digest: sha256:294a761ca972ea11ae79b9219960ca13a5337a1cbb550604c151586d266159eb
+    tag: v1.21.1
+    digest: sha256:15c0b46d9006ce8eb9ff14d1bf54d1bbfcc587bb9e24cd9fe186fb8fec56af1f
   layerSelector:
     mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
     operation: extract # can be 'extract' or 'copy', defaults to 'extract'
