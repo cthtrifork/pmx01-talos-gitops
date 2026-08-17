@@ -4,8 +4,8 @@ on:
   # This will render manifest in chosen branch
   workflow_dispatch:
   # This exists as some helm charts receive changes without patches. This will help catch these changes.
-  schedule:
-    - cron: "0 0/1 * * *" # Run every hour
+  #schedule:
+  #  - cron: "0 0/1 * * *" # Run every hour
   #pull_request:
   #  branches:
   #    - main
