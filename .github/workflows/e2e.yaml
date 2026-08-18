@@ -13,7 +13,7 @@ permissions:
 
 env:
   CILIUM_CLI_VERSION: v0.19.7 # renovate: datasource=github-releases depName=cilium/cilium-cli
-  CILIUM_VERSION: v1.20.0 # renovate: datasource=github-releases depName=cilium/cilium
+  CILIUM_VERSION: v1.20.1 # renovate: datasource=github-releases depName=cilium/cilium
   #INTERACTIVE: false
 
 concurrency:
