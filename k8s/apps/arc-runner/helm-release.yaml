@@ -73,8 +73,7 @@ spec:
                 chown -R 1001:1001 /tmp/dnf /tmp/rootless || true
                 chmod 0775 /tmp/dnf /tmp/rootless || true
                 # Feed existing data into the mounted volumes
-                mkdir -p home/runner/.local/share/containers
-                cp -r /home/runner/.local/share/containers /tmp/rootless || true
+                cp -r /home/runner/.local/share/containers/storage/. /tmp/rootless || true
             securityContext:
               runAsUser: 0
               runAsGroup: 0
