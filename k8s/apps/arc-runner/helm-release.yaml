@@ -203,14 +203,14 @@ spec:
               - name: ca-certs
                 mountPath: /usr/local/share/ca-certificates/private-ca.crt
                 subPath: ca.crt
-              - name: container-storage
-                mountPath: /var/lib/containers
+              - name: container-storage-rootful
+                mountPath: /var/lib/containers/storage
               - name: work
                 mountPath: /home/runner/_work
               - name: dind-sock
                 mountPath: /var/run
               - name: container-rootless-storage
-                mountPath: /home/runner/.local/share/containers
+                mountPath: /home/runner/.local/share/containers/storage
               - name: container-shared-storage
                 mountPath: /var/lib/shared
               - name: container-shared-registry
@@ -263,27 +263,23 @@ spec:
                       storage: 10Gi
           - name: docker-lib
             emptyDir: {}
-          - name: container-storage
-            ephemeral:
-              volumeClaimTemplate:
-                spec:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 32Gi
+          - name: container-storage-rootful
+            persistentVolumeClaim:
+              claimName: container-storage-rootful
           - name: container-rootless-storage
+            persistentVolumeClaim:
+              claimName: container-rootless-storage
             #hostPath:
             #  path: /var/mnt/local-storage-cache/gha-cache/containers-rootless
             #  type: DirectoryOrCreate
-            ephemeral:
-              volumeClaimTemplate:
-                spec:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 16Gi
+            #ephemeral:
+            #  volumeClaimTemplate:
+            #    spec:
+            #      accessModes:
+            #        - ReadWriteOnce
+            #      resources:
+            #        requests:
+            #          storage: 16Gi
           - name: dnf-cache
             hostPath:
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get volumestatus u-local-storage-cache
@@ -368,3 +364,28 @@ spec:
   resources:
     requests:
       storage: 24Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: container-storage-rootful
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 32Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: container-rootless-storage
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 32Gi
