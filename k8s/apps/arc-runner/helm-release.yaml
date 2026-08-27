@@ -222,7 +222,7 @@ spec:
               - name: dnf-cache
                 mountPath: /home/runner/.cache/dnf
               - name: tmp-cache
-                mountPath: /runner/cache
+                mountPath: /home/runner/.cache/tmp
         imagePullSecrets:
           - name: github-auth
         securityContext:
