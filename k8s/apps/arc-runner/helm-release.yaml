@@ -15,6 +15,11 @@ spec:
 
   # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
   values:
+    resourceMeta:
+      ephemeralRunner:
+        annotations:
+          kubernetes.io/ingress-bandwidth: "10M"
+          kubernetes.io/egress-bandwidth: "10M"
     controllerServiceAccount:
       # this SA is created by the controller chart, in arc-systems
       name: gha-runner-scale-set-controller-gha-rs-controller

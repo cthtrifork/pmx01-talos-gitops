@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 1a0af118da79c67d91891138de9b727366411f697623757ca65f6d21c0e1fef
+    actions.github.com/values-hash: f74fa890b07fcea2b3e8df8c3ac6e5f955dc432057c187997b1861502b6be09
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -19,6 +19,10 @@ metadata:
   name: arc-ubuntu
   namespace: arc-runners-system
 spec:
+  ephemeralRunnerMetadata:
+    annotations:
+      kubernetes.io/egress-bandwidth: 10M
+      kubernetes.io/ingress-bandwidth: 10M
   githubConfigSecret: github-auth
   githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
   listenerTemplate:
