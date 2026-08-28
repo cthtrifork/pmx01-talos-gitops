@@ -12,6 +12,7 @@ imagePullSecrets: []
 
 nameOverride: ""
 fullnameOverride: ""
+namespaceOverride: ""
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -45,6 +46,7 @@ commonLabels: {}
 podLabels: {}
 podAnnotations: {}
 podSecurityContext: {}
+hostUsers:
 securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true

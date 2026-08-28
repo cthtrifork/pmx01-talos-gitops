@@ -1,3 +1,5 @@
+Pulled: ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller:0.14.2
+Digest: sha256:3081ba15c41f0aa791058dedd2a7406fece24c9aeaa94956c268e5099427a452
 # Default values for gha-runner-scale-set-controller.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.

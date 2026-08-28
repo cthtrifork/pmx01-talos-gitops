@@ -6,7 +6,7 @@ metadata:
   name: reports-server-postgres-cluster
   namespace: policy-system
   labels:
-    helm.sh/chart: cluster-0.6.1
+    helm.sh/chart: cluster-0.8.1
     app.kubernetes.io/name: cluster
     app.kubernetes.io/instance: reports-server-postgres
     app.kubernetes.io/part-of: cloudnative-pg
@@ -31,6 +31,7 @@ spec:
   priorityClassName: system-cluster-critical
   primaryUpdateMethod: switchover
   primaryUpdateStrategy: unsupervised
+  stopDelay: 1800
   logLevel: info
   certificates:
     serverCASecret: reports-server-postgres-cert
@@ -52,6 +53,8 @@ spec:
         superuser: false
   monitoring:
     disableDefaultQueries: false
+    tls:
+      enabled: false
   bootstrap:
     initdb:
       database: reportsdb

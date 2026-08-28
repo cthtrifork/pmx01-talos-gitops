@@ -1,3 +1,5 @@
+Pulled: ghcr.io/aquasecurity/helm-charts/trivy-operator:0.32.1
+Digest: sha256:39caa565eaac9388bf5d86b9853e7535ae41703b4068475ea553c3e97754c06f
 # Default values for the trivy-operator Helm chart, these are used to render
 # the templates into valid k8s Resources.
 

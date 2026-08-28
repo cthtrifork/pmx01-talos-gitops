@@ -8,8 +8,8 @@ metadata:
     app.kubernetes.io/instance: kube-prometheus-stack
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: prom
-    app.kubernetes.io/version: 86.1.1
-    chart: kube-prometheus-stack-86.1.1
+    app.kubernetes.io/version: 88.3.0
+    chart: kube-prometheus-stack-88.3.0
     heritage: Helm
     release: kube-prometheus-stack
     type: rule
@@ -130,11 +130,13 @@ spec:
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubequotaalmostfull
         summary: Namespace quota is going to be full.
       expr: |-
-        max without (instance, job, type) (
-          kube_resourcequota{job="kube-state-metrics", type="used"}
+        topk by (cluster, namespace, resource, resourcequota) (1,
+          max without (instance, job, type) (
+            kube_resourcequota{job="kube-state-metrics", type="used"}
+          )
         )
         / on (cluster, namespace, resource, resourcequota) group_left()
-        (
+        topk by (cluster, namespace, resource, resourcequota) (1,
           max without (instance, job, type) (
             kube_resourcequota{job="kube-state-metrics", type="hard"}
           ) > 0
@@ -150,11 +152,13 @@ spec:
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubequotafullyused
         summary: Namespace quota is fully used.
       expr: |-
-        max without (instance, job, type) (
-          kube_resourcequota{job="kube-state-metrics", type="used"}
+        topk by (cluster, namespace, resource, resourcequota) (1,
+          max without (instance, job, type) (
+            kube_resourcequota{job="kube-state-metrics", type="used"}
+          )
         )
         / on (cluster, namespace, resource, resourcequota) group_left()
-        (
+        topk by (cluster, namespace, resource, resourcequota) (1,
           max without (instance, job, type) (
             kube_resourcequota{job="kube-state-metrics", type="hard"}
           ) > 0
@@ -170,11 +174,13 @@ spec:
         runbook_url: https://runbooks.prometheus-operator.dev/runbooks/kubernetes/kubequotaexceeded
         summary: Namespace quota has exceeded the limits.
       expr: |-
-        max without (instance, job, type) (
-          kube_resourcequota{job="kube-state-metrics", type="used"}
+        topk by (cluster, namespace, resource, resourcequota) (1,
+          max without (instance, job, type) (
+            kube_resourcequota{job="kube-state-metrics", type="used"}
+          )
         )
         / on (cluster, namespace, resource, resourcequota) group_left()
-        (
+        topk by (cluster, namespace, resource, resourcequota) (1,
           max without (instance, job, type) (
             kube_resourcequota{job="kube-state-metrics", type="hard"}
           ) > 0

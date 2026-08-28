@@ -6,8 +6,9 @@ metadata:
   name: reports-server-postgres-cluster-monitoring-logical-replication
   namespace: policy-system
   labels:
-    cnpg.io/reload: ""
-    helm.sh/chart: cluster-0.6.1
+    cnpg.io/reload: "true"
+    cnpg.io/cluster: reports-server-postgres-cluster
+    helm.sh/chart: cluster-0.8.1
     app.kubernetes.io/name: cluster
     app.kubernetes.io/instance: reports-server-postgres
     app.kubernetes.io/part-of: cloudnative-pg
@@ -20,7 +21,6 @@ data:
              , s.oid AS subid
              , s.subname AS subname
              , subenabled AS enabled
-             , worker_type
              , relid
              , pg_wal_lsn_diff(received_lsn, '0/0') AS received_lsn
              , last_msg_send_time
@@ -59,9 +59,6 @@ data:
             usage: LABEL
         - subname:
             description: Name of the subscription
-            usage: LABEL
-        - worker_type:
-            description: Type of the worker
             usage: LABEL
         - relid:
             description: OID of the relation

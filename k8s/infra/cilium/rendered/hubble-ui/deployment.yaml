@@ -9,6 +9,7 @@ metadata:
     k8s-app: hubble-ui
     app.kubernetes.io/name: hubble-ui
     app.kubernetes.io/part-of: cilium
+    helm.sh/chart: cilium-1.20.0
 spec:
   replicas: 1
   selector:
@@ -25,11 +26,15 @@ spec:
         k8s-app: hubble-ui
         app.kubernetes.io/name: hubble-ui
         app.kubernetes.io/part-of: cilium
+        helm.sh/chart: cilium-1.20.0
     spec:
       securityContext:
         fsGroup: 1001
         runAsGroup: 1001
+        runAsNonRoot: true
         runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       priorityClassName:
       serviceAccountName: "hubble-ui"
       automountServiceAccountToken: true
@@ -57,6 +62,9 @@ spec:
           terminationMessagePolicy: FallbackToLogsOnError
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
         - name: backend
           image: "quay.io/cilium/hubble-ui-backend:v0.13.5@sha256:fac0c300ae119274edca11fd89b1ad23c788792d8bc4ea2ba631c709e8d3c688"
           imagePullPolicy: IfNotPresent
@@ -85,6 +93,9 @@ spec:
           terminationMessagePolicy: FallbackToLogsOnError
           securityContext:
             allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       nodeSelector:
         kubernetes.io/os: linux
       volumes:
@@ -93,7 +104,8 @@ spec:
             name: hubble-ui-nginx
           name: hubble-ui-nginx-conf
         - name: tmp-dir
-          emptyDir: {}
+          emptyDir:
+            sizeLimit: 256Mi
         - name: hubble-ui-client-certs
           projected:
             # note: the leading zero means this number is in octal representation: do not remove it

@@ -1,3 +1,5 @@
+Pulled: ghcr.io/prometheus-community/charts/prometheus-operator-crds:31.0.1
+Digest: sha256:45a18cd10ce5c57cbcdd90e4eddfa9a6f653684a8d74cf6b2925f682c8a023e5
 ## Settings for CRDs
 ##
 crds:

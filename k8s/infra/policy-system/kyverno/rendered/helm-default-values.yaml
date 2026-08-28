@@ -1,3 +1,5 @@
+Pulled: ghcr.io/kyverno/charts/kyverno:3.8.2
+Digest: sha256:2d267f9a36a0cf42efb735f5e984acac8a9f5eabe501f48138825f1cf07efafe
 global:
   # -- Internal settings used with `helm template` to generate install manifest
   # @ignored

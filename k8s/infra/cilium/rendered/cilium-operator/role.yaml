@@ -7,6 +7,7 @@ metadata:
   namespace: "cilium-secrets"
   labels:
     app.kubernetes.io/part-of: cilium
+    helm.sh/chart: cilium-1.20.0
 rules:
   - apiGroups:
       - ""
@@ -26,6 +27,7 @@ metadata:
   namespace: kube-system
   labels:
     app.kubernetes.io/part-of: cilium
+    helm.sh/chart: cilium-1.20.0
 rules:
   # ZTunnel DaemonSet management permissions
   # Note: These permissions must always be granted (not conditional on encryption.type)
@@ -37,6 +39,14 @@ rules:
     verbs:
       - create
       - delete
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
       - get
       - list
       - watch

@@ -10,6 +10,7 @@ metadata:
     app.kubernetes.io/part-of: cilium
     app.kubernetes.io/name: cilium-envoy
     name: cilium-envoy
+    helm.sh/chart: cilium-1.20.0
 spec:
   selector:
     matchLabels:
@@ -26,13 +27,14 @@ spec:
         name: cilium-envoy
         app.kubernetes.io/name: cilium-envoy
         app.kubernetes.io/part-of: cilium
+        helm.sh/chart: cilium-1.20.0
     spec:
       securityContext:
         appArmorProfile:
           type: Unconfined
       containers:
         - name: cilium-envoy
-          image: "quay.io/cilium/cilium-envoy:v1.36.6-1778235340-b87d1e32f522b33bd51701c6476d199326f01496@sha256:71d4fa0ec45e8d546dbd5604e169dc77fe92be63b799313bff031d00d89762e3"
+          image: "quay.io/cilium/cilium-envoy:v1.37.5-1782911245-7cffc778c923f68a77954a53b1a98d6b5353f004@sha256:583057dd4f7d54cd41efff3c413aa0b148ac201f522e2c3336851fa89c78b039"
           imagePullPolicy: IfNotPresent
           command:
             - /usr/bin/cilium-envoy-starter
@@ -51,6 +53,7 @@ spec:
             periodSeconds: 2
             successThreshold: 1
             initialDelaySeconds: 5
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               host: "127.0.0.1"
@@ -60,6 +63,7 @@ spec:
             periodSeconds: 30
             successThreshold: 1
             failureThreshold: 10
+            initialDelaySeconds: 0
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
@@ -70,6 +74,7 @@ spec:
             periodSeconds: 30
             successThreshold: 1
             failureThreshold: 3
+            initialDelaySeconds: 0
             timeoutSeconds: 5
           env:
             - name: K8S_NODE_NAME
@@ -127,6 +132,7 @@ spec:
       automountServiceAccountToken: true
       terminationGracePeriodSeconds: 1
       hostNetwork: true
+      hostUsers: true
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

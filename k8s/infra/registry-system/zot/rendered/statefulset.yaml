@@ -5,8 +5,8 @@ metadata:
     app.kubernetes.io/instance: zot
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: zot
-    app.kubernetes.io/version: v2.1.17
-    helm.sh/chart: zot-0.1.116
+    app.kubernetes.io/version: v2.1.18
+    helm.sh/chart: zot-0.1.122
   name: zot
   namespace: registry-system
 spec:
@@ -32,7 +32,7 @@ spec:
           value: 1600MiB
         - name: ZOT_CREDENTIALS_FILE
           value: /run/secrets/github_auth
-        image: ghcr.io/project-zot/zot:v2.1.17@sha256:48b0c11c8c61a07246e047f22e02aad615816683fd8d8073b2862fb7ed0a3cc0
+        image: ghcr.io/project-zot/zot:v2.1.20@sha256:542e25be4d32e7879c0cfad93492a93c81b1e059cbd2d30d485d4bd567318234
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -77,7 +77,10 @@ spec:
           name: zot-certs
           readOnly: true
       dnsPolicy: ClusterFirst
-      securityContext: null
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: zot
       tolerations:
       - effect: NoSchedule

@@ -10,6 +10,7 @@ metadata:
     name: cilium-operator
     app.kubernetes.io/part-of: cilium
     app.kubernetes.io/name: cilium-operator
+    helm.sh/chart: cilium-1.20.0
 spec:
   # See docs on ServerCapabilities.LeasesResourceLock in file pkg/k8s/version/version.go
   # for more details.
@@ -35,13 +36,14 @@ spec:
         name: cilium-operator
         app.kubernetes.io/part-of: cilium
         app.kubernetes.io/name: cilium-operator
+        helm.sh/chart: cilium-1.20.0
     spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: cilium-operator
-          image: "quay.io/cilium/operator-generic:v1.19.4@sha256:1aa2b62735e7d8ab49ee840ae59c346932024c88901579121395c1271b435f71"
+          image: "quay.io/cilium/operator-generic:v1.20.0@sha256:80744a8cc7c91c2f9e6347629406844eb35d79b30a732c6d41c15b17232a74f3"
           imagePullPolicy: IfNotPresent
           command:
             - cilium-operator-generic
@@ -113,6 +115,7 @@ spec:
                 - ALL
           terminationMessagePolicy: FallbackToLogsOnError
       hostNetwork: true
+      hostUsers: true
       restartPolicy: Always
       priorityClassName: system-cluster-critical
       serviceAccountName: "cilium-operator"

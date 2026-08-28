@@ -1,3 +1,5 @@
+Pulled: ghcr.io/spegel-org/helm-charts/spegel:0.7.4
+Digest: sha256:eaf39cc0967adead1cb6b8c48080c0ecc301016870be7aa43f3e6a8fb8e78000
 image:
   # -- Image repository.
   repository: ghcr.io/spegel-org/spegel
@@ -6,7 +8,7 @@ image:
   # -- Overrides the image tag whose default is the chart appVersion.
   tag: ""
   # -- Image digest.
-  digest: "sha256:bfb81b01f3cb0512044f7af2f8dd4aae9163ca36a35253a2d91c30c1b5dcf626"
+  digest: "sha256:26c60b05e08ac738e8442bc389c5780bff0e1d8153956e45d810a2f1008cf56f"
 # -- Image Pull Secrets
 imagePullSecrets: []
 # -- Overrides the name of the chart.

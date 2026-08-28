@@ -10,6 +10,7 @@ metadata:
     name: cilium-operator
     app.kubernetes.io/name: cilium-operator
     app.kubernetes.io/part-of: cilium
+    helm.sh/chart: cilium-1.20.0
 spec:
   maxUnavailable: 50%
   selector:

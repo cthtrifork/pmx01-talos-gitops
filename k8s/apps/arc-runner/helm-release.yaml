@@ -11,7 +11,7 @@ spec:
     kind: OCIRepository
     name: arc-runners-system
   install:
-    createNamespace: true
+    createNamespace: false
 
   # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
   values:
@@ -280,6 +280,8 @@ spec:
             persistentVolumeClaim:
               claimName: container-rootless-storage
           - name: dnf-cache
+            #persistentVolumeClaim:
+            #  claimName: dnf-cache
             hostPath:
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-wb5-z9x get volumestatus u-local-storage-cache
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get mountstatus u-local-storage-cache
@@ -319,7 +321,20 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: cross-run-cache
+  name: dnf-cache
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tmp-cache
   namespace: arc-runners-system
 spec:
   accessModes:

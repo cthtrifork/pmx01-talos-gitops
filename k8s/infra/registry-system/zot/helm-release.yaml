@@ -83,6 +83,10 @@ spec:
     httpGet:
       scheme: HTTPS
       port: 5000
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
   postRenderers:
     - kustomize:
         patches: # Tolerate the control plane taint
@@ -96,3 +100,26 @@ spec:
                   - key: node-role.kubernetes.io/control-plane
                     operator: Exists
                     effect: NoSchedule
+    # add securityContext
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: zot
+            patch: |
+              - op: add
+                path: /spec/template/spec/securityContext
+                value:
+                  runAsNonRoot: true
+                  runAsUser: 1000
+                  runAsGroup: 1000
+                  fsGroup: 1000
+                  seccompProfile:
+                    type: RuntimeDefault
+              - op: add
+                path: /spec/template/spec/containers/0/securityContext
+                value:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                      - ALL
