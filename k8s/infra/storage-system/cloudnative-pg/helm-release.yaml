@@ -17,7 +17,7 @@ spec:
       name: RetryOnFailure
   # https://github.com/cloudnative-pg/charts/blob/main/charts/cloudnative-pg/values.yaml
   values:
-    replicaCount: 2
+    replicaCount: 1
     priorityClassName: system-cluster-critical
     crds:
       create: true
