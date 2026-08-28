@@ -46,6 +46,8 @@ spec:
       requests:
         cpu: ${CILIUM_CPU_REQUEST:=100m}
         memory: ${CILIUM_MEMORY_REQUEST:=256Mi}
+    bandwidthManager:
+      enabled: true
     envoy:
       updateStrategy:
         rollingUpdate:
@@ -84,7 +86,7 @@ spec:
           enabled: true
           interval: 60s
       relay:
-        enabled: ${CILIUM_HUBBLE_RELAY_ENABLED:=true}
+        enabled: true
         podDisruptionBudget:
           enabled: false
         resources:
@@ -99,6 +101,9 @@ spec:
             mtls: true
       ui:
         enabled: true
+        backend:
+          livenessProbe:
+            enabled: true
         service:
           annotations:
             omni-kube-service-exposer.sidero.dev/port: "50081"
