@@ -5,11 +5,11 @@ resources:
   - local-path-provisioner/
   - cert-manager/
   - flux-system/
-  - kubevirt/
+  #- kubevirt/
   - metrics-server/
   - metallb/
-  - kube-prometheus-stack
+  #- kube-prometheus-stack
   - storage-system/
   - policy-system/
   - registry-system/
-  - security-system/
+  #- security-system/
