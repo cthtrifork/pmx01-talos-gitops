@@ -12,24 +12,26 @@ spec:
     name: arc-runners-system
   install:
     createNamespace: true
+
   # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
   values:
     controllerServiceAccount:
       # this SA is created by the controller chart, in arc-systems
       name: gha-runner-scale-set-controller-gha-rs-controller
       namespace: arc-controller-system
+
     # name of the runner scale set -> what you use in `runs-on: arc-ubuntu`
     githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
     runnerScaleSetName: arc-ubuntu
 
     maxRunners: 1 # only 1 runner due to pvc design
-    minRunners: 0
+    minRunners: 1 # always ready
 
     nodeSelector:
       kubernetes.io/hostname: talos-ska-6at
+
     # point to the secret we created with SOPS
     githubConfigSecret: github-auth
-
     containerMode: {} # we use custom
     template:
       spec:
@@ -56,8 +58,9 @@ spec:
                 cpu: 25m
                 memory: 128Mi
             volumeMounts:
-              - name: tmp-cache
+              - name: cross-run-cache
                 mountPath: /tmp/arc-cache
+
           - name: fix-perms
             image: docker.io/library/busybox:1.38@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
             imagePullPolicy: IfNotPresent
@@ -144,12 +147,16 @@ spec:
               failureThreshold: 24
               periodSeconds: 5
             volumeMounts:
+              # Shared runner/DinD workspace, but local to this pod.
               - name: work
                 mountPath: /home/runner/_work
+              # Docker Unix socket.
               - name: dind-sock
                 mountPath: /var/run
+              # Runner externals copied by init container.
               - name: dind-externals
                 mountPath: /home/runner/externals
+              # Transient Docker image/layer storage.
               - name: docker-lib
                 mountPath: /var/lib/docker
         containers:
@@ -157,75 +164,104 @@ spec:
             image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.3.0@sha256:bd7d92d46c8bc066a295626ba818f1976ef9f3bdd63e58b6b26aa0aadea91855
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
+
             resources:
               requests:
                 cpu: 500m
                 memory: 4Gi
               limits:
                 memory: 16Gi
+
             securityContext:
               seLinuxOptions:
                 type: container_file_t
               privileged: true
               runAsUser: 1001
               runAsGroup: 1001
+
             env:
               - name: DOCKER_HOST
                 value: unix:///var/run/docker.sock
+
               - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
                 value: "120"
+
               - name: STORAGE_DRIVER
                 value: overlay
+
               - name: BUILDAH_ISOLATION
                 value: chroot
+
               - name: BUILDAH_LAYERS
                 value: "true"
+
               - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
                 value: /var/lib/registry
+
               - name: RUNNER_UPDATE_CA_CERTS
                 value: "1"
+
               #- name: HTTP_PROXY
               #  value: "http://192.168.1.135:3128"
               #- name: HTTPS_PROXY
               #  value: "http://192.168.1.135:3128"
               #- name: NO_PROXY
               #  value: "localhost,127.0.0.1"
-              #- name: STORAGE_DRIVER
-              #  value: vfs # slower
-              #- name: _BUILDAH_STARTED_IN_USERNS
-              #  value: ""
-              #- name: _CONTAINERS_USERNS
-              #  value: "auto"
-              #- name: _CONTAINERS_USERNS_CONFIGURED
-              #  value: ""
+
             volumeMounts:
               - name: ca-certs
                 mountPath: /usr/local/share/ca-certificates/private-ca.crt
                 subPath: ca.crt
+
+              # Persistent rootful Podman/Buildah storage.
               - name: container-storage-rootful
                 mountPath: /var/lib/containers/storage
+
+              # Job workspace: fast node-local ephemeral storage.
               - name: work
                 mountPath: /home/runner/_work
+
+              # Docker socket shared with DinD.
               - name: dind-sock
                 mountPath: /var/run
+
+              # Persistent rootless container storage.
               - name: container-rootless-storage
                 mountPath: /home/runner/.local/share/containers/storage
+
+              # Persistent additional image store.
               - name: container-shared-storage
                 mountPath: /var/lib/shared
+
+              # Persistent local registry/cache.
               - name: container-shared-registry
                 mountPath: /var/lib/registry
+
+              # Same transient Docker storage as DinD.
               - name: docker-lib
                 mountPath: /var/lib/docker
+
+              # Persistent DNF caches.
               - name: dnf-cache
                 mountPath: /var/cache/dnf
+
               - name: dnf-cache
                 mountPath: /home/runner/.cache/dnf
-              - name: tmp-cache
+
+              # Existing persistent temporary/cache area.
+              - name: cross-run-cache
                 mountPath: /home/runner/.cache/tmp
+
+              # RAM-backed scratch space.
+              - name: tmp-memory
+                mountPath: /tmp
+
         imagePullSecrets:
           - name: github-auth
+
         securityContext:
           fsGroup: 1001
+
         volumes:
           - name: ca-certs
             secret:
@@ -234,51 +270,27 @@ spec:
                 - key: ca.crt
                   path: ca.crt
           - name: work
-            ephemeral:
-              volumeClaimTemplate:
-                spec:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 32Gi
+            emptyDir:
+              sizeLimit: 32Gi
           - name: dind-sock
-            ephemeral:
-              volumeClaimTemplate:
-                spec:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 1Gi
-          - name: dind-externals
-            ephemeral:
-              volumeClaimTemplate:
-                spec:
-                  accessModes:
-                    - ReadWriteOnce
-                  resources:
-                    requests:
-                      storage: 10Gi
-          - name: docker-lib
             emptyDir: {}
+          - name: dind-externals
+            emptyDir:
+              sizeLimit: 2Gi
+          # Docker-in-Docker transient image/layer storage.
+          - name: docker-lib
+            emptyDir:
+              sizeLimit: 32Gi
+          - name: tmp-memory
+            emptyDir:
+              medium: Memory
+              sizeLimit: 4Gi
           - name: container-storage-rootful
             persistentVolumeClaim:
               claimName: container-storage-rootful
           - name: container-rootless-storage
             persistentVolumeClaim:
               claimName: container-rootless-storage
-            #hostPath:
-            #  path: /var/mnt/local-storage-cache/gha-cache/containers-rootless
-            #  type: DirectoryOrCreate
-            #ephemeral:
-            #  volumeClaimTemplate:
-            #    spec:
-            #      accessModes:
-            #        - ReadWriteOnce
-            #      resources:
-            #        requests:
-            #          storage: 16Gi
           - name: dnf-cache
             hostPath:
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get volumestatus u-local-storage-cache
@@ -291,18 +303,9 @@ spec:
           - name: container-shared-registry
             persistentVolumeClaim:
               claimName: container-shared-registry
-          - name: tmp-cache
+          - name: cross-run-cache
             persistentVolumeClaim:
-              claimName: tmp-cache
-          # - name: container-shared-registry
-          #   ephemeral:
-          #     volumeClaimTemplate:
-          #       spec:
-          #         accessModes:
-          #           - ReadWriteOnce
-          #         resources:
-          #           requests:
-          #             storage: 16Gi
+              claimName: cross-run-cache
     listenerTemplate:
       spec:
         securityContext:
@@ -328,7 +331,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: tmp-cache
+  name: cross-run-cache
   namespace: arc-runners-system
 spec:
   accessModes:
