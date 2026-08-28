@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: b963a1983c89871bcd4c0a91588e68a59f169c0880cad500035f3e88787184d
+    actions.github.com/values-hash: 10c60f8340c4b87c91ae497771bf8927a89aa80e092cb7a3520fa7b2450000c
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -173,7 +173,7 @@ spec:
         name: init-dind-externals
         resources:
           limits:
-            memory: 128Mi
+            memory: 1Gi
           requests:
             cpu: 25m
             memory: 128Mi
@@ -270,9 +270,10 @@ spec:
       - name: container-rootless-storage
         persistentVolumeClaim:
           claimName: container-rootless-storage
-      - name: dnf-cache
-        persistentVolumeClaim:
-          claimName: dnf-cache
+      - hostPath:
+          path: /var/tmp/local-storage-cache/gha-cache/dnf
+          type: DirectoryOrCreate
+        name: dnf-cache
       - name: container-shared-storage
         persistentVolumeClaim:
           claimName: container-shared-storage

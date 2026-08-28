@@ -27,8 +27,8 @@ spec:
     maxRunners: 1 # only 1 runner due to pvc design
     minRunners: 1 # always ready
 
-    nodeSelector:
-      kubernetes.io/hostname: talos-ska-6at
+    #nodeSelector:
+    #  kubernetes.io/hostname: talos-ska-6at
 
     # point to the secret we created with SOPS
     githubConfigSecret: github-auth
@@ -106,7 +106,7 @@ spec:
                 mountPath: /home/runner/tmpDir
             resources:
               limits:
-                memory: 128Mi
+                memory: 1Gi
               requests:
                 cpu: 25m
                 memory: 128Mi
