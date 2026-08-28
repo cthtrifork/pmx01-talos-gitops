@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 367347918dd06397f7b4b3d384eca03437210d244b0c3c3f9af077ed970049e
+    actions.github.com/values-hash: 1a0af118da79c67d91891138de9b727366411f697623757ca65f6d21c0e1fef
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -251,8 +251,7 @@ spec:
           sizeLimit: 32Gi
         name: docker-lib
       - emptyDir:
-          medium: Memory
-          sizeLimit: 4Gi
+          sizeLimit: 20Gi
         name: tmp-memory
       - name: container-storage-rootful
         persistentVolumeClaim:
