@@ -244,7 +244,7 @@ spec:
               # RAM-backed scratch space.
               - name: tmp-memory
                 mountPath: /tmp
-              - name: tmp-memory
+              - name: podman-tmp
                 mountPath: /var/tmp
         imagePullSecrets:
           - name: github-auth
@@ -317,6 +317,19 @@ spec:
               requests:
                 cpu: 15m
                 memory: 64Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: podman-tmp
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 15Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
