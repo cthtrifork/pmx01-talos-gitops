@@ -271,8 +271,8 @@ spec:
               sizeLimit: 32Gi
           - name: tmp-memory
             emptyDir:
-              medium: Memory
-              sizeLimit: 4Gi
+              #medium: Memory
+              sizeLimit: 20Gi
           - name: container-storage-rootful
             persistentVolumeClaim:
               claimName: container-storage-rootful
