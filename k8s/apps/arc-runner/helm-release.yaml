@@ -279,6 +279,9 @@ spec:
           - name: container-rootless-storage
             persistentVolumeClaim:
               claimName: container-rootless-storage
+          - name: podman-tmp
+            persistentVolumeClaim:
+              claimName: podman-tmp
           - name: dnf-cache
             #persistentVolumeClaim:
             #  claimName: dnf-cache
