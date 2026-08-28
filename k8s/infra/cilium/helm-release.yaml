@@ -113,7 +113,7 @@ spec:
         auto:
           enabled: true # enable automatic TLS certificate generation
           method: certmanager #  auto generate certificates using cert-manager
-          certValidityDuration: 1095 #  certificates validity duration in days (default 3 years)
+          certValidityDuration: 30 #  certificates validity duration in days (default 3 years)
           certManagerIssuerRef:
             group: cert-manager.io # Reference to cert-manager's issuer
             kind: ClusterIssuer
@@ -127,7 +127,7 @@ spec:
           auto:
             enabled: true
             method: certmanager #  auto generate certificates using cert-manager
-            certValidityDuration: 1095 #  certificates validity duration in days (default 3 years)
+            certValidityDuration: 30 #  certificates validity duration in days (default 3 years)
             certManagerIssuerRef:
               group: cert-manager.io # Reference to cert-manager's issuer
               kind: ClusterIssuer
