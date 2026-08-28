@@ -147,6 +147,9 @@ data:
   iptables-random-fully: "false"
   auto-direct-node-routes: "true"
   direct-routing-skip-unreachable: "false"
+  enable-bandwidth-manager: "true"
+  enable-bbr: "false"
+  enable-bbr-hostns-only: "false"
   ipv4-native-routing-cidr: 10.244.0.0/16
   enable-host-firewall: "false"
   # List of devices used to attach bpf_host.o (implements BPF NodePort,

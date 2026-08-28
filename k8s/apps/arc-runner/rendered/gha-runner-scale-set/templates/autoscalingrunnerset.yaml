@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 10c60f8340c4b87c91ae497771bf8927a89aa80e092cb7a3520fa7b2450000c
+    actions.github.com/values-hash: 367347918dd06397f7b4b3d384eca03437210d244b0c3c3f9af077ed970049e
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -43,7 +43,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
   maxRunners: 1
-  minRunners: 0
+  minRunners: 1
   runnerScaleSetName: arc-ubuntu
   template:
     spec:
@@ -103,7 +103,11 @@ spec:
         - mountPath: /home/runner/.cache/dnf
           name: dnf-cache
         - mountPath: /home/runner/.cache/tmp
-          name: tmp-cache
+          name: cross-run-cache
+        - mountPath: /tmp
+          name: tmp-memory
+        - mountPath: /var/tmp
+          name: podman-tmp
       imagePullSecrets:
       - name: github-auth
       initContainers:
@@ -130,7 +134,7 @@ spec:
           runAsUser: 0
         volumeMounts:
         - mountPath: /tmp/arc-cache
-          name: tmp-cache
+          name: cross-run-cache
       - command:
         - sh
         - -c
@@ -143,7 +147,7 @@ spec:
           chown -R 1001:1001 /tmp/dnf /tmp/rootless || true
           chmod 0775 /tmp/dnf /tmp/rootless || true
           # Feed existing data into the mounted volumes
-          cp -r /home/runner/.local/share/containers/storage/. /tmp/rootless || true
+          #cp -r /home/runner/.local/share/containers/storage/. /tmp/rootless || true
         image: docker.io/library/busybox:1.38@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
         imagePullPolicy: IfNotPresent
         name: fix-perms
@@ -235,41 +239,30 @@ spec:
           - key: ca.crt
             path: ca.crt
           secretName: arc-runner-cert
-      - ephemeral:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-              - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 32Gi
+      - emptyDir:
+          sizeLimit: 32Gi
         name: work
-      - ephemeral:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-              - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 1Gi
-        name: dind-sock
-      - ephemeral:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-              - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 10Gi
-        name: dind-externals
       - emptyDir: {}
+        name: dind-sock
+      - emptyDir:
+          sizeLimit: 2Gi
+        name: dind-externals
+      - emptyDir:
+          sizeLimit: 32Gi
         name: docker-lib
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 4Gi
+        name: tmp-memory
       - name: container-storage-rootful
         persistentVolumeClaim:
           claimName: container-storage-rootful
       - name: container-rootless-storage
         persistentVolumeClaim:
           claimName: container-rootless-storage
+      - name: podman-tmp
+        persistentVolumeClaim:
+          claimName: podman-tmp
       - hostPath:
           path: /var/tmp/local-storage-cache/gha-cache/dnf
           type: DirectoryOrCreate
@@ -280,6 +273,6 @@ spec:
       - name: container-shared-registry
         persistentVolumeClaim:
           claimName: container-shared-registry
-      - name: tmp-cache
+      - name: cross-run-cache
         persistentVolumeClaim:
-          claimName: tmp-cache
+          claimName: cross-run-cache

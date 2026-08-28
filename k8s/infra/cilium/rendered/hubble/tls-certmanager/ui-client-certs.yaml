@@ -14,7 +14,7 @@ spec:
   commonName: "*.hubble-ui.cilium.io"
   dnsNames:
     - "*.hubble-ui.cilium.io"
-  duration: 26280h0m0s
+  duration: 720h0m0s
   privateKey:
     rotationPolicy: Always
   isCA: false
