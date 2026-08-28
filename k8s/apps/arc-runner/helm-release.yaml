@@ -212,56 +212,44 @@ spec:
               - name: ca-certs
                 mountPath: /usr/local/share/ca-certificates/private-ca.crt
                 subPath: ca.crt
-
               # Persistent rootful Podman/Buildah storage.
               - name: container-storage-rootful
                 mountPath: /var/lib/containers/storage
-
               # Job workspace: fast node-local ephemeral storage.
               - name: work
                 mountPath: /home/runner/_work
-
               # Docker socket shared with DinD.
               - name: dind-sock
                 mountPath: /var/run
-
               # Persistent rootless container storage.
               - name: container-rootless-storage
                 mountPath: /home/runner/.local/share/containers/storage
-
               # Persistent additional image store.
               - name: container-shared-storage
                 mountPath: /var/lib/shared
-
               # Persistent local registry/cache.
               - name: container-shared-registry
                 mountPath: /var/lib/registry
-
               # Same transient Docker storage as DinD.
               - name: docker-lib
                 mountPath: /var/lib/docker
-
               # Persistent DNF caches.
               - name: dnf-cache
                 mountPath: /var/cache/dnf
-
               - name: dnf-cache
                 mountPath: /home/runner/.cache/dnf
-
               # Existing persistent temporary/cache area.
               - name: cross-run-cache
                 mountPath: /home/runner/.cache/tmp
-
               # RAM-backed scratch space.
               - name: tmp-memory
                 mountPath: /tmp
-
+              - name: tmp-memory
+                mountPath: /var/tmp
         imagePullSecrets:
           - name: github-auth
-
         securityContext:
           fsGroup: 1001
-
         volumes:
           - name: ca-certs
             secret:
@@ -293,7 +281,7 @@ spec:
               claimName: container-rootless-storage
           - name: dnf-cache
             hostPath:
-              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get volumestatus u-local-storage-cache
+              # talosctl --talosconfig ./talosconfig.yaml --nodes talos-wb5-z9x get volumestatus u-local-storage-cache
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get mountstatus u-local-storage-cache
               path: /var/tmp/local-storage-cache/gha-cache/dnf
               type: DirectoryOrCreate
