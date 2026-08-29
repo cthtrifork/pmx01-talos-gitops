@@ -99,7 +99,7 @@ spec:
               - name: container-rootless-storage
                 mountPath: /tmp/rootless
           - name: init-dind-externals
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.3.0@sha256:bd7d92d46c8bc066a295626ba818f1976ef9f3bdd63e58b6b26aa0aadea91855
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.4.0@sha256:2d14bfcf5890fd1642f1ec055bf86dc3d90012cd550ef178109e2bb6861ec6e2
             imagePullPolicy: IfNotPresent
             command:
               - "cp"
@@ -166,7 +166,7 @@ spec:
                 mountPath: /var/lib/docker
         containers:
           - name: runner
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.3.0@sha256:bd7d92d46c8bc066a295626ba818f1976ef9f3bdd63e58b6b26aa0aadea91855
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.4.0@sha256:2d14bfcf5890fd1642f1ec055bf86dc3d90012cd550ef178109e2bb6861ec6e2
             imagePullPolicy: IfNotPresent
             command: ["/home/runner/run.sh"]
 
