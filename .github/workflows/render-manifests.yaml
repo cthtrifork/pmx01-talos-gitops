@@ -53,7 +53,7 @@ jobs:
         run: echo "SHOULD_RUN=true" >> $GITHUB_OUTPUT
 
       - name: Setup Flux CLI
-        uses: fluxcd/flux2/action@da2d22d3690191a315822612085f424e4133b06a # main
+        uses: fluxcd/flux2/action@602d14817c2cd3d6124ec948cd8c0348e2bf2b0a # main
 
       - name: Find and execute render.sh
         if: ${{ steps.should-run.outputs.SHOULD_RUN == 'true' }}
