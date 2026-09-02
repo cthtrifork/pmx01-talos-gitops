@@ -5,5 +5,5 @@ resources:
   - cert-manager/
   #- kubevirt/kubevirt.yaml
   #- kubevirt/cdi.yaml
-  #- metallb/l2announcement.yaml
+  - metallb/l2announcement.yaml
   #- kyverno-policies/
