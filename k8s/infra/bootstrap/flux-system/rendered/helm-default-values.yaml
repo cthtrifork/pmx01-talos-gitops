@@ -1,5 +1,5 @@
-Pulled: ghcr.io/controlplaneio-fluxcd/charts/flux-operator:0.58.1
-Digest: sha256:b93eb18c9dfb62554e2cb750ecdd9f4ff58ca7e1c7bde260c6bf0c3452b786f8
+Pulled: ghcr.io/controlplaneio-fluxcd/charts/flux-operator:0.59.0
+Digest: sha256:ae962f87e04301c61aeb41698146027ba4c2e4b4157d4c08fb4a4e335be9aa42
 # Default values for flux-operator.
 
 nameOverride: ""
