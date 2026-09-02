@@ -1,4 +1,5 @@
 ---
+# https://docs.github.com/en/actions/tutorials/use-actions-runner-controller/troubleshoot
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
