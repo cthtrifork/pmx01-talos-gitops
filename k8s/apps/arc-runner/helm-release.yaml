@@ -257,13 +257,13 @@ spec:
             persistentVolumeClaim:
               claimName: podman-tmp
           - name: dnf-cache
-            #persistentVolumeClaim:
-            #  claimName: dnf-cache
-            hostPath:
+            persistentVolumeClaim:
+              claimName: dnf-cache
+            #hostPath:
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-wb5-z9x get volumestatus u-local-storage-cache
               # talosctl --talosconfig ./talosconfig.yaml --nodes talos-ska-6at get mountstatus u-local-storage-cache
-              path: /var/tmp/local-storage-cache/gha-cache/dnf
-              type: DirectoryOrCreate
+            #  path: /var/tmp/local-storage-cache/gha-cache/dnf
+            #  type: DirectoryOrCreate
           - name: container-shared-storage
             persistentVolumeClaim:
               claimName: container-shared-storage
@@ -294,6 +294,19 @@ spec:
               requests:
                 cpu: 15m
                 memory: 64Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dnf-cache
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 25Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
