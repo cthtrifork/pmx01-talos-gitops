@@ -41,6 +41,10 @@ spec:
     containerMode: {} # we use custom
     template:
       spec:
+        # `bootc install` (used by the homeserver-bootc e2e) must see a root-owned PID 1 and the
+        # host's udev database, like it would on a real host. The runner container is already
+        # privileged; this additionally shares the node PID namespace with the pod.
+        hostPID: true
         initContainers:
           - name: data-retention
             image: docker.io/library/busybox:1.38@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
@@ -220,6 +224,10 @@ spec:
                 mountPath: /tmp
               - name: podman-tmp
                 mountPath: /var/tmp
+              # Host udev database, bind-mounted into `bootc install` containers (read-only).
+              - name: host-udev
+                mountPath: /run/udev
+                readOnly: true
         imagePullSecrets:
           - name: github-auth
         securityContext:
@@ -231,6 +239,10 @@ spec:
               items:
                 - key: ca.crt
                   path: ca.crt
+          - name: host-udev
+            hostPath:
+              path: /run/udev
+              type: Directory
           - name: work
             emptyDir:
               sizeLimit: 32Gi
