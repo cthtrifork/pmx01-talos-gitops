@@ -11,6 +11,7 @@
   "rebaseWhen": "conflicted",
   "recreateWhen": "always",
   "pinDigests": true,
+  "commitMessageSuffix": "({{updateType}})",
   "ignorePaths": [
     "scripts/**",
     "k8s/**/rendered/**",
