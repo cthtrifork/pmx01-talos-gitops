@@ -49,8 +49,6 @@ jobs:
       - name: Install latest cilium
         run: |
          helm repo add cilium https://helm.cilium.io/
-         docker pull quay.io/cilium/cilium:${CILIUM_VERSION}
-         kind load docker-image quay.io/cilium/cilium:${CILIUM_VERSION} --name pmx-talos
 
          helm install cilium cilium/cilium --version ${CILIUM_VERSION#v} \
           --namespace kube-system \
