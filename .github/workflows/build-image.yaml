@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-    RUNNER_VERSION: "2.338.1" # renovate: datasource=github-releases depName=actions/runner
+    RUNNER_VERSION: "2.338.2" # renovate: datasource=github-releases depName=actions/runner
 
 jobs:
     publish-images:
