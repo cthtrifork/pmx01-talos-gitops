@@ -41,10 +41,6 @@ spec:
     containerMode: {} # we use custom
     template:
       spec:
-        # `bootc install` (used by the homeserver-bootc e2e) must see a root-owned PID 1 and the
-        # host's udev database, like it would on a real host. The runner container is already
-        # privileged; this additionally shares the node PID namespace with the pod.
-        hostPID: true
         initContainers:
           - name: data-retention
             image: docker.io/library/busybox:1.38@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
@@ -228,6 +224,12 @@ spec:
               - name: host-udev
                 mountPath: /run/udev
                 readOnly: true
+              # Live host devtmpfs. A privileged pod only gets a static snapshot of /dev, so the
+              # partition nodes `bootc install --via-loopback` creates (/dev/loopXpN) would never
+              # appear. Mounted at /host-dev (not /dev) so the runner's own /dev is untouched; the
+              # e2e job bind-mounts it as /dev into the bootc container.
+              - name: host-dev
+                mountPath: /host-dev
         imagePullSecrets:
           - name: github-auth
         securityContext:
@@ -242,6 +244,10 @@ spec:
           - name: host-udev
             hostPath:
               path: /run/udev
+              type: Directory
+          - name: host-dev
+            hostPath:
+              path: /dev
               type: Directory
           - name: work
             emptyDir:
