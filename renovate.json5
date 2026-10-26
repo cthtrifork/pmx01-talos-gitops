@@ -57,10 +57,12 @@
   },
   "packageRules": [
     {
-      "description": "Automerge patch updates everywhere; more specific rules below can override",
+      "description": "Automerge patch and digest updates everywhere; more specific rules below can override",
       "automerge": true,
+      "automergeType": "branch",
       "matchUpdateTypes": [
-        "patch"
+        "patch",
+        "digest"
       ]
     },
     {
