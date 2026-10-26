@@ -56,6 +56,13 @@
   },
   "packageRules": [
     {
+      "description": "Automerge patch updates everywhere; more specific rules below can override",
+      "automerge": true,
+      "matchUpdateTypes": [
+        "patch"
+      ]
+    },
+    {
       "automerge": false,
       "matchUpdateTypes": [
         "major",
