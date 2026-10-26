@@ -11,6 +11,7 @@
   "rebaseWhen": "conflicted",
   "recreateWhen": "always",
   "pinDigests": true,
+  "commitMessageSuffix": "({{updateType}})",
   "ignorePaths": [
     "scripts/**",
     "k8s/**/rendered/**",
@@ -55,6 +56,15 @@
     ]
   },
   "packageRules": [
+    {
+      "description": "Automerge patch and digest updates everywhere; more specific rules below can override",
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": [
+        "patch",
+        "digest"
+      ]
+    },
     {
       "automerge": false,
       "matchUpdateTypes": [
