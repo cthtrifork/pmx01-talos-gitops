@@ -170,6 +170,11 @@ spec:
     k8sServicePort: 7445 # sidero specific
     routingMode: "native"
     autoDirectNodeRoutes: true
+    # NIC names differ per node (eno1, enp87s0, eth0). Pin to the physical NICs so
+    # the siderolink tunnel (MTU 1280) is not auto-detected and does not cap the pod MTU.
+    devices:
+      - "en+"
+      - "eth+"
 
     enableIPv4Masquerade: true
     ipMasqAgent:
