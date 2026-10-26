@@ -116,6 +116,7 @@
       "matchPackageNames": [
         "cilium",
         "cilium/cilium",
+        "quay.io/cilium/charts/cilium",
         "quay.io/cilium/cilium",
         "quay.io/cilium/operator",
         "quay.io/cilium/operator-generic",
