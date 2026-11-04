@@ -137,7 +137,8 @@ spec:
           - name: runner
             image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.6.1@sha256:ac40333190ab577b76951db6d90527c8c0e5bd28795ee014fed56b883ab1c8d6
             imagePullPolicy: IfNotPresent
-            command: ["/home/runner/run.sh"]
+            command:
+              - "/home/runner/run.sh"
 
             resources:
               requests:

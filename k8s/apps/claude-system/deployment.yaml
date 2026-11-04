@@ -36,7 +36,9 @@ spec:
       containers:
         - name: claude
           image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.8.0@sha256:f40cd25b03dbfc1fb94b02017f3e82911681935b732a9ba0db526d68eb78dc07
-          command: ["/bin/bash", "-c"]
+          command:
+            - "/bin/bash"
+            - "-c"
           args:
             - |
               # User-level memory from the claude-md ConfigMap (managed in Git). A symlink, not a subPath
@@ -62,7 +64,8 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - "ALL"
           volumeMounts:
             - name: home
               mountPath: /home/claude
@@ -94,7 +97,8 @@ spec:
           ephemeral:
             volumeClaimTemplate:
               spec:
-                accessModes: [ReadWriteOnce]
+                accessModes:
+                  - ReadWriteOnce
                 storageClassName: local-path
                 resources:
                   requests:

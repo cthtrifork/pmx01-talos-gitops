@@ -42,7 +42,8 @@ spec:
     persistence: true
     pvc:
       create: true
-      accessModes: ["ReadWriteOnce"]
+      accessModes:
+        - "ReadWriteOnce"
       storage: 60Gi
       # Name of the storage class to use if it is different than the default one
       storageClassName: ${DEFAULT_STORAGE_CLASS:=local-path}
