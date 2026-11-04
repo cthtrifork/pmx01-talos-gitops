@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - images/github-actions-runner/*
+      - images/claude-runner/*
   push:
     tags:
       - 'v*'
@@ -38,6 +39,10 @@ jobs:
                       containerfile: images/github-actions-runner/Dockerfile
                       context: images/github-actions-runner
                       registryurl: ghcr.io/${{ github.repository }}/github-actions-runner
+                    - name: claude-runner
+                      containerfile: images/claude-runner/Dockerfile
+                      context: images/claude-runner
+                      registryurl: ghcr.io/${{ github.repository }}/claude-runner
         steps:
             - name: Checkout repository
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

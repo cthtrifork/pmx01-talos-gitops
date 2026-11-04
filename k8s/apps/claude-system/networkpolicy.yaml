@@ -1,0 +1,54 @@
+# Default deny both ways for everything in the namespace, then an egress whitelist by DNS name.
+# Edit the toFQDNs list if the runner needs another host; anything not listed is dropped. The cloud
+# metadata address 169.254.169.254 is not allowed, as the Anthropic docs require.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claude-default-deny
+  namespace: claude-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claude-egress-allowlist
+  namespace: claude-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns; the dns rule makes Cilium learn the addresses the FQDN rules below match
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+          rules:
+            dns:
+              - matchPattern: "*"
+    # Kubernetes API (read-only through the ServiceAccount's RBAC)
+    - toEntities:
+        - kube-apiserver
+    - toFQDNs:
+        # The runner's required hosts (https://code.claude.com/docs/en/self-hosted-environments-deploy,
+        # "Network requirements"): control plane and inference, then git.
+        - matchName: api.anthropic.com
+        - matchName: github.com
+        # Claude Code itself: plugin installs and metadata, documentation lookups
+        - matchName: downloads.claude.ai
+        - matchName: storage.googleapis.com
+        - matchName: code.claude.com
+        - matchName: claude.com
+        # Only needed when sessions install plugins or run npx MCP servers
+        - matchName: registry.npmjs.org
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }
