@@ -5,6 +5,7 @@
 # The login lives on the claude-home PVC (~/.claude/.credentials.json, ~/.claude.json), so it survives
 # restarts and the token refreshes in place. The pod idles until a login exists, then starts
 # `claude remote-control`. One-time login: README.md.
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -7,6 +7,7 @@
 # https://sync.portableinfo.cloud/ , which is handy for checking Cloudflare's client-IP headers.
 # To switch: set image to ghcr.io/cthtrifork/harper-pad-sync pinned by digest, args to ["serve"],
 # and the probe paths to /healthz and /readyz.
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
