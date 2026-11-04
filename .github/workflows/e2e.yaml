@@ -2,11 +2,17 @@ name: e2e
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - k8s/**
+      - scripts/kind.yaml
+      - .github/workflows/e2e.yaml
   push:
-    branches: [ '**' ]
-    tags-ignore: [ '*' ]
-    paths-ignore:
-      - images/**
+    branches: [ main ]
+    paths:
+      - k8s/**
+      - scripts/kind.yaml
+      - .github/workflows/e2e.yaml
 
 permissions:
   contents: read
@@ -24,6 +30,7 @@ concurrency:
 jobs:
   e2e-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -102,9 +109,37 @@ jobs:
 
       - name: List deployed resources
         run: flux tree ks flux-system
+
+      # Server-side dry-run of the harper-pad manifests against a real API server: checks the
+      # schemas of the cert-manager, CloudNativePG and Traefik resources (CRDs from the rendered
+      # manifests in this repo and the Traefik chart) and Pod Security admission for the restricted namespace.
+      - name: Install CRDs needed by harper-pad
+        run: |
+          kubectl apply --server-side --force-conflicts \
+            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_certificates.yaml \
+            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_issuers.yaml \
+            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_clusterissuers.yaml
+          kubectl apply --server-side --force-conflicts \
+            -f k8s/infra/storage-system/cloudnative-pg/rendered/crds/crds.yaml
+          # Traefik ships its CRDs in the chart's crds/ directory, which helm template does not render
+          helm show crds oci://ghcr.io/traefik/helm/traefik --version "${TRAEFIK_CHART_VERSION}" |
+            kubectl apply --server-side --force-conflicts -f -
+          kubectl wait --for=condition=Established --timeout=2m \
+            crd/certificates.cert-manager.io crd/issuers.cert-manager.io crd/clusters.postgresql.cnpg.io \
+            crd/middlewares.traefik.io crd/ingressroutes.traefik.io
+        env:
+          TRAEFIK_CHART_VERSION: "42.3.0" # renovate: datasource=docker depName=ghcr.io/traefik/helm/traefik
+      - name: Dry-run harper-pad against the API server
+        run: |
+          kubectl kustomize k8s/apps/harper-pad > "${RUNNER_TEMP}/harper-pad.yaml"
+          # the namespace has to exist for a namespaced dry-run
+          kubectl apply -f k8s/apps/harper-pad/namespace.yaml
+          kubectl apply --dry-run=server -f "${RUNNER_TEMP}/harper-pad.yaml"
       - name: Debug failure
         if: failure()
         run: |
+          kubectl get pods -A
+          kubectl get events -A --sort-by=.lastTimestamp | tail -50
           kubectl -n flux-system get all
           kubectl -n flux-system logs deploy/source-controller
           kubectl -n flux-system logs deploy/kustomize-controller

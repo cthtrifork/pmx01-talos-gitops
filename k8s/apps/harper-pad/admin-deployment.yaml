@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+# harper-pad-admin: NO Service. The app listens on 127.0.0.1 only; a cloudflared native sidecar maps the
+# admin hostname (remotely managed tunnel, behind Cloudflare Access with OIDC) to http://localhost:9001.
+#
+# replicas is 0 until the Secret harper-pad-admin-tunnel (key `token`) exists (see README.md):
+#   kubectl -n harper-pad create secret generic harper-pad-admin-tunnel --from-literal=token=<TUNNEL_TOKEN>
+# or commit it as secret.enc.yaml (sops), as the other apps do. Then set replicas: 1.
+# The app listens on loopback, which kubelet cannot probe, so there are no probes on it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harper-pad-admin
+  namespace: harper-pad
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: harper-pad-admin
+  template:
+    metadata:
+      labels:
+        app: harper-pad-admin
+    spec:
+      serviceAccountName: harper-pad-admin
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Native sidecar: up before the app, outlives it.
+        - name: cloudflared
+          image: docker.io/cloudflare/cloudflared:2026.9.3@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c
+          restartPolicy: Always
+          args: ["tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:2000", "run"]
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: harper-pad-admin-tunnel
+                  key: token
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      containers:
+        - name: admin
+          # PLACEHOLDER echo server until the real image exists. It listens on all interfaces, not
+          # loopback; the default-deny ingress policy still lets only the pod's own sidecar reach it.
+          # Real image: ghcr.io/cthtrifork/harper-pad-admin pinned by digest, args ["serve"].
+          image: docker.io/traefik/whoami:v1.12.0@sha256:c4717a8d1f0134a7444e24f881160e033991f23027c6c5a9a3f8fd22e70d1d44
+          args: ["--port", "9001"]
+          env:
+            - name: LISTEN_ADDR
+              value: 127.0.0.1:9001
+            - name: PGHOST
+              value: harper-pad-db-rw
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              value: harper
+            - name: PGUSER
+              value: harper_admin
+            - name: PGSSLMODE
+              value: verify-full
+            - name: PGSSLROOTCERT
+              value: /db-client/ca.crt
+            - name: PGSSLCERT
+              value: /db-client/tls.crt
+            - name: PGSSLKEY
+              value: /db-client/tls.key
+          volumeMounts:
+            - name: db-client
+              mountPath: /db-client
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: db-client
+          secret:
+            secretName: harper-pad-db-client-admin
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+              - key: ca.crt
+                path: ca.crt

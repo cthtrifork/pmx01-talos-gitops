@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/cluster_v1.json
+# One instance, no backups: every device holds a full copy and Sync all repopulates an empty server.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: harper-pad-db
+  namespace: harper-pad
+spec:
+  instances: 1
+  enableSuperuserAccess: false
+  storage:
+    size: 2Gi
+    storageClass: local-path
+  resources:
+    requests:
+      cpu: 30m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  bootstrap:
+    initdb:
+      database: harper
+      owner: harper_sync # owns the tables and runs the migrations
+      encoding: UTF8
+  managed:
+    roles:
+      # No password: access is by client certificate only (see pg_hba below).
+      - name: harper_admin
+        ensure: present
+        login: true
+        comment: harper-pad-admin; grants are applied by the sync service's migrations
+  certificates:
+    serverTLSSecret: harper-pad-db-server
+    serverCASecret: harper-pad-db-ca
+    clientCASecret: harper-pad-db-ca
+    replicationTLSSecret: harper-pad-db-replication
+  postgresql:
+    pg_hba:
+      # Placed before CNPG's default "host all all all scram-sha-256" rule.
+      # cert auth matches the certificate CN against the role name.
+      - hostssl harper harper_sync all cert
+      - hostssl harper harper_admin all cert
+  monitoring:
+    enablePodMonitor: true

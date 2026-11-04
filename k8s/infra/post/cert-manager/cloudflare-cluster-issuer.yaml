@@ -17,4 +17,3 @@ spec:
               name: cloudflare-api-token-secret
               key: api-token
             email: caspert@gmail.com
-

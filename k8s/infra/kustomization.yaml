@@ -12,4 +12,5 @@ resources:
   - storage-system/
   - policy-system/
   - registry-system/
+  - ingress-system/
   #- security-system/

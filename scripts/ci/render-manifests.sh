@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Get the directory of the current script
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # Enable Helm OCI support
 export HELM_EXPERIMENTAL_OCI=1
 
@@ -96,7 +93,8 @@ prepare_values() {
 
   if [[ -f ./.render-env ]]; then
     while read -r line; do
-      export $line
+      # shellcheck disable=SC2163 # line is NAME=value
+      export "$line"
     done <./.render-env
   fi
 
@@ -110,7 +108,7 @@ prepare_values() {
     while read -r line; do
       # Extract variable name before '='
       var_name=$(echo "$line" | cut -d '=' -f 1)
-      unset $var_name
+      unset "$var_name"
     done <./.render-env
   fi
 }

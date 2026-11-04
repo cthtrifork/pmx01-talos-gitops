@@ -1,0 +1,14 @@
+# Cluster-internal only: Traefik routes to this (ingressroute.yaml); nothing is exposed on the LAN.
+apiVersion: v1
+kind: Service
+metadata:
+  name: harper-pad-sync
+  namespace: harper-pad
+spec:
+  type: ClusterIP
+  selector:
+    app: harper-pad-sync
+  ports:
+    - name: http
+      port: 80
+      targetPort: app

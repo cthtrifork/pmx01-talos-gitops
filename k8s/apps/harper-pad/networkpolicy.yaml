@@ -1,0 +1,127 @@
+# Default deny for the app pods, then allow only what docs/sync.md lists. The Postgres pod is only
+# restricted on ingress: the CNPG instance manager needs the Kubernetes API, which plain
+# NetworkPolicy cannot allow under Cilium's kube-proxy replacement.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-apps
+  namespace: harper-pad
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: [harper-pad-sync, harper-pad-admin]
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: apps-egress-dns-and-db
+  namespace: harper-pad
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: [harper-pad-sync, harper-pad-admin]
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: harper-pad-db
+      ports:
+        - { protocol: TCP, port: 5432 }
+---
+# Sync API: reachable from Traefik only (the Cloudflare tunnel runs in the Traefik pod).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sync-ingress
+  namespace: harper-pad
+spec:
+  podSelector:
+    matchLabels:
+      app: harper-pad-sync
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - { protocol: TCP, port: 9000 }
+---
+# Admin pod: no ingress at all. Out to Cloudflare for the tunnel only (7844 tunnel, 443 api).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-egress-cloudflare
+  namespace: harper-pad
+spec:
+  podSelector:
+    matchLabels:
+      app: harper-pad-admin
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]
+      ports:
+        - { protocol: TCP, port: 7844 }
+        - { protocol: UDP, port: 7844 }
+        - { protocol: TCP, port: 443 }
+---
+# PostgreSQL: only the sync and admin pods, plus the CNPG operator and Prometheus.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-ingress
+  namespace: harper-pad
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: harper-pad-db
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: [harper-pad-sync, harper-pad-admin]
+      ports:
+        - { protocol: TCP, port: 5432 }
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: harper-pad-db # replication / instance manager between pods
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: storage-system # CNPG operator: status 8000, 5432
+      ports:
+        - { protocol: TCP, port: 8000 }
+        - { protocol: TCP, port: 5432 }
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack-system
+      ports:
+        - { protocol: TCP, port: 9187 }

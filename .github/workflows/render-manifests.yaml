@@ -124,5 +124,7 @@ jobs:
 
       - name: Push changes
         if: ${{ github.event_name == 'workflow_dispatch' && steps.commit.outputs.commit }}
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: | #sh
-          git push origin ${{ github.head_ref || github.ref_name }}
+          git push origin "$BRANCH"

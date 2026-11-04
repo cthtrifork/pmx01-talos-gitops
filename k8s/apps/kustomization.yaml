@@ -4,3 +4,4 @@ resources:
   - arc-runner/
   - controllers/actions-runner-controller/
   - adguard/
+  - harper-pad/

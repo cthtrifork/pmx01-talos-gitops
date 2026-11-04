@@ -1,0 +1,24 @@
+---
+# Source: traefik/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: traefik-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik-traefik-system
+    app.kubernetes.io/version: "v3.7.17"
+    helm.sh/chart: traefik-42.3.0
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik-traefik-system
+  ports:
+    - port: 80
+      name: web
+      targetPort: web
+      protocol: TCP
