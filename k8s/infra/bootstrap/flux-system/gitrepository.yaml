@@ -5,7 +5,7 @@ metadata:
   name: gitops
   namespace: flux-system
 spec:
-  interval: 1m0s # todo
+  interval: 15m # not referenced by any Kustomization; the cluster syncs from the FluxInstance GitRepository
   url: https://github.com/cthtrifork/pmx01-talos-gitops
   ref:
     branch: main
