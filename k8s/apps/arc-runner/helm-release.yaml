@@ -6,7 +6,7 @@ metadata:
   name: arc-runners-homeserver-bootc
   namespace: arc-runners-system
 spec:
-  interval: 10m
+  interval: 30m
   releaseName: arc-runners
   chartRef:
     kind: OCIRepository
