@@ -132,3 +132,5 @@ docker run -it --rm \
 - render manifests on renovatebot PRs
 - Remove insecure-tls from metrics-server
 - Finish air-gapped compatability
+
+<!-- test PR from Claude Code; safe to close -->
