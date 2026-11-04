@@ -21,7 +21,9 @@ metadata:
   name: claude-egress-allowlist
   namespace: claude-system
 spec:
-  endpointSelector: {}
+  endpointSelector:
+    matchLabels:
+      app: claude-runner
   egress:
     # DNS through kube-dns; the dns rule makes Cilium learn the addresses the FQDN rules below match
     - toEndpoints:
@@ -49,6 +51,35 @@ spec:
         - matchName: claude.com
         # Only needed when sessions install plugins or run npx MCP servers
         - matchName: registry.npmjs.org
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }
+---
+# The token refresher only needs DNS, the Kubernetes API (to write one Secret) and api.github.com.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claude-token-refresher-egress
+  namespace: claude-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: claude-token-refresher
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEntities:
+        - kube-apiserver
+    - toFQDNs:
+        - matchName: api.github.com
       toPorts:
         - ports:
             - { port: "443", protocol: TCP }
