@@ -1,4 +1,5 @@
 # Holds the Claude login (~/.claude) for the claude-rc Deployment. Delete it to sign out.
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

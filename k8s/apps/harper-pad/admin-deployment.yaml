@@ -5,6 +5,7 @@
 # Needs the Secret harper-pad-admin-tunnel (key `token`), created by hand (see README.md):
 #   kubectl -n harper-pad create secret generic harper-pad-admin-tunnel --from-literal=token=<TUNNEL_TOKEN>
 # The app listens on loopback, which kubelet cannot probe, so there are no probes on it.
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
