@@ -40,7 +40,7 @@ jobs:
           bash <(curl -fsSL "https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash") "${ACTIONLINT_VERSION}"
           ./actionlint -color -ignore 'SC2086' -ignore 'SC2129' -ignore 'constant expression "false"'
         env:
-          ACTIONLINT_VERSION: "1.7.7" # renovate: datasource=github-releases depName=rhysd/actionlint
+          ACTIONLINT_VERSION: "1.7.12" # renovate: datasource=github-releases depName=rhysd/actionlint
       - name: Secrets are SOPS-encrypted
         run: ./scripts/ci/check-secrets-encrypted.sh k8s
   manifests:
