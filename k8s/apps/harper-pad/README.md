@@ -33,9 +33,17 @@ application's contract (harper-pad PR #82):
 `/readyz` queries the database, so Traefik does not route it (`ingressroute.yaml`); `/healthz` stays public. Both tunnel
 tokens exist.
 
-**Image pull secret.** The images are private until made public. Both ServiceAccounts use the `github-auth` pull secret,
-which the Kyverno policy `clone-github-auth` (`k8s/infra/post/kyverno-policies/`) copies from `arc-runners-system` into
-every namespace labelled `ghcr-pull-secret: "true"`, this one included; the secret stays encrypted once, in Git.
+**Image pull secret.** The images are private until made public. Both ServiceAccounts use a `github-auth` pull secret that
+is created by hand and is not in Git. Copy the one the runner namespace has:
+
+```sh
+kubectl -n arc-runners-system get secret github-auth -o json \
+  | jq '{apiVersion, kind, type, metadata: {name: .metadata.name, namespace: "harper-pad"}, data}' \
+  | kubectl apply -f -
+```
+
+It must be `type: kubernetes.io/dockerconfigjson`; check with `kubectl -n harper-pad get secret github-auth -o jsonpath='{.type}'`.
+Pods only retry the pull with backoff, so a secret created after the first failure is used on the next attempt.
 
 ## Tunnel tokens
 
@@ -84,8 +92,7 @@ Turn on **Always Use HTTPS** for the zone.
    job summary prints each image's digest.
 2. In both Deployments replace the fake tag with `sha-<commit>@sha256:<digest>` (the tag in front of the digest lets
    Renovate bump it).
-3. Check: `kubectl -n harper-pad get secret github-auth` exists (cloned by Kyverno; if not, `kubectl get clusterpolicy
-   clone-github-auth` and the background controller's log). `kubectl -n harper-pad rollout status deploy/harper-pad-sync`;
+3. Create the pull secret (see "Image pull secret"), then check: `kubectl -n harper-pad rollout status deploy/harper-pad-sync`;
    `curl -i https://sync.portableinfo.cloud/healthz` returns `ok`. The pod is only Ready when `/readyz` reaches
    `harper-pad-db`, so a pod stuck not Ready with `readiness: database ping failed` in its log points at the
    client-certificate login or the NetworkPolicy, not the app.
