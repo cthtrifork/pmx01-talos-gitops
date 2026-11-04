@@ -2,11 +2,11 @@
 # Anthropic publishes no runner image, so this wraps the claude binary. Runs as non-root.
 ARG DEBIAN_IMAGE=debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
 FROM ${DEBIAN_IMAGE}
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Bump together: the version and the linux-x64 checksum from
-# https://downloads.claude.ai/claude-code-releases/<version>/manifest.json
-ARG CLAUDE_CODE_VERSION=2.1.311
-ARG CLAUDE_CODE_SHA256=86dc1fcc69498159eaf15f446613e847010f9036bfbbdffd4c49350be8489ada
+# Renovate bumps the version. The linux-x64 checksum is read from the release manifest at build time
+# (https://downloads.claude.ai/claude-code-releases/<version>/manifest.json), so there is nothing to bump by hand.
+ARG CLAUDE_CODE_VERSION=2.1.311 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 # Keep within one minor version of the cluster
 ARG KUBECTL_VERSION=v1.34.1
 
@@ -14,8 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       git curl ca-certificates openssh-client jq python3 \
  && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL "https://downloads.claude.ai/claude-code-releases/${CLAUDE_CODE_VERSION}/linux-x64/claude" -o /usr/local/bin/claude \
- && echo "${CLAUDE_CODE_SHA256}  /usr/local/bin/claude" | sha256sum -c - \
+RUN base="https://downloads.claude.ai/claude-code-releases/${CLAUDE_CODE_VERSION}" \
+ && sha="$(curl -fsSL "${base}/manifest.json" | jq -er '.platforms."linux-x64".checksum')" \
+ && curl -fsSL "${base}/linux-x64/claude" -o /usr/local/bin/claude \
+ && echo "${sha}  /usr/local/bin/claude" | sha256sum -c - \
  && chmod +x /usr/local/bin/claude
 
 RUN curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl \
