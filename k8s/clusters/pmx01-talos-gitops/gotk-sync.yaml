@@ -6,7 +6,7 @@ metadata:
   name: gitops-infra-bootstrap
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 30m
   prune: true
   decryption:
     provider: sops
@@ -31,7 +31,7 @@ spec:
     provider: sops
     secretRef:
       name: sops-age
-  interval: 10m
+  interval: 30m
   prune: true
   dependsOn:
     - name: gitops-infra-bootstrap
@@ -50,7 +50,7 @@ metadata:
   name: gitops-infra-post
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 30m
   prune: true
   decryption:
     provider: sops
@@ -73,7 +73,7 @@ metadata:
   name: gitops-virtualmachines
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 30m
   prune: true
   dependsOn:
     - name: gitops-infra-post
@@ -92,7 +92,7 @@ metadata:
   name: app-controllers
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 30m
   prune: true
   decryption:
     provider: sops
@@ -115,7 +115,7 @@ metadata:
   name: app
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 30m
   prune: true
   decryption:
     provider: sops

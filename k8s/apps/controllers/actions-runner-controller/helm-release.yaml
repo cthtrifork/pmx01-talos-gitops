@@ -5,7 +5,7 @@ metadata:
   name: gha-runner-scale-set-controller
   namespace: arc-controller-system
 spec:
-  interval: 10m
+  interval: 30m
   releaseName: gha-runner-scale-set-controller
   chartRef:
     kind: OCIRepository

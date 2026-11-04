@@ -5,7 +5,7 @@ metadata:
   name: prometheus-operator-crds
   namespace: kube-prometheus-stack-system
 spec:
-  interval: 5m
+  interval: 30m
   chartRef:
     kind: OCIRepository
     name: prometheus-community-crds
