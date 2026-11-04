@@ -2,11 +2,11 @@
 # harper-pad-sync: the API on :9000, reachable only from Traefik (see networkpolicy.yaml). TLS, DNS and the
 # public hostname are Cloudflare's: a tunnel in the Traefik pod (k8s/infra/ingress-system) carries the traffic.
 #
-# PLACEHOLDER: runs traefik/whoami (an echo server with /health) until the real image exists
-# (backend/ is not built yet, harper-pad PR #80 is docs only). It echoes request headers at
-# https://sync.portableinfo.cloud/ , which is handy for checking Cloudflare's client-IP headers.
-# To switch: set image to ghcr.io/cthtrifork/harper-pad-sync pinned by digest, args to ["serve"],
-# and the probe paths to /healthz and /readyz.
+# The pull secret comes from the ServiceAccount (serviceaccount.yaml). No args: the image's CMD is "serve". The
+# probes, ports and env follow the app's contract (backend/README.md in harper-pad).
+#
+# Probes: /healthz is liveness and never touches PostgreSQL; /readyz is readiness and does a database round trip
+# (2 s limit, cached for 2 s), so timeoutSeconds is 3. Metrics are on the separate port 9102 (podmonitor.yaml).
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,10 +38,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sync
-          image: docker.io/traefik/whoami:v1.12.0@sha256:c4717a8d1f0134a7444e24f881160e033991f23027c6c5a9a3f8fd22e70d1d44
-          args:
-            - "--port"
-            - "9000"
+          image: ghcr.io/cthtrifork/harper-pad-sync:v1.1.0
           env:
             # Must be https: or the service refuses to start; the scheme is taken from here, not from headers.
             - name: PUBLIC_URL
@@ -68,20 +65,26 @@ spec:
           ports:
             - name: app
               containerPort: 9000
+            - name: metrics
+              containerPort: 9102
           volumeMounts:
             - name: db-client
               mountPath: /db-client # a directory mount, not subPath, so renewals reach the pod
               readOnly: true
           livenessProbe:
             httpGet:
-              path: /health
+              path: /healthz
               port: app
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: app
             periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
           resources:
             requests:
               cpu: 20m

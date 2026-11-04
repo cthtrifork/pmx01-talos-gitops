@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/monitoring.coreos.com/podmonitor_v1.json
+# Prometheus scrapes harper-pad-sync on its named container port `metrics` (:9102/metrics). The release label is what
+# the kube-prometheus-stack Prometheus selects PodMonitors by (podMonitorSelectorNilUsesHelmValues: true). While the
+# whoami placeholder runs, nothing listens there and the target simply shows as down. The admin pod has no metrics
+# port: it accepts no traffic except from its own sidecar.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: harper-pad-sync
+  namespace: harper-pad
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: harper-pad-sync
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics

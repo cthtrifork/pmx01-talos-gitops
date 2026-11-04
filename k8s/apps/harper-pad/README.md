@@ -19,10 +19,20 @@ Cloudflare owns DNS and TLS. There is no certificate or LAN address for the API.
 
 ## Status
 
-The application images are not published yet, so both Deployments run `traefik/whoami`, an echo
-server with a `/health` endpoint, as a placeholder. Both tunnel tokens exist, so `harper-pad-sync`
-and `harper-pad-admin` are running (`https://sync.portableinfo.cloud/` echoes the request headers
-and `/health` returns 200).
+Both Deployments run `ghcr.io/cthtrifork/harper-pad-sync` and `-admin`. Everything around the images follows the
+application's contract (harper-pad PR #82):
+
+| | sync | admin |
+|---|---|---|
+| Listens on | `:9000` | `127.0.0.1:9001` |
+| Liveness | `GET /healthz` (process only) | none (loopback) |
+| Readiness | `GET /readyz` (PostgreSQL round trip) | none (loopback) |
+| Metrics | `:9102/metrics`, scraped through `podmonitor.yaml`; the NetworkPolicy lets only Prometheus in | off |
+
+`/readyz` queries the database, so Traefik does not route it (`ingressroute.yaml`); `/healthz` stays public. Both tunnel
+tokens exist.
+
+**Image pull secret.** Both ServiceAccounts use the `github-auth` pull secret in the `harper-pad` namespace.
 
 ## Tunnel tokens
 
@@ -65,16 +75,8 @@ kubectl -n harper-pad logs deploy/harper-pad-admin -c cloudflared | grep -i 'reg
 
 Turn on **Always Use HTTPS** for the zone.
 
-## Going live
-
-1. Publish the `harper-pad-sync` and `harper-pad-admin` images and pin them by digest in the
-   Deployments, replacing the `whoami` placeholder (also set `args: ["serve"]`, and for sync the
-   probe paths `/healthz` and `/readyz`).
-2. Check the database: `kubectl -n harper-pad get cluster harper-pad-db`.
-
-## Try the placeholder
+## Try it
 
 ```sh
-curl -i https://sync.portableinfo.cloud/health
-curl -s https://sync.portableinfo.cloud/ | grep -iE 'x-forwarded-for|cf-connecting-ip'
+curl -i https://sync.portableinfo.cloud/healthz
 ```

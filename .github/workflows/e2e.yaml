@@ -111,7 +111,7 @@ jobs:
         run: flux tree ks flux-system
 
       # Server-side dry-run of the harper-pad manifests against a real API server: checks the
-      # schemas of the cert-manager, CloudNativePG and Traefik resources (CRDs from the rendered
+      # schemas of the cert-manager, CloudNativePG, Prometheus Operator (PodMonitor) and Traefik resources (CRDs from the rendered
       # manifests in this repo and the Traefik chart) and Pod Security admission for the restricted namespace.
       - name: Install CRDs needed by harper-pad
         run: |
@@ -121,12 +121,14 @@ jobs:
             -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_clusterissuers.yaml
           kubectl apply --server-side --force-conflicts \
             -f k8s/infra/storage-system/cloudnative-pg/rendered/crds/crds.yaml
+          kubectl apply --server-side --force-conflicts \
+            -f k8s/infra/bootstrap/kube-prometheus-stack/prometheus-operator-crds/rendered/prometheus-operator-crds/charts/crds/templates/crd-podmonitors.yaml
           # Traefik ships its CRDs in the chart's crds/ directory, which helm template does not render
           helm show crds oci://ghcr.io/traefik/helm/traefik --version "${TRAEFIK_CHART_VERSION}" |
             kubectl apply --server-side --force-conflicts -f -
           kubectl wait --for=condition=Established --timeout=2m \
             crd/certificates.cert-manager.io crd/issuers.cert-manager.io crd/clusters.postgresql.cnpg.io \
-            crd/middlewares.traefik.io crd/ingressroutes.traefik.io
+            crd/middlewares.traefik.io crd/ingressroutes.traefik.io crd/podmonitors.monitoring.coreos.com
         env:
           TRAEFIK_CHART_VERSION: "42.3.0" # renovate: datasource=docker depName=ghcr.io/traefik/helm/traefik
       - name: Dry-run harper-pad against the API server

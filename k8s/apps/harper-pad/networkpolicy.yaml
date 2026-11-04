@@ -75,6 +75,29 @@ spec:
       ports:
         - { protocol: TCP, port: 9000 }
 ---
+# Sync metrics (port 9102, never routed by Traefik): Prometheus only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sync-metrics-ingress
+  namespace: harper-pad
+spec:
+  podSelector:
+    matchLabels:
+      app: harper-pad-sync
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - { protocol: TCP, port: 9102 }
+---
 # Admin pod: no ingress at all. Out to Cloudflare for the tunnel only (7844 tunnel, 443 api).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
