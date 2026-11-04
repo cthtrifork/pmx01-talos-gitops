@@ -5,3 +5,4 @@ resources:
   - controllers/actions-runner-controller/
   - adguard/
   - harper-pad/
+  - claude-system/
