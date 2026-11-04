@@ -23,7 +23,7 @@ metadata:
 spec:
   endpointSelector:
     matchLabels:
-      app: claude-runner
+      app: claude-rc
   egress:
     # DNS through kube-dns; the dns rule makes Cilium learn the addresses the FQDN rules below match
     - toEndpoints:
