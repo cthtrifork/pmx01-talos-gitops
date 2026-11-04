@@ -41,7 +41,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sync
-          image: ghcr.io/cthtrifork/harper-pad-sync:sha-0000000000000000000000000000000000000000 # FAKE tag, see the header
+          image: ghcr.io/cthtrifork/harper-pad-sync:v1.1.0
           env:
             # Must be https: or the service refuses to start; the scheme is taken from here, not from headers.
             - name: PUBLIC_URL
