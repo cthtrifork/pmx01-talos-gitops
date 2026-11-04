@@ -44,6 +44,7 @@ spec:
         # "Network requirements"): control plane and inference, then git.
         - matchName: api.anthropic.com
         - matchName: github.com
+        - matchPattern: "*.github.com*
         # Claude Code itself: plugin installs and metadata, documentation lookups
         - matchName: downloads.claude.ai
         - matchName: storage.googleapis.com
