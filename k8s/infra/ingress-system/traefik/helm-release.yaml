@@ -25,6 +25,8 @@ spec:
   values:
     deployment:
       replicas: 1
+      annotations:
+        reloader.stakater.com/auto: "true" # restart when the tunnel token Secret changes
       additionalContainers:
         # A regular (not native) sidecar: if the token is missing only the tunnel restarts, Traefik stays up.
         - name: cloudflared

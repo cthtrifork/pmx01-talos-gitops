@@ -12,6 +12,7 @@ metadata:
     helm.sh/chart: traefik-42.3.0
     app.kubernetes.io/managed-by: Helm
   annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   replicas: 1
   selector:

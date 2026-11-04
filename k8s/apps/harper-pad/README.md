@@ -37,8 +37,10 @@ In the tunnel's **Public hostname** tab add `sync.portableinfo.cloud` with servi
 ```sh
 kubectl -n traefik-system create secret generic cloudflared-tunnel-token \
   --from-literal=token='<SYNC_TUNNEL_TOKEN>'
-kubectl -n traefik-system rollout restart deployment/traefik
 ```
+
+No restart is needed: the pod picks the Secret up when it appears, and Reloader restarts the
+Deployment when the token changes later.
 
 ### 2. Admin tunnel (sidecar in the admin pod)
 
