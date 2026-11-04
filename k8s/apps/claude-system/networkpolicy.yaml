@@ -42,8 +42,20 @@ spec:
     - toFQDNs:
         # The runner's required hosts (https://code.claude.com/docs/en/self-hosted-environments-deploy,
         # "Network requirements"): control plane and inference, then git.
+        # Claude Code / Remote Control
         - matchName: api.anthropic.com
+        - matchName: anthropic.com
+
+        # Source hosting and MCP
         - matchName: github.com
+        - matchPattern: "*.github.com"
+        - matchName: githubassets.com
+        - matchName: githubcopilot.com
+        
+        - matchPattern: "*.githubusercontent.com"
+        - matchName: "context7.com"
+        - matchPattern: "*.portableinfo.cloud"
+        
         # Claude Code itself: plugin installs and metadata, documentation lookups
         - matchName: downloads.claude.ai
         - matchName: storage.googleapis.com
@@ -52,6 +64,7 @@ spec:
         # Sign-in (OAuth) and Remote Control
         - matchName: claude.ai
         - matchName: platform.claude.com
+        - matchPattern: "*.claudeusercontent.com"
         # Only needed when sessions install plugins or run npx MCP servers
         - matchName: registry.npmjs.org
       toPorts:
