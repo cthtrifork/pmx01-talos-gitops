@@ -1,4 +1,5 @@
 # Cluster-internal only: Traefik routes to this (ingressroute.yaml); nothing is exposed on the LAN.
+---
 apiVersion: v1
 kind: Service
 metadata:

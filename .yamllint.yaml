@@ -3,16 +3,18 @@ ignore: |
   k8s/**/rendered/
   k8s/**/*.enc.yaml
   .github/workflows/
+  # Embedded verbatim in a ConfigMap as AdGuardHome.yaml: a document start would change the app's config
+  k8s/apps/adguard/adguard-config.yaml
 rules:
   line-length: disable
-  document-start: disable
+  document-start: enable
   truthy:
     check-keys: false
   comments: disable
   comments-indentation: disable
-  indentation:
-    spaces: 2
-    indent-sequences: consistent
+  indentation: {spaces: 2}
+  brackets:
+    forbid: non-empty # block sequences only; [] is fine
   braces:
     max-spaces-inside: 1
   empty-lines:

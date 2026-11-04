@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/cluster_v1.json
 # One instance, no backups: every device holds a full copy and Sync all repopulates an empty server.
+---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
