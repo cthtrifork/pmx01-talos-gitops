@@ -20,4 +20,4 @@ spec:
     name: github-status
   eventSources:
     - kind: Kustomization
-      name: gitops-bootstrap
+      name: "*" # gitops-bootstrap does not exist; the Kustomizations are flux-system, gitops-infra-*, app-*, ...
