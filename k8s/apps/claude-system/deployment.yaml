@@ -25,6 +25,10 @@ spec:
     spec:
       serviceAccountName: claude # in-cluster token is what lets sessions read the cluster
       terminationGracePeriodSeconds: 30
+      dnsConfig:
+        options:
+          - name: ndots # external names (api.anthropic.com) otherwise try 4 cluster search suffixes through the FQDN DNS proxy first
+            value: "1"
       hostname: claude-k8s-helper # stable device name in claude.ai/code instead of the generated pod name
       securityContext:
         runAsNonRoot: true
