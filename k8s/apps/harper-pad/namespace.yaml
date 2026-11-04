@@ -4,6 +4,7 @@ kind: Namespace
 metadata:
   name: harper-pad
   labels:
+    ghcr-pull-secret: "true" # Kyverno clones github-auth here (clone-github-auth.yaml)
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted

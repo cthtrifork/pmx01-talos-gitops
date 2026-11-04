@@ -1,0 +1,51 @@
+# Copies the ghcr.io pull secret github-auth from arc-runners-system into every namespace labelled
+# ghcr-pull-secret=true, and keeps the copies in sync (synchronize: true), so the secret stays encrypted once, in Git.
+# Add the label to a Namespace and reference the secret from its ServiceAccounts or pods (imagePullSecrets).
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: clone-github-auth
+  annotations:
+    policies.kyverno.io/title: Clone the ghcr.io pull secret
+    policies.kyverno.io/category: Other
+    policies.kyverno.io/subject: Secret
+spec:
+  generateExisting: true
+  rules:
+    - name: clone-github-auth
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              selector:
+                matchLabels:
+                  ghcr-pull-secret: "true"
+      generate:
+        apiVersion: v1
+        kind: Secret
+        name: github-auth
+        namespace: "{{ request.object.metadata.name }}"
+        synchronize: true
+        clone:
+          namespace: arc-runners-system
+          name: github-auth
+---
+# Kyverno's background controller may only read Secrets by default; generating a copy needs write access. Aggregated into
+# kyverno:background-controller through the label below.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyverno:background-controller:clone-secrets
+  labels:
+    rbac.kyverno.io/aggregate-to-background-controller: "true"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - update
+      - delete
