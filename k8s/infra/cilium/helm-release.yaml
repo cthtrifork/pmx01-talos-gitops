@@ -81,7 +81,9 @@ spec:
       metrics:
         enabled:
           #- dns:query;ignoreAAAA
-          - drop:destinationContext=dns|workload-name;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction
+          - drop:destinationContext=dns|workload-name;labelsContext=source_namespace,source_workload,destination_namespace,destination_workload,traffic_direction
+          - tcp
+          - flow:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity
         enableOpenMetrics: true
         serviceMonitor:
           enabled: true
