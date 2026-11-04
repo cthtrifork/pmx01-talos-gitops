@@ -1,0 +1,28 @@
+name: Release Drafter
+
+# Keeps a draft release up to date as PRs merge: notes grouped by .github/release-drafter.yml and the
+# next version worked out from the merged PR titles (breaking = major, feat = minor, else patch).
+# Publishing the draft creates the tag on main, and the tag triggers build-image.yaml, which builds,
+# signs and attests the images under that version. See docs/releasing.md.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-drafter
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    name: Update draft release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # create and update the draft release
+      pull-requests: read # the merged PRs and their labels
+    steps:
+      - uses: release-drafter/release-drafter@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7.10.0

@@ -11,6 +11,9 @@
   "rebaseWhen": "conflicted",
   "recreateWhen": "always",
   "pinDigests": true,
+  "semanticCommits": "enabled",
+  "semanticCommitType": "deps",
+  "semanticCommitScope": null,
   "commitMessageSuffix": "({{updateType}})",
   "ignorePaths": [
     "scripts/**",

@@ -1,0 +1,114 @@
+# Release Drafter: release notes and next version, from Conventional Commit PR titles (see docs/releasing.md).
+# Keep the types in step with workflows/pr-title.yaml. The autolabeler at the bottom labels PRs from their title.
+
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+change-template: '- $TITLE (#$NUMBER) $AUTHORS'
+# Keep a PR title from being read as Markdown. @ and # are made harmless by Release Drafter itself.
+change-title-escapes: '\<*_&'
+no-changes-template: '- No user-facing changes'
+template: |
+  $CHANGES
+
+  **Full changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_TAG
+
+# The section already says what kind of change it is, so drop `feat(scope):` and capitalise the rest.
+replacers:
+  - target: change-title
+    search: '/^[a-z]+(?:\([^)]*\))?!?: (.*)$/'
+    replace: '\u$1'
+
+# A PR is listed in the first category it matches (exclusive). semver-increment sets the next version:
+# the highest one among the merged PRs wins, and `patch` is the default.
+categories:
+  - type: pre-exclude
+    when:
+      label: skip-changelog # keeps a PR out of the notes and out of the version calculation
+  - title: Breaking changes
+    semver-increment: major
+    exclusive: true
+    when:
+      - conventional:
+          breaking: true
+      - label: breaking-change
+  - title: Security
+    exclusive: true
+    when:
+      - conventional:
+          type: security
+      - label: security
+  - title: New features
+    semver-increment: minor
+    exclusive: true
+    when:
+      - conventional:
+          type: feat
+      - label: feature
+  - title: Bug fixes
+    exclusive: true
+    when:
+      - conventional:
+          type: fix
+      - label: bug
+  - title: Performance
+    exclusive: true
+    when:
+      - conventional:
+          type: perf
+      - label: performance
+  - title: Documentation
+    exclusive: true
+    when:
+      - conventional:
+          type: docs
+      - label: documentation
+  - title: Dependencies
+    collapse-after: 5
+    exclusive: true
+    when:
+      - conventional:
+          type: deps
+      - label: dependencies
+  - title: CI, build and release
+    exclusive: true
+    when:
+      - conventional:
+          types: [ci, build]
+      - labels: [ci, build]
+  - title: Maintenance
+    exclusive: true
+    when:
+      - conventional:
+          types: [refactor, test, chore, revert]
+      - labels: [maintenance, refactor]
+  - title: Other changes # no `when`: whatever is left, such as a PR whose title is not conventional
+
+# Labels from the PR title, by the autolabeler. sync-labels removes a managed label the title no longer
+# earns (title edited from fix: to feat:). That includes `dependencies` and `security`, which Renovate also
+# sets, so its PRs are titled to match: `deps:` for updates, `security:` for vulnerability fixes (renovate.json5).
+sync-labels: true
+
+autolabeler:
+  - labels: [feature]
+    title: ['/^feat(\([^)]*\))?!?:/']
+  - labels: [bug]
+    title: ['/^fix(\([^)]*\))?!?:/']
+  - labels: [security]
+    title: ['/^security(\([^)]*\))?!?:/']
+  - labels: [performance]
+    title: ['/^perf(\([^)]*\))?!?:/']
+  - labels: [refactor]
+    title: ['/^refactor(\([^)]*\))?!?:/']
+  - labels: [documentation]
+    title: ['/^docs(\([^)]*\))?!?:/']
+  - labels: [maintenance]
+    title: ['/^(test|chore|revert)(\([^)]*\))?!?:/']
+  - labels: [ci]
+    title: ['/^ci(\([^)]*\))?!?:/']
+  - labels: [build]
+    title: ['/^build(\([^)]*\))?!?:/']
+  - labels: [dependencies]
+    title: ['/^deps(\([^)]*\))?!?:/']
+  # `!` before the colon marks a breaking change, whatever the type.
+  - labels: [breaking-change]
+    title: ['/^[a-z]+(\([^)]*\))?!:/']
