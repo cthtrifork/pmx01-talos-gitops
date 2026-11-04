@@ -67,7 +67,7 @@ spec:
         - name: admin
           # FAKE tag (sha-0000...): replace with the sha-<commit> that harper-pad PR #82 publishes and pin the digest.
           # No args: the image's CMD is "serve"; it listens on LISTEN_ADDR (loopback).
-          image: ghcr.io/cthtrifork/harper-pad-admin:sha-0000000000000000000000000000000000000000
+          image: ghcr.io/cthtrifork/harper-pad-admin:v1.1.0
           env:
             - name: LISTEN_ADDR
               value: 127.0.0.1:9001
