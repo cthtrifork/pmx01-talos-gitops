@@ -4,7 +4,7 @@
 GitHub push webhook -> Cloudflare -> tunnel -> cloudflared + Traefik -> notification-controller (webhook-receiver) -> GitRepository flux-system
 ```
 
-Without it, Flux polls the repository on the GitRepository's interval. With it, a push triggers a fetch at once and the
+Without it, Flux polls the repository on the FluxInstance interval (`sync.interval`, 1h; the default is 1m). With it, a push triggers a fetch at once and the
 Kustomizations apply the new revision right away. The poll stays as the fallback if a delivery is lost.
 
 ## Setup
