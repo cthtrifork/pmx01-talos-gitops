@@ -75,9 +75,17 @@ spec:
             secretName: claude-github-token # minted by github-app.yaml
             optional: true
             defaultMode: 0400
+        # Generic ephemeral volume: a PVC that lives and dies with the pod (like adguard), so clones are
+        # not counted against the node's ephemeral storage. Lost on restart: commit and push.
         - name: workspace
-          emptyDir:
-            sizeLimit: 10Gi
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes: [ReadWriteOnce]
+                storageClassName: local-path
+                resources:
+                  requests:
+                    storage: 10Gi
         - name: tmp
           emptyDir:
             sizeLimit: 1Gi
