@@ -81,7 +81,8 @@ Turn on **Always Use HTTPS** for the zone.
    `harper-pad-admin` as `sha-<commit>` on a push to `main`, and the job summary prints each image's digest. The packages
    are private by default: make them public (package settings) or add an `imagePullSecret` to the service accounts.
 2. In both Deployments replace the `whoami` image with `ghcr.io/cthtrifork/harper-pad-<sync|admin>@sha256:<digest>`
-   (keep a tag in front of the digest so Renovate can bump it) and replace `args` with `["serve"]`.
+   (keep a tag in front of the digest so Renovate can bump it) and delete the `args` (they are `whoami`'s; the image's own
+   `CMD` is `serve`, and the binary rejects unknown arguments).
 3. Check: `kubectl -n harper-pad rollout status deploy/harper-pad-sync`; `curl -i https://sync.portableinfo.cloud/healthz`
    returns `ok`. The pod is only Ready when `/readyz` reaches `harper-pad-db`, so a pod stuck not Ready with
    `readiness: database ping failed` in its log means the client-certificate login or the NetworkPolicy, not the app.

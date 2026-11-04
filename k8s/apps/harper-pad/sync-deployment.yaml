@@ -5,8 +5,8 @@
 # PLACEHOLDER image: traefik/whoami (an echo server that answers 200 on every path, so the probes below pass) until the
 # first harper-pad-sync image is published (harper-pad PR #82, workflow backend-image.yml; its job summary prints the
 # digest). It echoes request headers at https://sync.portableinfo.cloud/ , which is handy for checking Cloudflare's
-# client-IP headers. To switch: set image to ghcr.io/cthtrifork/harper-pad-sync pinned by digest and replace the
-# args with ["serve"]; nothing else changes (ports, env and probes already follow the app's contract, see
+# client-IP headers. To switch: set image to ghcr.io/cthtrifork/harper-pad-sync pinned by digest and delete the
+# whoami args (the image's own CMD is "serve", and the binary rejects unknown arguments); nothing else changes (ports, env and probes already follow the app's contract, see
 # backend/README.md in harper-pad).
 #
 # Probes: /healthz is liveness and never touches PostgreSQL; /readyz is readiness and does a database round trip
