@@ -1,134 +1,170 @@
-name: Publish to Github
+name: Build and publish container images
+
 on:
-  pull_request: 
-    branches: 
+  pull_request:
+    branches:
       - main
     paths:
-      - images/github-actions-runner/*
-      - images/claude-runner/*
+      - images/github-actions-runner/**
+      - images/claude-runner/**
+      - .github/workflows/build-image.yaml
   push:
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'image tag prefix'
+        description: 'Image tag prefix (the short commit SHA is appended)'
         default: 'rc'
         required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 env:
-    RUNNER_VERSION: "2.338.2" # renovate: datasource=github-releases depName=actions/runner
+  RUNNER_VERSION: "2.338.2" # renovate: datasource=github-releases depName=actions/runner
 
 jobs:
-    publish-images:
-        outputs:
-            image_url: ${{ steps.slsa.outputs.image_url }}
-            image_digest: ${{ steps.slsa.outputs.image_digest }}
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            id-token: write # for creating OIDC tokens for signing.
-            packages: write # for pushing and signing container images.
-        strategy:
-            matrix:
-                image:
-                    - name: github-actions-runner
-                      containerfile: images/github-actions-runner/Dockerfile
-                      context: images/github-actions-runner
-                      registryurl: ghcr.io/${{ github.repository }}/github-actions-runner
-                    - name: claude-runner
-                      containerfile: images/claude-runner/Dockerfile
-                      context: images/claude-runner
-                      registryurl: ghcr.io/${{ github.repository }}/claude-runner
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+  build-and-publish:
+    name: Build and publish (${{ matrix.image.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # One output per image: matrix legs cannot share a single output name.
+    outputs:
+      image_url_github-actions-runner: ${{ steps.slsa.outputs.image_url_github-actions-runner }}
+      image_digest_github-actions-runner: ${{ steps.slsa.outputs.image_digest_github-actions-runner }}
+      image_url_claude-runner: ${{ steps.slsa.outputs.image_url_claude-runner }}
+      image_digest_claude-runner: ${{ steps.slsa.outputs.image_digest_claude-runner }}
+    permissions:
+      contents: read
+      id-token: write # for creating OIDC tokens for signing.
+      packages: write # for pushing and signing container images.
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: github-actions-runner
+            containerfile: images/github-actions-runner/Dockerfile
+            context: images/github-actions-runner
+            registryurl: ghcr.io/${{ github.repository }}/github-actions-runner
+          - name: claude-runner
+            containerfile: images/claude-runner/Dockerfile
+            context: images/claude-runner
+            registryurl: ghcr.io/${{ github.repository }}/claude-runner
+    env:
+      PUBLISH: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-            - name: Prepare
-              id: prep
-              run: |
-                VERSION="${DEFAULT_TAG:-rc}-${GITHUB_SHA::8}"
-                if [[ $GITHUB_REF == refs/tags/* ]]; then
-                  VERSION=${GITHUB_REF/refs\/tags\//}
-                fi
-                echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-                echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-              env:
-                DEFAULT_TAG: ${{ github.event.inputs.tag }}
+      - name: Compute version and build date
+        id: prep
+        env:
+          TAG_PREFIX: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG_PREFIX:-rc}-${GITHUB_SHA::8}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-            - name: Generate images meta
-              id: meta
-              uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-              with:
-                images: |
-                  ${{ matrix.image.registryurl }}
-                tags: |
-                  type=raw,value=${{ steps.prep.outputs.VERSION }}
-
-            - name: Log in to the Container registry
-              uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.repository_owner }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Build and push Docker image
-              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-              id: build-push
-              with:
-                  context: ./${{ matrix.image.context }}
-                  file: ./${{ matrix.image.containerfile }}
-                  platforms: linux/amd64
-                  push: ${{ github.event_name != 'pull_request' }}
-                  tags: ${{ steps.meta.outputs.tags }}
-                  labels: ${{ steps.meta.outputs.labels }}
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
-                  sbom: ${{ github.event_name != 'pull_request' }}
-                  provenance: ${{ github.event_name != 'pull_request' }}
-                  build-args: |
-                      DOCKER_METADATA_OUTPUT_VERSION
-                      RUNNER_VERSION=${{ env.RUNNER_VERSION }}
-                      VERSION=${{ steps.prep.outputs.VERSION }}
-       
-            - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-            - name: Sign images
-              if: ${{ github.event_name != 'pull_request' }}
-              env:
-                COSIGN_EXPERIMENTAL: 1
-              run: |
-                cosign sign --yes ${{ matrix.image.registryurl }}@${{ steps.build-push.outputs.digest }}
-
-            - name: Generate SLSA metadata
-              id: slsa
-              if: ${{ github.event_name != 'pull_request' }}
-              run: |
-                image_url=${{ matrix.image.registryurl }}:${{ steps.prep.outputs.VERSION }}
-                echo "image_url=$image_url" >> $GITHUB_OUTPUT
-            
-                image_digest=${{ steps.build-push.outputs.digest }}
-                echo "image_digest=$image_digest" >> $GITHUB_OUTPUT
-
-    ghcr-provenance:
-        needs: [publish-images]
-        if: startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request'
-        permissions:
-            actions: read # for detecting the Github Actions environment.
-            id-token: write # for creating OIDC tokens for signing.
-            packages: write # for uploading attestations.
-        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # must be a tag, SLSA generator rejects SHA refs
+      - name: Generate image tags and labels
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-            image: ${{ needs.publish-images.outputs.image_url }}
-            digest: ${{ needs.publish-images.outputs.image_digest }}
-            registry-username: ${{ github.actor }}
-        secrets:
-            registry-password: ${{ secrets.GITHUB_TOKEN }}
+          images: ${{ matrix.image.registryurl }}
+          tags: |
+            type=raw,value=${{ steps.prep.outputs.VERSION }}
+
+      - name: Log in to GitHub Container Registry
+        if: ${{ env.PUBLISH == 'true' }}
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image${{ env.PUBLISH == 'true' && ' and push to GHCR' || ' (no push on pull requests)' }}
+        id: build-push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./${{ matrix.image.context }}
+          file: ./${{ matrix.image.containerfile }}
+          platforms: linux/amd64
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}
+          sbom: ${{ env.PUBLISH == 'true' }}
+          provenance: ${{ env.PUBLISH == 'true' && 'mode=max' || 'false' }}
+          build-args: |
+            RUNNER_VERSION=${{ env.RUNNER_VERSION }}
+            VERSION=${{ steps.prep.outputs.VERSION }}
+
+      - name: Install cosign
+        if: ${{ env.PUBLISH == 'true' }}
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign image with cosign (keyless)
+        if: ${{ env.PUBLISH == 'true' }}
+        env:
+          IMAGE: ${{ matrix.image.registryurl }}@${{ steps.build-push.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}"
+
+      - name: Export image reference for SLSA provenance
+        id: slsa
+        if: ${{ env.PUBLISH == 'true' }}
+        env:
+          IMAGE_NAME: ${{ matrix.image.name }}
+          IMAGE_URL: ${{ matrix.image.registryurl }}:${{ steps.prep.outputs.VERSION }}
+          IMAGE_DIGEST: ${{ steps.build-push.outputs.digest }}
+        run: |
+          echo "image_url_${IMAGE_NAME}=${IMAGE_URL}" >> "$GITHUB_OUTPUT"
+          echo "image_digest_${IMAGE_NAME}=${IMAGE_DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Summarize build
+        if: ${{ always() }}
+        env:
+          IMAGE_NAME: ${{ matrix.image.name }}
+          IMAGE_URL: ${{ matrix.image.registryurl }}:${{ steps.prep.outputs.VERSION }}
+          IMAGE_DIGEST: ${{ steps.build-push.outputs.digest }}
+        run: |
+          {
+            echo "### ${IMAGE_NAME}"
+            echo "- Reference: \`${IMAGE_URL}\`"
+            echo "- Digest: \`${IMAGE_DIGEST:-n/a}\`"
+            echo "- Published: ${PUBLISH}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  slsa-provenance:
+    name: SLSA provenance (${{ matrix.image }})
+    needs: [build-and-publish]
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [github-actions-runner, claude-runner]
+    permissions:
+      actions: read # for detecting the Github Actions environment.
+      id-token: write # for creating OIDC tokens for signing.
+      packages: write # for uploading attestations.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # must be a tag, SLSA generator rejects SHA refs
+    with:
+      image: ${{ needs.build-and-publish.outputs[format('image_url_{0}', matrix.image)] }}
+      digest: ${{ needs.build-and-publish.outputs[format('image_digest_{0}', matrix.image)] }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
