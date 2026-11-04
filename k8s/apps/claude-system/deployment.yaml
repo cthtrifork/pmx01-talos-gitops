@@ -1,34 +1,29 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
-# Claude Code self-hosted environment runner. It claims sessions from your claude.ai environment and runs
-# them in this pod as the `claude` ServiceAccount (read-only RBAC, see rbac.yaml).
-# https://code.claude.com/docs/en/self-hosted-environments-deploy
+# Claude Code Remote Control, signed in as a person (no admin settings or environment key needed).
+# Runs as the `claude` ServiceAccount (read-only RBAC, see rbac.yaml).
 #
-# replicas is 0 until the image is published and both Secrets exist (README.md).
-# --capacity 1: one session per pod, as the docs recommend for production.
+# The login lives on the claude-home PVC (~/.claude/.credentials.json, ~/.claude.json), so it survives
+# restarts and the token refreshes in place. The pod idles until a login exists, then starts
+# `claude remote-control`. One-time login: README.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: claude-runner
+  name: claude-rc
   namespace: claude-system
-  annotations:
-    # Restart on a new environment key only. The GitHub token Secret is rewritten every 30 minutes and is
-    # picked up in place, so `auto` would restart the runner (and kill sessions) twice an hour.
-    secret.reloader.stakater.com/reload: claude-runner-environment-secret
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
-    type: Recreate
+    type: Recreate # the PVC is ReadWriteOnce, and one login must not run twice
   selector:
     matchLabels:
-      app: claude-runner
+      app: claude-rc
   template:
     metadata:
       labels:
-        app: claude-runner
-        app.kubernetes.io/part-of: claude-code-self-hosted-runner
+        app: claude-rc
     spec:
       serviceAccountName: claude # in-cluster token is what lets sessions read the cluster
-      terminationGracePeriodSeconds: 90
+      terminationGracePeriodSeconds: 30
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -37,38 +32,23 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: runner
+        - name: claude
           image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:rc-REPLACE # TODO set to the published tag, pin by digest
+          command: ["/bin/bash", "-c"]
           args:
-            - self-hosted-runner
-            - --environment-secret-file
-            - /etc/claude/environment-secret
-            - --capacity
-            - "1"
-            - --base-dir
-            - /workspace
+            - |
+              until [ -s "$HOME/.claude/.credentials.json" ]; do
+                echo "not logged in: kubectl -n claude-system exec -it deploy/claude-rc -- claude"
+                sleep 30
+              done
+              exec claude remote-control --name pmx01-talos
           env:
             - name: DISABLE_AUTOUPDATER
               value: "1" # the binary is baked into the image
-          ports:
-            - name: health
-              containerPort: 8080
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: health
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: health
-            initialDelaySeconds: 30
-            periodSeconds: 30
           resources:
             requests:
-              cpu: "1"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
             limits:
               memory: 4Gi
           securityContext:
@@ -77,34 +57,35 @@ spec:
             capabilities:
               drop: ["ALL"]
           volumeMounts:
-            - name: environment-secret
-              mountPath: /etc/claude
-              readOnly: true
+            - name: home
+              mountPath: /home/claude
             - name: github-token
               mountPath: /etc/github
               readOnly: true
             - name: workspace
               mountPath: /workspace
-            - name: home
-              mountPath: /home/claude
             - name: tmp
               mountPath: /tmp
       volumes:
-        # Both Secrets are created by hand, see README.md; they are not in this repository.
-        - name: environment-secret
-          secret:
-            secretName: claude-runner-environment-secret
-            defaultMode: 0400
+        - name: home
+          persistentVolumeClaim:
+            claimName: claude-home
         - name: github-token
           secret:
-            secretName: claude-github-token
+            secretName: claude-github-token # minted by github-app.yaml
+            optional: true
             defaultMode: 0400
+        # Generic ephemeral volume: a PVC that lives and dies with the pod (like adguard), so clones are
+        # not counted against the node's ephemeral storage. Lost on restart: commit and push.
         - name: workspace
-          emptyDir:
-            sizeLimit: 10Gi
-        - name: home
-          emptyDir:
-            sizeLimit: 1Gi
+          ephemeral:
+            volumeClaimTemplate:
+              spec:
+                accessModes: [ReadWriteOnce]
+                storageClassName: local-path
+                resources:
+                  requests:
+                    storage: 10Gi
         - name: tmp
           emptyDir:
             sizeLimit: 1Gi

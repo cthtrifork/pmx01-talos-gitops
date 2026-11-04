@@ -1,0 +1,12 @@
+# Holds the Claude login (~/.claude) for the claude-rc Deployment. Delete it to sign out.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: claude-home
+  namespace: claude-system
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
