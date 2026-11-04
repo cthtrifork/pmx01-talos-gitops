@@ -2,9 +2,8 @@
 # harper-pad-admin: NO Service. The app listens on 127.0.0.1 only; a cloudflared native sidecar maps the
 # admin hostname (remotely managed tunnel, behind Cloudflare Access with OIDC) to http://localhost:9001.
 #
-# replicas is 0 until the Secret harper-pad-admin-tunnel (key `token`) exists (see README.md):
+# Needs the Secret harper-pad-admin-tunnel (key `token`), created by hand (see README.md):
 #   kubectl -n harper-pad create secret generic harper-pad-admin-tunnel --from-literal=token=<TUNNEL_TOKEN>
-# or commit it as secret.enc.yaml (sops), as the other apps do. Then set replicas: 1.
 # The app listens on loopback, which kubelet cannot probe, so there are no probes on it.
 apiVersion: apps/v1
 kind: Deployment
@@ -14,7 +13,7 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:

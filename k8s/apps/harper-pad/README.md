@@ -20,9 +20,9 @@ Cloudflare owns DNS and TLS. There is no certificate or LAN address for the API.
 ## Status
 
 The application images are not published yet, so both Deployments run `traefik/whoami`, an echo
-server with a `/health` endpoint, as a placeholder. `harper-pad-sync` is running (once the sync
-tunnel token exists, `https://sync.portableinfo.cloud/` echoes the request headers and
-`/health` returns 200). `harper-pad-admin` stays at `replicas: 0` until its tunnel token exists.
+server with a `/health` endpoint, as a placeholder. Both tunnel tokens exist, so `harper-pad-sync`
+and `harper-pad-admin` are running (`https://sync.portableinfo.cloud/` echoes the request headers
+and `/health` returns 200).
 
 ## Tunnel tokens
 
@@ -52,23 +52,7 @@ kubectl -n harper-pad create secret generic harper-pad-admin-tunnel \
   --from-literal=token='<ADMIN_TUNNEL_TOKEN>'
 ```
 
-The admin Deployment is at `replicas: 0`; once the secret exists, scale it up:
-`kubectl -n harper-pad scale deployment/harper-pad-admin --replicas=1` (Flux will revert this
-unless you also change `replicas` in `admin-deployment.yaml`).
-
-### Committing them instead
-
-The tokens are secrets. To keep them in Git, write the same Secret as a manifest, encrypt it with
-SOPS (the repository's `.sops.yaml` applies) and add it to the matching `kustomization.yaml`:
-
-```sh
-kubectl -n harper-pad create secret generic harper-pad-admin-tunnel \
-  --from-literal=token='<ADMIN_TUNNEL_TOKEN>' --dry-run=client -o yaml > k8s/apps/harper-pad/secret.enc.yaml
-sops --encrypt --in-place k8s/apps/harper-pad/secret.enc.yaml
-```
-
-Use `-n traefik-system`, `cloudflared-tunnel-token` and a file under
-`k8s/infra/ingress-system/traefik/` for the sync tunnel. CI fails on plaintext Secrets.
+The admin Deployment runs with `replicas: 1` and starts once this Secret exists.
 
 ### Check
 
@@ -86,8 +70,7 @@ Turn on **Always Use HTTPS** for the zone.
 1. Publish the `harper-pad-sync` and `harper-pad-admin` images and pin them by digest in the
    Deployments, replacing the `whoami` placeholder (also set `args: ["serve"]`, and for sync the
    probe paths `/healthz` and `/readyz`).
-2. Create the admin tunnel token and set `replicas: 1` on `harper-pad-admin`.
-3. Check the database: `kubectl -n harper-pad get cluster harper-pad-db`.
+2. Check the database: `kubectl -n harper-pad get cluster harper-pad-db`.
 
 ## Try the placeholder
 
