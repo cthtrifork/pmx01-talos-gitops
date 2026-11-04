@@ -1,5 +1,11 @@
 name: Build and publish container images
 
+# Versioning (see docs/releasing.md):
+#   - Tag push vX.Y.Z (made by publishing the draft release): images get vX.Y.Z, vX.Y, vX and latest.
+#     A pre-release tag (vX.Y.Z-rc.1) gets only its own tag, so the floating tags and latest stay on stable.
+#   - Manual run: <tag prefix>-<short sha>, for example rc-1a2b3c4d. Never a release tag.
+#   - Pull request: built to check it, not pushed.
+
 on:
   pull_request:
     branches:
@@ -10,7 +16,7 @@ on:
       - .github/workflows/build-image.yaml
   push:
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+.[0-9]+*' # v1.2.3, or v1.2.3-rc.1 for a pre-release
   workflow_dispatch:
     inputs:
       tag:
@@ -62,17 +68,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Compute version and build date
+      - name: Compute build date and dispatch tag
         id: prep
         env:
           TAG_PREFIX: ${{ inputs.tag }}
         run: |
-          VERSION="${TAG_PREFIX:-rc}-${GITHUB_SHA::8}"
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-          fi
           echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
-          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "DEV_TAG=${TAG_PREFIX:-rc}-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -85,8 +87,15 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ matrix.image.registryurl }}
+          # Keep the v prefix: deployed manifests reference tags like v0.6.1.
           tags: |
-            type=raw,value=${{ steps.prep.outputs.VERSION }}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}}.{{minor}}
+            type=semver,pattern=v{{major}}
+            type=raw,value=${{ steps.prep.outputs.DEV_TAG }},enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=ref,event=pr
+          labels: |
+            org.opencontainers.image.created=${{ steps.prep.outputs.BUILD_DATE }}
 
       - name: Log in to GitHub Container Registry
         if: ${{ env.PUBLISH == 'true' }}
@@ -112,7 +121,7 @@ jobs:
           provenance: ${{ env.PUBLISH == 'true' && 'mode=max' || 'false' }}
           build-args: |
             RUNNER_VERSION=${{ env.RUNNER_VERSION }}
-            VERSION=${{ steps.prep.outputs.VERSION }}
+            VERSION=${{ steps.meta.outputs.version }}
 
       - name: Install cosign
         if: ${{ env.PUBLISH == 'true' }}
@@ -129,7 +138,7 @@ jobs:
         if: ${{ env.PUBLISH == 'true' }}
         env:
           IMAGE_NAME: ${{ matrix.image.name }}
-          IMAGE_URL: ${{ matrix.image.registryurl }}:${{ steps.prep.outputs.VERSION }}
+          IMAGE_URL: ${{ matrix.image.registryurl }}:${{ steps.meta.outputs.version }}
           IMAGE_DIGEST: ${{ steps.build-push.outputs.digest }}
         run: |
           echo "image_url_${IMAGE_NAME}=${IMAGE_URL}" >> "$GITHUB_OUTPUT"
@@ -139,7 +148,7 @@ jobs:
         if: ${{ always() }}
         env:
           IMAGE_NAME: ${{ matrix.image.name }}
-          IMAGE_URL: ${{ matrix.image.registryurl }}:${{ steps.prep.outputs.VERSION }}
+          IMAGE_URL: ${{ matrix.image.registryurl }}:${{ steps.meta.outputs.version }}
           IMAGE_DIGEST: ${{ steps.build-push.outputs.digest }}
         run: |
           {

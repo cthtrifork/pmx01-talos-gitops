@@ -1,0 +1,53 @@
+name: PR title
+
+# Enforces Conventional Commits (`type(scope)!: summary`) on pull request titles and labels the PR from
+# the title. Squash merges use the title as the commit subject, and the release notes and the next
+# version (.github/release-drafter.yml) are derived from it.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  title:
+    name: Check PR title (Conventional Commits)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read # read the PR title
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          # Keep in step with .github/release-drafter.yml.
+          types: |
+            feat
+            fix
+            security
+            perf
+            refactor
+            docs
+            test
+            chore
+            revert
+            ci
+            build
+            deps
+
+  label:
+    name: Label PR from title
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # the autolabeler reads .github/release-drafter.yml
+      pull-requests: write # add and remove labels
+    steps:
+      - uses: release-drafter/release-drafter/autolabeler@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7.10.0
