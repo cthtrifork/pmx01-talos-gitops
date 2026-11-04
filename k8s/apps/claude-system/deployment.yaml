@@ -41,6 +41,10 @@ spec:
                 echo "not logged in: kubectl -n claude-system exec -it deploy/claude-rc -- claude"
                 sleep 30
               done
+              # First-run "Enable Remote Control?" prompt has nobody to answer it: mark it as seen.
+              f="$HOME/.claude.json"
+              [ -s "$f" ] || echo '{}' >"$f"
+              jq '.remoteDialogSeen = true' "$f" >"$f.tmp" && mv "$f.tmp" "$f"
               exec claude remote-control --name pmx01-talos
           env:
             - name: DISABLE_AUTOUPDATER
