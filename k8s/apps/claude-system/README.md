@@ -52,9 +52,8 @@ revoking the old key. Reloader restarts the runner when the Secret changes.
 ## 3. GitHub access for git
 
 The runner reads a token from the Secret `claude-github-token` and hands it to git for `github.com` only
-(no `gh` CLI in the image, so it can push branches but not open PRs). Pick one way to fill that Secret.
-
-### Option A (recommended): a GitHub App, token refreshed every 30 minutes
+(no `gh` CLI in the image, so it can push branches but not open PRs). A GitHub App keeps that Secret
+fresh, with a token that expires every hour.
 
 `github-app.yaml` runs a CronJob that signs a JWT with the App's private key and exchanges it for a
 one-hour installation token, narrowed to this repository with Contents and Pull requests read/write. The
@@ -99,29 +98,8 @@ kubectl -n claude-system get secret claude-github-token
 If the Job fails, look at `kubectl -n claude-system logs job/first-token -c sign-jwt` and
 `kubectl -n claude-system describe job first-token`. The runner will not start until the Secret exists.
 
-### Option B: a personal access token
-
-A fine-grained token limited to this repository (Contents and Pull requests read/write, short expiry), in
-the same Secret. Disable the CronJob first (`kubectl -n claude-system patch cronjob claude-github-token -p
-'{"spec":{"suspend":true}}'`, and set `suspend: true` in `github-app.yaml`) or it will overwrite it.
-
-```sh
-read -rsp 'GitHub token: ' GITHUB_TOKEN; echo
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: claude-github-token
-  namespace: claude-system
-type: Opaque
-stringData:
-  token: ${GITHUB_TOKEN}
-EOF
-unset GITHUB_TOKEN
-```
-
-The Secrets are created by hand and are not in Git. Flux only prunes what it applied, so it leaves them
-alone.
+The Secrets `claude-runner-environment-secret` and `claude-github-app` are created by hand and are not in
+Git. Flux only prunes what it applied, so it leaves them alone.
 
 ## 4. Start it
 
