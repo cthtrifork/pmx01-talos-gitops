@@ -1,22 +1,14 @@
-# LAN-facing like AdGuard: a dedicated LoadBalancer IP (see k8s/apps/adguard/service.yaml for .253).
-# AdGuard rewrites sync.portableinfo.cloud to this IP; for access from outside, forward 443 to it.
+# Cluster-internal only: Traefik routes to this (ingressroute.yaml); nothing is exposed on the LAN.
 apiVersion: v1
 kind: Service
 metadata:
   name: harper-pad-sync
   namespace: harper-pad
-  annotations:
-    metallb.io/loadBalancerIPs: "192.168.1.252"
-    lbipam.cilium.io/ips: "192.168.1.252"
 spec:
-  type: LoadBalancer
-  externalTrafficPolicy: Local # keeps the real client IP for the rate limit
+  type: ClusterIP
   selector:
     app: harper-pad-sync
   ports:
-    - name: https
-      port: 443
-      targetPort: 8443
     - name: http
       port: 80
-      targetPort: 8080
+      targetPort: app

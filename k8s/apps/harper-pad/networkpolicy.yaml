@@ -45,7 +45,7 @@ spec:
       ports:
         - { protocol: TCP, port: 5432 }
 ---
-# Sync API: reachable from clients through the LoadBalancer on the nginx ports only (not :9000).
+# Sync API: reachable from Traefik only (the Cloudflare tunnel runs in the Traefik pod).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -57,9 +57,15 @@ spec:
       app: harper-pad-sync
   policyTypes: [Ingress]
   ingress:
-    - ports:
-        - { protocol: TCP, port: 8080 }
-        - { protocol: TCP, port: 8443 }
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:
+        - { protocol: TCP, port: 9000 }
 ---
 # Admin pod: no ingress at all. Out to Cloudflare for the tunnel only (7844 tunnel, 443 api).
 apiVersion: networking.k8s.io/v1

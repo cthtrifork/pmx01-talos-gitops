@@ -1,0 +1,60 @@
+# Public sync API. Cloudflare terminates TLS at its edge and forwards through the tunnel to Traefik's
+# plain-HTTP "web" entrypoint (the redirect to HTTPS is Cloudflare's "Always Use HTTPS"). The app takes
+# its scheme from PUBLIC_URL, not from headers.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/traefik.io/middleware_v1alpha1.json
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sync-headers
+  namespace: harper-pad
+spec:
+  headers:
+    stsSeconds: 31536000
+    stsIncludeSubdomains: true
+    contentTypeNosniff: true
+    referrerPolicy: no-referrer
+    customResponseHeaders:
+      Cache-Control: no-store
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sync-ratelimit
+  namespace: harper-pad
+spec:
+  rateLimit:
+    average: 10
+    burst: 30
+    period: 1s
+    sourceCriterion:
+      # the real client address as set by Cloudflare; every request arrives from the tunnel
+      requestHeaderName: Cf-Connecting-Ip
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sync-bodylimit
+  namespace: harper-pad
+spec:
+  buffering:
+    maxRequestBodyBytes: 9437184 # 9 MiB; the largest allowed request is 8 MiB
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harper-pad-sync
+  namespace: harper-pad
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`sync.portableinfo.cloud`)
+      middlewares:
+        - name: sync-headers
+        - name: sync-ratelimit
+        - name: sync-bodylimit
+      services:
+        - name: harper-pad-sync
+          port: http

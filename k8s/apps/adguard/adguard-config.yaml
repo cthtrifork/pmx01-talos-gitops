@@ -156,8 +156,6 @@ filtering:
   rewrites:
     - domain: dns.portableinfo.cloud
       answer: 192.168.1.253
-    - domain: sync.portableinfo.cloud
-      answer: 192.168.1.252
   safe_fs_patterns:
     - /opt/adguardhome/work/userfilters/*
   safebrowsing_cache_size: 1048576

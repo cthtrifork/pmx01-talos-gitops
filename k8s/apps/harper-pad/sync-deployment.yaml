@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
-# harper-pad-sync: the API (listens on :9000 inside the pod, reachable only from the nginx container via
-# 127.0.0.1 and from kubelet probes) behind an nginx TLS front on 8443.
+# harper-pad-sync: the API on :9000, reachable only from Traefik (see networkpolicy.yaml). TLS, DNS and the
+# public hostname are Cloudflare's: a tunnel in the Traefik pod (k8s/infra/ingress-system) carries the traffic.
 #
 # replicas is 0 until the images exist: backend/ is not yet built (harper-pad PR #80 is docs only).
 # Once ghcr.io/cthtrifork/harper-pad-sync is published, pin it by digest and set replicas: 1.
@@ -87,39 +87,6 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-        - name: tls
-          image: docker.io/nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
-          ports:
-            - name: http
-              containerPort: 8080
-            - name: https
-              containerPort: 8443
-          volumeMounts:
-            - name: nginx-config
-              mountPath: /etc/nginx/nginx.conf
-              subPath: nginx.conf
-              readOnly: true
-            - name: tls-cert
-              mountPath: /tls
-              readOnly: true
-            - name: tmp
-              mountPath: /tmp
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            periodSeconds: 5
-          resources:
-            requests:
-              cpu: 10m
-              memory: 16Mi
-            limits:
-              memory: 64Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
       volumes:
         - name: db-client
           secret:
@@ -132,12 +99,3 @@ spec:
                 path: tls.key
               - key: ca.crt
                 path: ca.crt
-        - name: tls-cert
-          secret:
-            secretName: harper-pad-sync-tls-cert
-        - name: nginx-config
-          configMap:
-            name: harper-pad-sync-nginx
-        - name: tmp
-          emptyDir:
-            sizeLimit: 64Mi

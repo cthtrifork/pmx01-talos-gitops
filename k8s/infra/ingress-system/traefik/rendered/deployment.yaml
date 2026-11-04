@@ -1,0 +1,163 @@
+---
+# Source: traefik/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: traefik-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik-traefik-system
+    app.kubernetes.io/version: "v3.7.17"
+    helm.sh/chart: traefik-42.3.0
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+      app.kubernetes.io/instance: traefik-traefik-system
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  minReadySeconds: 0
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9100"
+        prometheus.io/scrape: "true"
+      labels:
+        app.kubernetes.io/instance: traefik-traefik-system
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: traefik
+        app.kubernetes.io/version: v3.7.17
+        helm.sh/chart: traefik-42.3.0
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - args:
+            - --entryPoints.metrics.address=:9100/tcp
+            - --entryPoints.traefik.address=:8080/tcp
+            - --entryPoints.web.address=:8000/tcp
+            - --entryPoints.websecure.address=:8443/tcp
+            - --api.dashboard=true
+            - --ping=true
+            - --metrics.prometheus=true
+            - --metrics.prometheus.entrypoint=metrics
+            - --providers.kubernetescrd
+            - --providers.kubernetescrd.allowEmptyServices=true
+            - --entryPoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32
+            - --entryPoints.websecure.http.tls=true
+            - --log.level=INFO
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: USER
+              value: traefik
+            - name: GOMEMLIMIT
+              value: 172MiB
+          image: docker.io/traefik:v3.7.17
+          imagePullPolicy: IfNotPresent
+          lifecycle: null
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          name: traefik
+          ports:
+            - containerPort: 9100
+              name: metrics
+              protocol: TCP
+            - containerPort: 8080
+              name: traefik
+              protocol: TCP
+            - containerPort: 8000
+              name: web
+              protocol: TCP
+            - containerPort: 8443
+              name: websecure
+              protocol: TCP
+          readinessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /ping
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 2
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
+          resources:
+            limits:
+              memory: 192Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /data
+              name: data
+            - mountPath: /tmp
+              name: tmp
+        - args:
+            - tunnel
+            - --no-autoupdate
+            - --metrics
+            - 127.0.0.1:2000
+            - run
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: token
+                  name: cloudflared-tunnel-token
+          image: docker.io/cloudflare/cloudflared:2026.9.3@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c
+          name: cloudflared
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+      hostNetwork: false
+      securityContext:
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: traefik
+      terminationGracePeriodSeconds: 60
+      volumes:
+        - emptyDir: {}
+          name: data
+        - emptyDir: {}
+          name: tmp

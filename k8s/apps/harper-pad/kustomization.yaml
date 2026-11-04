@@ -5,15 +5,8 @@ resources:
   - serviceaccount.yaml
   - postgres-certificates.yaml
   - postgres-cluster.yaml
-  - sync-certificate.yaml
   - sync-deployment.yaml
   - sync-service.yaml
+  - ingressroute.yaml
   - admin-deployment.yaml
   - networkpolicy.yaml
-configMapGenerator:
-  - name: harper-pad-sync-nginx
-    namespace: harper-pad
-    files:
-      - nginx.conf
-generatorOptions:
-  disableNameSuffixHash: true

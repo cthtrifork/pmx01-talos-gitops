@@ -108,8 +108,8 @@ jobs:
         run: flux tree ks flux-system
 
       # Server-side dry-run of the harper-pad manifests against a real API server: checks the
-      # schemas of the cert-manager and CloudNativePG resources (CRDs come from the rendered
-      # manifests in this repo) and Pod Security admission for the restricted namespace.
+      # schemas of the cert-manager, CloudNativePG and Traefik resources (CRDs from the rendered
+      # manifests in this repo and the Traefik chart) and Pod Security admission for the restricted namespace.
       - name: Install CRDs needed by harper-pad
         run: |
           kubectl apply --server-side --force-conflicts \
@@ -118,8 +118,14 @@ jobs:
             -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_clusterissuers.yaml
           kubectl apply --server-side --force-conflicts \
             -f k8s/infra/storage-system/cloudnative-pg/rendered/crds/crds.yaml
+          # Traefik ships its CRDs in the chart's crds/ directory, which helm template does not render
+          helm show crds oci://ghcr.io/traefik/helm/traefik --version "${TRAEFIK_CHART_VERSION}" |
+            kubectl apply --server-side --force-conflicts -f -
           kubectl wait --for=condition=Established --timeout=2m \
-            crd/certificates.cert-manager.io crd/issuers.cert-manager.io clusters.postgresql.cnpg.io
+            crd/certificates.cert-manager.io crd/issuers.cert-manager.io crd/clusters.postgresql.cnpg.io \
+            crd/middlewares.traefik.io crd/ingressroutes.traefik.io
+        env:
+          TRAEFIK_CHART_VERSION: "42.3.0" # renovate: datasource=docker depName=ghcr.io/traefik/helm/traefik
       - name: Dry-run harper-pad against the API server
         run: |
           kubectl kustomize k8s/apps/harper-pad > "${RUNNER_TEMP}/harper-pad.yaml"
