@@ -51,7 +51,7 @@ spec:
         - matchPattern: "*.github.com"
         - matchName: githubassets.com
         - matchName: githubcopilot.com
-        
+
         # Context and documentation
         - matchName: cilium.io
         - matchPattern: "*.cilium.io"
