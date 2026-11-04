@@ -33,7 +33,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: claude
-          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:rc-REPLACE # TODO set to the published tag, pin by digest
+          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.7.0@sha256:782e7265826c830a950123f322841123c03760660c03bde69641cfe8edf32b39
           command: ["/bin/bash", "-c"]
           args:
             - |
