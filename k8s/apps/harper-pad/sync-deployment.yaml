@@ -2,11 +2,8 @@
 # harper-pad-sync: the API on :9000, reachable only from Traefik (see networkpolicy.yaml). TLS, DNS and the
 # public hostname are Cloudflare's: a tunnel in the Traefik pod (k8s/infra/ingress-system) carries the traffic.
 #
-# IMAGE: the tag below is FAKE (sha-0000...). The images are built and pushed by harper-pad PR #82
-# (backend-image.yml) as sha-<commit> on a push to main; its job summary prints each digest. Replace the tag
-# with the real one and pin the digest (sha-<commit>@sha256:<digest>) before this merges. The pull secret comes
-# from the ServiceAccount (serviceaccount.yaml). No args: the image's CMD is "serve". The probes, ports and env
-# follow the app's contract (backend/README.md in harper-pad).
+# The pull secret comes from the ServiceAccount (serviceaccount.yaml). No args: the image's CMD is "serve". The
+# probes, ports and env follow the app's contract (backend/README.md in harper-pad).
 #
 # Probes: /healthz is liveness and never touches PostgreSQL; /readyz is readiness and does a database round trip
 # (2 s limit, cached for 2 s), so timeoutSeconds is 3. Metrics are on the separate port 9102 (podmonitor.yaml).
