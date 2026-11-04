@@ -62,7 +62,7 @@
     {
       "description": "Automerge patch and digest updates everywhere; more specific rules below can override",
       "automerge": true,
-      "automergeType": "branch",
+      "automergeType": "pr",
       "matchUpdateTypes": [
         "patch",
         "digest"
