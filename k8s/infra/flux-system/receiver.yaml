@@ -3,8 +3,8 @@
 # The GitRepository that drives every Kustomization is `flux-system`, created by the FluxInstance
 # (clusters/pmx01-talos-gitops/flux-instance.yaml). The Kustomizations reconcile as soon as it has a new revision.
 #
-# Needs the Secret flux-webhook-token (key `token`), created by hand (see README.md). It is a separate secret from
-# `github-token`, which holds a PAT. The same value goes into the GitHub webhook's "Secret" field.
+# Needs the Secret flux-webhook-token (key `token`), created by hand (see README.md).
+# The same value goes into the GitHub webhook's "Secret" field.
 ---
 apiVersion: notification.toolkit.fluxcd.io/v1
 kind: Receiver
