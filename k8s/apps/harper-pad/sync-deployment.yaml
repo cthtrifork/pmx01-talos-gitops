@@ -42,7 +42,7 @@ spec:
           env:
             # Must be https: or the service refuses to start; the scheme is taken from here, not from headers.
             - name: PUBLIC_URL
-              value: https://sync.portableinfo.cloud
+              value: https://harper-sync.portableinfo.cloud
             - name: LISTEN_ADDR
               value: ":9000"
             # Standard libpq settings; no password, client certificate only.
