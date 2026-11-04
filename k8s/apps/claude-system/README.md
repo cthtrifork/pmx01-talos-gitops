@@ -1,21 +1,17 @@
 # claude-system
 
-A Claude Code **self-hosted environment runner** with read-only cluster access and an egress whitelist.
-The runner connects out to Anthropic, claims sessions you start at claude.ai/code and runs them in this
-pod as the `claude` ServiceAccount. Docs: <https://code.claude.com/docs/en/self-hosted-environments>.
-
-Requires a Team or Enterprise plan (public beta), Claude Code 2.1.224 or later, and an Owner to enable
-"Allow self-hosted environments" in admin settings.
+Claude Code **Remote Control** with read-only cluster access and an egress whitelist. The pod runs
+`claude remote-control` under your own claude.ai login (stored on a PVC), so the session appears at
+claude.ai/code. No admin settings or environment key are needed. Docs: <https://code.claude.com/docs/en/remote-control>.
 
 | File | What |
 |---|---|
 | `rbac.yaml` | ServiceAccount `claude`; built-in `view` (no Secrets) plus read-only access to nodes, storage, CRDs and the CRD groups in use. No write verbs, no `pods/exec` |
-| `networkpolicy.yaml` | Cilium default deny, then DNS, the Kubernetes API and TCP 443 to the hosts the runner needs |
+| `networkpolicy.yaml` | Cilium default deny, then DNS, the Kubernetes API and TCP 443 to the hosts Claude Code needs |
 | `github-app.yaml` | CronJob that mints a one-hour GitHub App installation token into `claude-github-token` (scripts in `github-app/`) |
-| `deployment.yaml` | The runner, one session per pod (`--capacity 1`), non-root, read-only root filesystem |
+| `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
+| `pvc.yaml` | 1Gi volume holding the login (`/home/claude`); delete it to sign out |
 | `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl` and a git credential helper |
-
-The Deployment is `replicas: 0` until the image is published and the two Secrets below exist.
 
 ## 1. Build the image
 
@@ -24,40 +20,15 @@ publishes `ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:<tag>`. Put that 
 in `deployment.yaml`. Bump `CLAUDE_CODE_VERSION` and `CLAUDE_CODE_SHA256` together in the Dockerfile
 (checksum: `https://downloads.claude.ai/claude-code-releases/<version>/manifest.json`, `linux-x64`).
 
-## 2. Authorize the runner with an environment key
+## 2. GitHub access for git
 
-1. Open <https://claude.ai/admin-settings/cloud-environments>, under **Self-hosted environments** select
-   **New**, name it, **Create**.
-2. On the second step select **Copy environment key**. It is shown once and expires after 365 days.
-3. Create the Secret yourself. `read -rs` keeps the key out of your shell history and screen:
-
-```sh
-read -rsp 'Environment key: ' ENV_KEY; echo
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: claude-runner-environment-secret
-  namespace: claude-system
-type: Opaque
-stringData:
-  environment-secret: ${ENV_KEY}
-EOF
-unset ENV_KEY
-```
-
-Rotate by creating a new key on the environment's **Configuration** tab, re-running the command, then
-revoking the old key. Reloader restarts the runner when the Secret changes.
-
-## 3. GitHub access for git
-
-The runner reads a token from the Secret `claude-github-token` and hands it to git for `github.com` only
+The pod reads a token from the Secret `claude-github-token` and hands it to git for `github.com` only
 (no `gh` CLI in the image, so it can push branches but not open PRs). A GitHub App keeps that Secret
 fresh, with a token that expires every hour.
 
 `github-app.yaml` runs a CronJob that signs a JWT with the App's private key and exchanges it for a
 one-hour installation token, narrowed to this repository with Contents and Pull requests read/write. The
-runner holds only that short-lived token.
+pod holds only that short-lived token.
 
 1. Create the App (GitHub: Settings > Developer settings > GitHub Apps > New). Repository permissions:
    **Contents: read and write**, **Pull requests: read and write**, **Metadata: read**. Leave everything
@@ -96,43 +67,23 @@ kubectl -n claude-system get secret claude-github-token
 ```
 
 If the Job fails, look at `kubectl -n claude-system logs job/first-token -c sign-jwt` and
-`kubectl -n claude-system describe job first-token`. The runner will not start until the Secret exists.
+`kubectl -n claude-system describe job first-token`. Git pushes fail until the Secret exists (the pod itself starts without it).
 
-The Secrets `claude-runner-environment-secret` and `claude-github-app` are created by hand and are not in
-Git. Flux only prunes what it applied, so it leaves them alone.
+The Secret `claude-github-app` is created by hand and is not in Git. Flux only prunes what it applied, so
+it leaves it alone.
 
-## 4. Start it
+## 3. Sign in once
 
-Set `replicas: 1` in `deployment.yaml` (Flux reverts a manual `kubectl scale`), then:
-
-```sh
-kubectl -n claude-system logs deploy/claude-runner
-kubectl -n claude-system get pods
-```
-
-Pick the environment at <https://claude.ai/code>.
-
-## Alternative: Remote Control signed in as a person (no admin settings)
-
-If you cannot reach admin settings to create an environment key, run `statefulset-rc.yaml` instead of the
-runner. It starts `claude remote-control` under your own claude.ai login, which is stored on a 1Gi PVC
-(`/home/claude`), so it survives restarts and token refreshes. Nothing is written to a Secret.
-
-1. Publish the image (step 1) and set the tag in `statefulset-rc.yaml`. Create the GitHub token Secret
-   (step 3) if you want git pushes; the pod starts without it.
-2. The pod idles and logs "not logged in". Sign in once:
+The pod idles and logs "not logged in" until a login exists:
 
 ```sh
-kubectl -n claude-system exec -it claude-rc-0 -- claude
+kubectl -n claude-system exec -it deploy/claude-rc -- claude
 ```
 
-   Run `/login`, open the URL on your own machine, paste the code back, then `/exit`. Within 30 seconds
-   the pod starts `claude remote-control` and the session appears at <https://claude.ai/code>.
-3. Delete the PVC (`home-claude-rc-0`) to sign out. `kubectl exec` is yours; the `claude` ServiceAccount has
-   no `pods/exec`.
-
-Use either this or the runner, not both, unless you want both. The PVC holds your login, so anyone who can
-read it (node access) can act as you; the pod has the same read-only cluster access as the runner.
+Run `/login`, open the URL on your own machine, paste the code back, then `/exit`. Within 30 seconds the
+pod starts `claude remote-control` and the session appears at <https://claude.ai/code>. The login and
+its token refreshes stay on the PVC, so restarts need no new login. To sign out, delete the
+`claude-home` PVC. The PVC holds your login: anyone with node access can act as you.
 
 ## Check what the pod can and cannot do
 
@@ -147,4 +98,4 @@ kubectl auth can-i create pods/exec -A --as=$SA                   # no
 
 Anything the pod reads from the cluster (logs, events, annotations) is input Claude acts on, so keep
 the GitHub token scoped to one repository. The `claude` ServiceAccount cannot read Secrets through the
-API, but the GitHub token and environment key are mounted in this pod, so treat the pod as holding both.
+API, but the GitHub token and your claude.ai login are in this pod, so treat the pod as holding both.

@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - networkpolicy.yaml
+  - pvc.yaml
   - deployment.yaml
   - github-app.yaml
 configMapGenerator:
