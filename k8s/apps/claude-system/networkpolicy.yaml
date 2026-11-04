@@ -49,6 +49,9 @@ spec:
         - matchName: storage.googleapis.com
         - matchName: code.claude.com
         - matchName: claude.com
+        # Sign-in (OAuth) and Remote Control
+        - matchName: claude.ai
+        - matchName: platform.claude.com
         # Only needed when sessions install plugins or run npx MCP servers
         - matchName: registry.npmjs.org
       toPorts:

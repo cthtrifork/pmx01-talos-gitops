@@ -112,6 +112,28 @@ kubectl -n claude-system get pods
 
 Pick the environment at <https://claude.ai/code>.
 
+## Alternative: Remote Control signed in as a person (no admin settings)
+
+If you cannot reach admin settings to create an environment key, run `statefulset-rc.yaml` instead of the
+runner. It starts `claude remote-control` under your own claude.ai login, which is stored on a 1Gi PVC
+(`/home/claude`), so it survives restarts and token refreshes. Nothing is written to a Secret.
+
+1. Publish the image (step 1) and set the tag in `statefulset-rc.yaml`. Create the GitHub token Secret
+   (step 3) if you want git pushes; the pod starts without it.
+2. The pod idles and logs "not logged in". Sign in once:
+
+```sh
+kubectl -n claude-system exec -it claude-rc-0 -- claude
+```
+
+   Run `/login`, open the URL on your own machine, paste the code back, then `/exit`. Within 30 seconds
+   the pod starts `claude remote-control` and the session appears at <https://claude.ai/code>.
+3. Delete the PVC (`home-claude-rc-0`) to sign out. `kubectl exec` is yours; the `claude` ServiceAccount has
+   no `pods/exec`.
+
+Use either this or the runner, not both, unless you want both. The PVC holds your login, so anyone who can
+read it (node access) can act as you; the pod has the same read-only cluster access as the runner.
+
 ## Check what the pod can and cannot do
 
 ```sh
