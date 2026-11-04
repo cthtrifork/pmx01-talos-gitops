@@ -20,6 +20,29 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate renovate config
         run: npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator --strict renovate.json5
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup yq
+        uses: fluxcd/pkg/actions/yq@13c7c12b28c21769c7d33e387e677307d38ec22d # main
+      - name: yamllint
+        run: |
+          pip install --quiet "yamllint==${YAMLLINT_VERSION}"
+          yamllint --strict -c .yamllint.yaml k8s scripts bootstrap.yaml images .github/dependabot.yml
+        env:
+          YAMLLINT_VERSION: "1.38.0" # renovate: datasource=pypi depName=yamllint
+      - name: shellcheck
+        run: shellcheck scripts/*.sh scripts/ci/*.sh
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL "https://raw.githubusercontent.com/rhysd/actionlint/v${ACTIONLINT_VERSION}/scripts/download-actionlint.bash") "${ACTIONLINT_VERSION}"
+          ./actionlint -color -ignore 'SC2086' -ignore 'SC2129'
+        env:
+          ACTIONLINT_VERSION: "1.7.7" # renovate: datasource=github-releases depName=rhysd/actionlint
+      - name: Secrets are SOPS-encrypted
+        run: ./scripts/ci/check-secrets-encrypted.sh k8s
   manifests:
     runs-on: ubuntu-latest
     steps:
@@ -31,9 +54,26 @@ jobs:
         uses: fluxcd/pkg/actions/kubeconform@13c7c12b28c21769c7d33e387e677307d38ec22d # main
       - name: Setup kustomize
         uses: fluxcd/pkg/actions/kustomize@13c7c12b28c21769c7d33e387e677307d38ec22d # main
+      # The directory is relative to the repository root; a bare "apps" matched nothing and validated nothing.
       - name: Validate manifests -- /apps
-        run: ./scripts/validate.sh --dir apps
+        run: ./scripts/validate.sh --dir k8s/apps
       - name: Validate manifests -- /infra
-        run: ./scripts/validate.sh --dir infra
+        run: ./scripts/validate.sh --dir k8s/infra
       - name: Validate manifests -- /clusters
-        run: ./scripts/validate.sh --dir clusters
+        run: ./scripts/validate.sh --dir k8s/clusters
+      - name: Validate manifests -- /virtualmachines
+        run: ./scripts/validate.sh --dir k8s/virtualmachines
+  kustomize:
+    # Builds each path a Flux Kustomization syncs, the way kustomize-controller does.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup yq
+        uses: fluxcd/pkg/actions/yq@13c7c12b28c21769c7d33e387e677307d38ec22d # main
+      - name: Setup kubeconform
+        uses: fluxcd/pkg/actions/kubeconform@13c7c12b28c21769c7d33e387e677307d38ec22d # main
+      - name: Setup kustomize
+        uses: fluxcd/pkg/actions/kustomize@13c7c12b28c21769c7d33e387e677307d38ec22d # main
+      - name: Build Flux Kustomization paths
+        run: ./scripts/ci/build-flux-paths.sh k8s/clusters/pmx01-talos-gitops

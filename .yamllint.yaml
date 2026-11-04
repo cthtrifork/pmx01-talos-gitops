@@ -1,0 +1,19 @@
+extends: default
+ignore: |
+  k8s/**/rendered/
+  k8s/**/*.enc.yaml
+  .github/workflows/
+rules:
+  line-length: disable
+  document-start: disable
+  truthy:
+    check-keys: false
+  comments: disable
+  comments-indentation: disable
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  braces:
+    max-spaces-inside: 1
+  empty-lines:
+    max: 2

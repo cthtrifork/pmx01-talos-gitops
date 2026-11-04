@@ -22,7 +22,9 @@ kustomize_config="kustomization.yaml"
 
 # skip Kubernetes Secrets due to SOPS fields failing validation
 kubeconform_flags=("-skip=Secret")
-kubeconform_config=("-strict" "-ignore-missing-schemas" "-schema-location" "default" "-schema-location" "/tmp/flux-crd-schemas" "-verbose")
+# CRD schemas: Flux (downloaded below) plus the community catalog (cert-manager, CNPG, Cilium, ...)
+crd_catalog='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+kubeconform_config=("-strict" "-ignore-missing-schemas" "-schema-location" "default" "-schema-location" "/tmp/flux-crd-schemas" "-schema-location" "${crd_catalog}" "-verbose")
 
 # root directory to validate
 root_dir="."
@@ -95,8 +97,8 @@ check_prerequisites() {
 download_schemas() {
   echo "INFO - Downloading Flux OpenAPI schemas"
   mkdir -p /tmp/flux-crd-schemas/master-standalone-strict
-  curl -sL https://github.com/controlplaneio-fluxcd/flux-operator/releases/latest/download/crd-schemas.tar.gz | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
-  curl -sL https://github.com/fluxcd/flux2/releases/latest/download/crd-schemas.tar.gz | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
+  curl -fsSL https://github.com/controlplaneio-fluxcd/flux-operator/releases/latest/download/crd-schemas.tar.gz | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
+  curl -fsSL https://github.com/fluxcd/flux2/releases/latest/download/crd-schemas.tar.gz | tar zxf - -C /tmp/flux-crd-schemas/master-standalone-strict
 }
 
 # Normalize a path by stripping leading "./" for consistent comparisons
