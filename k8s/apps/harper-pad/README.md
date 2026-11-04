@@ -19,10 +19,20 @@ Cloudflare owns DNS and TLS. There is no certificate or LAN address for the API.
 
 ## Status
 
-The application images are not published yet, so both Deployments run `traefik/whoami`, an echo
-server with a `/health` endpoint, as a placeholder. Both tunnel tokens exist, so `harper-pad-sync`
-and `harper-pad-admin` are running (`https://sync.portableinfo.cloud/` echoes the request headers
-and `/health` returns 200).
+Both Deployments still run `traefik/whoami`, an echo server, as a placeholder until the first application image is
+published (harper-pad PR #82). Everything around it already follows the application's contract, so switching is one edit
+per Deployment (see "Going live"):
+
+| | sync | admin |
+|---|---|---|
+| Listens on | `:9000` | `127.0.0.1:9001` |
+| Liveness | `GET /healthz` (process only) | none (loopback) |
+| Readiness | `GET /readyz` (PostgreSQL round trip) | none (loopback) |
+| Metrics | `:9102/metrics`, scraped through `podmonitor.yaml`; the NetworkPolicy lets only Prometheus in | off |
+
+`/readyz` queries the database, so Traefik does not route it (`ingressroute.yaml`); `/healthz` stays public. Both tunnel
+tokens exist, so `harper-pad-sync` and `harper-pad-admin` are running (`https://sync.portableinfo.cloud/` echoes the
+request headers and `/healthz` returns 200).
 
 ## Tunnel tokens
 
@@ -67,14 +77,19 @@ Turn on **Always Use HTTPS** for the zone.
 
 ## Going live
 
-1. Publish the `harper-pad-sync` and `harper-pad-admin` images and pin them by digest in the
-   Deployments, replacing the `whoami` placeholder (also set `args: ["serve"]`, and for sync the
-   probe paths `/healthz` and `/readyz`).
-2. Check the database: `kubectl -n harper-pad get cluster harper-pad-db`.
+1. In harper-pad, merge PR #82. Its `backend-image.yml` publishes `ghcr.io/cthtrifork/harper-pad-sync` and
+   `harper-pad-admin` as `sha-<commit>` on a push to `main`, and the job summary prints each image's digest. The packages
+   are private by default: make them public (package settings) or add an `imagePullSecret` to the service accounts.
+2. In both Deployments replace the `whoami` image with `ghcr.io/cthtrifork/harper-pad-<sync|admin>@sha256:<digest>`
+   (keep a tag in front of the digest so Renovate can bump it) and replace `args` with `["serve"]`.
+3. Check: `kubectl -n harper-pad rollout status deploy/harper-pad-sync`; `curl -i https://sync.portableinfo.cloud/healthz`
+   returns `ok`. The pod is only Ready when `/readyz` reaches `harper-pad-db`, so a pod stuck not Ready with
+   `readiness: database ping failed` in its log means the client-certificate login or the NetworkPolicy, not the app.
+4. Check the database: `kubectl -n harper-pad get cluster harper-pad-db`, and that the `harper-pad-sync` target is up in Prometheus.
 
 ## Try the placeholder
 
 ```sh
-curl -i https://sync.portableinfo.cloud/health
+curl -i https://sync.portableinfo.cloud/healthz
 curl -s https://sync.portableinfo.cloud/ | grep -iE 'x-forwarded-for|cf-connecting-ip'
 ```

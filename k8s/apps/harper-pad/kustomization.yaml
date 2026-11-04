@@ -11,3 +11,4 @@ resources:
   - ingressroute.yaml
   - admin-deployment.yaml
   - networkpolicy.yaml
+  - podmonitor.yaml
