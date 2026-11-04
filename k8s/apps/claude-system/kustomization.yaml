@@ -17,3 +17,11 @@ configMapGenerator:
     files:
       - github-app/sign-jwt.sh
       - github-app/refresh-token.sh
+  - name: claude-md
+    namespace: claude-system
+    options:
+      annotations:
+        # Markdown, not a Flux template: skip postBuild envsubst
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+    files:
+      - claude-md/CLAUDE.md

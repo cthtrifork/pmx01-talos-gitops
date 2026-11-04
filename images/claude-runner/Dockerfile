@@ -9,6 +9,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG CLAUDE_CODE_VERSION=2.1.311 # renovate: datasource=npm depName=@anthropic-ai/claude-code
 # Keep within one minor version of the cluster
 ARG KUBECTL_VERSION=v1.34.1
+ARG GH_VERSION=2.103.3 # renovate: datasource=github-releases depName=cli/cli
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git curl ca-certificates openssh-client jq python3 \
@@ -23,6 +24,19 @@ RUN base="https://downloads.claude.ai/claude-code-releases/${CLAUDE_CODE_VERSION
 RUN curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" -o /usr/local/bin/kubectl \
  && echo "$(curl -fsSL "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sha256")  /usr/local/bin/kubectl" | sha256sum -c - \
  && chmod +x /usr/local/bin/kubectl
+
+# GitHub CLI, checksum verified against the release's checksums file. The real binary lives outside PATH;
+# the gh wrapper hands it the mounted token (see below), so tokens refreshed by the CronJob are picked up.
+RUN base="https://github.com/cli/cli/releases/download/v${GH_VERSION}" \
+ && tarball="gh_${GH_VERSION}_linux_amd64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
+ && curl -fsSL "${base}/gh_${GH_VERSION}_checksums.txt" | grep -F "  ${tarball}" | sha256sum -c - \
+ && tar -xzf "${tarball}" \
+ && install -D -m 0755 "gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/libexec/gh \
+ && rm -rf "${tarball}" "gh_${GH_VERSION}_linux_amd64"
+COPY gh-wrapper /usr/local/bin/gh
+RUN chmod +x /usr/local/bin/gh
 
 # GitHub access: a token mounted at /etc/github/token, handed to git only for github.com
 COPY git-credential-github-token /usr/local/bin/git-credential-github-token

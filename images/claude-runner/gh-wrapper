@@ -1,0 +1,9 @@
+#!/bin/sh
+# gh wrapper: reads the token mounted at /etc/github/token on every call (the CronJob rotates it hourly),
+# unless GH_TOKEN or GITHUB_TOKEN is already set.
+if [ -z "${GH_TOKEN:-}" ] && [ -z "${GITHUB_TOKEN:-}" ] && [ -r /etc/github/token ]; then
+    GH_TOKEN="$(cat /etc/github/token)"
+    export GH_TOKEN
+fi
+export GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1
+exec /usr/local/libexec/gh "$@"

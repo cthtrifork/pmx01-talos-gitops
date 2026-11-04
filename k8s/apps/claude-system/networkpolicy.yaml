@@ -51,11 +51,11 @@ spec:
         - matchPattern: "*.github.com"
         - matchName: githubassets.com
         - matchName: githubcopilot.com
-        
+
         - matchPattern: "*.githubusercontent.com"
         - matchName: "context7.com"
         - matchPattern: "*.portableinfo.cloud"
-        
+
         # Claude Code itself: plugin installs and metadata, documentation lookups
         - matchName: downloads.claude.ai
         - matchName: storage.googleapis.com
