@@ -1,0 +1,123 @@
+# Keeps the Secret `claude-github-token` fresh from a GitHub App, so the runner never holds a long-lived
+# token. Every 30 minutes a Job signs a JWT with the App's private key (init container, openssl), trades
+# it for a one-hour installation token narrowed to one repository, and writes it to the Secret. The runner
+# mounts the Secret as a directory, so the kubelet refreshes the file in place and no restart is needed
+# (the runner Deployment deliberately does not use Reloader's `auto` mode for that reason).
+#
+# The App credentials are a Secret you create by hand, see README.md; they are not in this repository.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: claude-token-refresher
+  namespace: claude-system
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/role-rbac-v1.json
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: claude-token-refresher
+  namespace: claude-system
+rules:
+  # `kubectl apply` of one Secret. `create` cannot be limited by name; the rest can.
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [claude-github-token]
+    verbs: [get, patch, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude-token-refresher
+  namespace: claude-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: claude-token-refresher
+subjects:
+  - kind: ServiceAccount
+    name: claude-token-refresher
+    namespace: claude-system
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/cronjob-batch-v1.json
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: claude-github-token
+  namespace: claude-system
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 120
+      ttlSecondsAfterFinished: 3600
+      template:
+        metadata:
+          labels:
+            app: claude-token-refresher
+        spec:
+          restartPolicy: Never
+          serviceAccountName: claude-token-refresher
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            fsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: sign-jwt
+              image: docker.io/alpine/openssl:3.5.9@sha256:96e53bf9b9041fdc8a33ea61356688506bbddc368c70d6e8a9acdd28475e8537
+              command: ["sh", "/scripts/sign-jwt.sh"]
+              volumeMounts:
+                - { name: scripts, mountPath: /scripts, readOnly: true }
+                - { name: app, mountPath: /app, readOnly: true }
+                - { name: work, mountPath: /work }
+              resources:
+                requests: { cpu: 10m, memory: 16Mi }
+                limits: { memory: 64Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          containers:
+            - name: refresh
+              image: docker.io/alpine/k8s:1.34.13@sha256:dea899fe8ac3fa25bcf8a9c7e1dee4caad82ef18e84922a3b159dedc9cabee9f
+              command: ["sh", "/scripts/refresh-token.sh"]
+              env:
+                - name: GITHUB_REPOSITORY
+                  value: pmx01-talos-gitops # repository name only; the token is limited to it
+                - name: HOME
+                  value: /work
+              volumeMounts:
+                - { name: scripts, mountPath: /scripts, readOnly: true }
+                - { name: app, mountPath: /app, readOnly: true }
+                - { name: work, mountPath: /work }
+              resources:
+                requests: { cpu: 10m, memory: 32Mi }
+                limits: { memory: 128Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+          volumes:
+            - name: scripts
+              configMap:
+                name: claude-token-scripts
+            - name: app
+              secret:
+                secretName: claude-github-app
+                defaultMode: 0440
+            - name: work
+              emptyDir:
+                medium: Memory
+                sizeLimit: 8Mi

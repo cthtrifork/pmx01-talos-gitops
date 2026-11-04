@@ -5,3 +5,10 @@ resources:
   - rbac.yaml
   - networkpolicy.yaml
   - deployment.yaml
+  - github-app.yaml
+configMapGenerator:
+  - name: claude-token-scripts
+    namespace: claude-system
+    files:
+      - github-app/sign-jwt.sh
+      - github-app/refresh-token.sh
