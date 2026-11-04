@@ -41,7 +41,7 @@ Create them in Cloudflare Zero Trust (Networks > Tunnels) and copy each tunnel's
 
 ### 1. Sync tunnel (runs in the Traefik pod)
 
-In the tunnel's **Public hostname** tab add `sync.portableinfo.cloud` with service
+In the tunnel's **Public hostname** tab add `harper-sync.portableinfo.cloud` with service
 `HTTP` `localhost:8000`. Cloudflare creates the DNS record.
 
 ```sh
@@ -78,5 +78,5 @@ Turn on **Always Use HTTPS** for the zone.
 ## Try it
 
 ```sh
-curl -i https://sync.portableinfo.cloud/healthz
+curl -i https://harper-sync.portableinfo.cloud/healthz
 ```

@@ -51,7 +51,7 @@ spec:
   routes:
     - kind: Rule
       # /readyz runs a database query, so it is for the kubelet only (it probes the pod directly); /healthz stays public.
-      match: Host(`sync.portableinfo.cloud`) && !Path(`/readyz`)
+      match: Host(`harper-sync.portableinfo.cloud`) && !Path(`/readyz`)
       middlewares:
         - name: sync-headers
         - name: sync-ratelimit
