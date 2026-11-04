@@ -24,6 +24,7 @@ spec:
     spec:
       serviceAccountName: claude # in-cluster token is what lets sessions read the cluster
       terminationGracePeriodSeconds: 30
+      hostname: claude-rc # stable device name in claude.ai/code instead of the generated pod name
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532

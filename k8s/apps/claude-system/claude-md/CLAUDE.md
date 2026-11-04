@@ -29,6 +29,9 @@ there, not in the pod. Changes made in the pod are lost on restart.
   CI), `patches/` (Talos machine config patches), `scripts/`, `docs/`.
 - Never push to `main`. Create a branch named `claude/<short-topic>`, commit, push, and open a PR with
   `gh pr create`. Describe what changed and why, and say how it was verified.
+- Always open the PR yourself once the branch is pushed, without waiting to be asked, and put the PR
+  link in your final reply. If `gh` is unavailable, say so and share the
+  `https://github.com/cthtrifork/pmx01-talos-gitops/pull/new/<branch>` link instead.
 - Commit messages use Conventional Commits with a scope where it helps, for example
   `fix(claude-system): select the claude-rc pod in the egress policy`.
 - Renovate manages dependency versions and pins images by digest. Keep that style and do not bump
