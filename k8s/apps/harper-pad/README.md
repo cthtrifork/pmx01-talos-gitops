@@ -19,8 +19,10 @@ Cloudflare owns DNS and TLS. There is no certificate or LAN address for the API.
 
 ## Status
 
-`harper-pad-sync` and `harper-pad-admin` are scaled to `replicas: 0` because their images are not
-published yet. The database, certificates, Service, IngressRoute and policies come up regardless.
+The application images are not published yet, so both Deployments run `traefik/whoami`, an echo
+server with a `/health` endpoint, as a placeholder. `harper-pad-sync` is running (once the sync
+tunnel token exists, `https://sync.portableinfo.cloud/` echoes the request headers and
+`/health` returns 200). `harper-pad-admin` stays at `replicas: 0` until its tunnel token exists.
 
 ## Tunnel tokens
 
@@ -48,8 +50,9 @@ kubectl -n harper-pad create secret generic harper-pad-admin-tunnel \
   --from-literal=token='<ADMIN_TUNNEL_TOKEN>'
 ```
 
-The admin Deployment is at `replicas: 0`; the secret is picked up when you scale it up
-(see below).
+The admin Deployment is at `replicas: 0`; once the secret exists, scale it up:
+`kubectl -n harper-pad scale deployment/harper-pad-admin --replicas=1` (Flux will revert this
+unless you also change `replicas` in `admin-deployment.yaml`).
 
 ### Committing them instead
 
@@ -79,6 +82,14 @@ Turn on **Always Use HTTPS** for the zone.
 ## Going live
 
 1. Publish the `harper-pad-sync` and `harper-pad-admin` images and pin them by digest in the
-   Deployments (they use placeholder `:0.0.0` tags).
-2. Set `replicas: 1` on both Deployments.
+   Deployments, replacing the `whoami` placeholder (also set `args: ["serve"]`, and for sync the
+   probe paths `/healthz` and `/readyz`).
+2. Create the admin tunnel token and set `replicas: 1` on `harper-pad-admin`.
 3. Check the database: `kubectl -n harper-pad get cluster harper-pad-db`.
+
+## Try the placeholder
+
+```sh
+curl -i https://sync.portableinfo.cloud/health
+curl -s https://sync.portableinfo.cloud/ | grep -iE 'x-forwarded-for|cf-connecting-ip'
+```

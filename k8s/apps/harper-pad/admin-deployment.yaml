@@ -2,8 +2,7 @@
 # harper-pad-admin: NO Service. The app listens on 127.0.0.1 only; a cloudflared native sidecar maps the
 # admin hostname (remotely managed tunnel, behind Cloudflare Access with OIDC) to http://localhost:9001.
 #
-# replicas is 0 until (1) the image is published and (2) the Secret harper-pad-admin-tunnel (key `token`)
-# exists:
+# replicas is 0 until the Secret harper-pad-admin-tunnel (key `token`) exists (see README.md):
 #   kubectl -n harper-pad create secret generic harper-pad-admin-tunnel --from-literal=token=<TUNNEL_TOKEN>
 # or commit it as secret.enc.yaml (sops), as the other apps do. Then set replicas: 1.
 # The app listens on loopback, which kubelet cannot probe, so there are no probes on it.
@@ -60,8 +59,11 @@ spec:
               drop: ["ALL"]
       containers:
         - name: admin
-          image: ghcr.io/cthtrifork/harper-pad-admin:0.0.0 # TODO pin by digest once published
-          args: ["serve"]
+          # PLACEHOLDER echo server until the real image exists. It listens on all interfaces, not
+          # loopback; the default-deny ingress policy still lets only the pod's own sidecar reach it.
+          # Real image: ghcr.io/cthtrifork/harper-pad-admin pinned by digest, args ["serve"].
+          image: docker.io/traefik/whoami:v1.12.0@sha256:c4717a8d1f0134a7444e24f881160e033991f23027c6c5a9a3f8fd22e70d1d44
+          args: ["--port", "9001"]
           env:
             - name: LISTEN_ADDR
               value: 127.0.0.1:9001
