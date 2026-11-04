@@ -1,0 +1,143 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+# harper-pad-sync: the API (listens on :9000 inside the pod, reachable only from the nginx container via
+# 127.0.0.1 and from kubelet probes) behind an nginx TLS front on 8443.
+#
+# replicas is 0 until the images exist: backend/ is not yet built (harper-pad PR #80 is docs only).
+# Once ghcr.io/cthtrifork/harper-pad-sync is published, pin it by digest and set replicas: 1.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harper-pad-sync
+  namespace: harper-pad
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate # in-memory rate limiter and DPoP replay cache are per pod: never two at once
+  selector:
+    matchLabels:
+      app: harper-pad-sync
+  template:
+    metadata:
+      labels:
+        app: harper-pad-sync
+    spec:
+      serviceAccountName: harper-pad-sync
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: sync
+          image: ghcr.io/cthtrifork/harper-pad-sync:0.0.0 # TODO pin by digest once published
+          args: ["serve"]
+          env:
+            # Must be https: or the service refuses to start; the scheme is taken from here, not from headers.
+            - name: PUBLIC_URL
+              value: https://sync.portableinfo.cloud
+            - name: LISTEN_ADDR
+              value: ":9000"
+            # Standard libpq settings; no password, client certificate only.
+            - name: PGHOST
+              value: harper-pad-db-rw
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              value: harper
+            - name: PGUSER
+              value: harper_sync
+            - name: PGSSLMODE
+              value: verify-full
+            - name: PGSSLROOTCERT
+              value: /db-client/ca.crt
+            - name: PGSSLCERT
+              value: /db-client/tls.crt
+            - name: PGSSLKEY
+              value: /db-client/tls.key
+          ports:
+            - name: app
+              containerPort: 9000
+          volumeMounts:
+            - name: db-client
+              mountPath: /db-client # a directory mount, not subPath, so renewals reach the pod
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: app
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz # checks the database connection
+              port: app
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+        - name: tls
+          image: docker.io/nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: https
+              containerPort: 8443
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: tls-cert
+              mountPath: /tls
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: db-client
+          secret:
+            secretName: harper-pad-db-client-sync
+            defaultMode: 0440
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+              - key: ca.crt
+                path: ca.crt
+        - name: tls-cert
+          secret:
+            secretName: harper-pad-sync-tls-cert
+        - name: nginx-config
+          configMap:
+            name: harper-pad-sync-nginx
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

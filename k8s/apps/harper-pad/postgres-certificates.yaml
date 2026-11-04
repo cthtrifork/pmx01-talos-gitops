@@ -1,0 +1,109 @@
+# Database PKI (docs/sync.md, "Database access"): no passwords anywhere. PostgreSQL requires TLS and a
+# client certificate whose CN equals the role name. One dedicated CA signs the server, replication and
+# client certificates; cert-manager (not CNPG) owns the CA key.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/certificate_v1.json
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harper-pad-db-ca
+  namespace: harper-pad
+spec:
+  isCA: true
+  commonName: harper-pad-db-ca
+  secretName: harper-pad-db-ca
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: portableinfo-pmx01-root-ca-bootstrap
+    kind: ClusterIssuer
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/issuer_v1.json
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: harper-pad-db-ca
+  namespace: harper-pad
+spec:
+  ca:
+    secretName: harper-pad-db-ca
+---
+# Server certificate for the CNPG cluster services.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harper-pad-db-server
+  namespace: harper-pad
+spec:
+  secretName: harper-pad-db-server
+  usages:
+    - server auth
+  dnsNames:
+    - harper-pad-db-rw
+    - harper-pad-db-rw.harper-pad
+    - harper-pad-db-rw.harper-pad.svc
+    - harper-pad-db-r
+    - harper-pad-db-r.harper-pad
+    - harper-pad-db-r.harper-pad.svc
+    - harper-pad-db-ro
+    - harper-pad-db-ro.harper-pad
+    - harper-pad-db-ro.harper-pad.svc
+  issuerRef:
+    name: harper-pad-db-ca
+    kind: Issuer
+    group: cert-manager.io
+---
+# Required by CNPG once a custom client CA is used.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harper-pad-db-replication
+  namespace: harper-pad
+spec:
+  secretName: harper-pad-db-replication
+  commonName: streaming_replica
+  usages:
+    - client auth
+  issuerRef:
+    name: harper-pad-db-ca
+    kind: Issuer
+    group: cert-manager.io
+---
+# Client certificate for harper-pad-sync (role harper_sync).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harper-pad-db-client-sync
+  namespace: harper-pad
+spec:
+  secretName: harper-pad-db-client-sync
+  commonName: harper_sync
+  usages:
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: harper-pad-db-ca
+    kind: Issuer
+    group: cert-manager.io
+---
+# Client certificate for harper-pad-admin (role harper_admin).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harper-pad-db-client-admin
+  namespace: harper-pad
+spec:
+  secretName: harper-pad-db-client-admin
+  commonName: harper_admin
+  usages:
+    - client auth
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: harper-pad-db-ca
+    kind: Issuer
+    group: cert-manager.io

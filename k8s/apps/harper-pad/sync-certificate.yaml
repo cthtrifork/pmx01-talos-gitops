@@ -1,0 +1,15 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/certificate_v1.json
+# TLS cert for the sync API (terminated by the nginx container in the sync pod)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harper-pad-sync-tls
+  namespace: harper-pad
+spec:
+  secretName: harper-pad-sync-tls-cert
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+  dnsNames:
+    - sync.portableinfo.cloud
