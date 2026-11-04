@@ -51,9 +51,14 @@ spec:
         - matchPattern: "*.github.com"
         - matchName: githubassets.com
         - matchName: githubcopilot.com
-
+        
+        # Context and documentation
+        - matchName: cilium.io
+        - matchPattern: "*.cilium.io"
         - matchPattern: "*.githubusercontent.com"
         - matchName: "context7.com"
+
+        # Integrations
         - matchPattern: "*.portableinfo.cloud"
 
         # Claude Code itself: plugin installs and metadata, documentation lookups
