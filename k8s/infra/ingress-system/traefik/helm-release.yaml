@@ -31,7 +31,12 @@ spec:
         # A regular (not native) sidecar: if the token is missing only the tunnel restarts, Traefik stays up.
         - name: cloudflared
           image: docker.io/cloudflare/cloudflared:2026.9.3@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c
-          args: ["tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:2000", "run"]
+          args:
+            - "tunnel"
+            - "--no-autoupdate"
+            - "--metrics"
+            - "127.0.0.1:2000"
+            - "run"
           env:
             - name: TUNNEL_TOKEN
               valueFrom:
@@ -49,7 +54,8 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - "ALL"
     service:
       type: ClusterIP # reached through the tunnel only
     ports:

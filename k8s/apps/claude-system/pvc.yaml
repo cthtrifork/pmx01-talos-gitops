@@ -6,7 +6,8 @@ metadata:
   name: claude-home
   namespace: claude-system
 spec:
-  accessModes: [ReadWriteOnce]
+  accessModes:
+    - ReadWriteOnce
   storageClassName: local-path
   resources:
     requests:

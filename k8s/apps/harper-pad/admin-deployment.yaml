@@ -39,7 +39,12 @@ spec:
         - name: cloudflared
           image: docker.io/cloudflare/cloudflared:2026.9.3@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c
           restartPolicy: Always
-          args: ["tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:2000", "run"]
+          args:
+            - "tunnel"
+            - "--no-autoupdate"
+            - "--metrics"
+            - "127.0.0.1:2000"
+            - "run"
           env:
             - name: TUNNEL_TOKEN
               valueFrom:
@@ -56,14 +61,17 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - "ALL"
       containers:
         - name: admin
           # PLACEHOLDER echo server until the real image exists. It listens on all interfaces, not
           # loopback; the default-deny ingress policy still lets only the pod's own sidecar reach it.
           # Real image: ghcr.io/cthtrifork/harper-pad-admin pinned by digest, args ["serve"].
           image: docker.io/traefik/whoami:v1.12.0@sha256:c4717a8d1f0134a7444e24f881160e033991f23027c6c5a9a3f8fd22e70d1d44
-          args: ["--port", "9001"]
+          args:
+            - "--port"
+            - "9001"
           env:
             - name: LISTEN_ADDR
               value: 127.0.0.1:9001
@@ -97,7 +105,8 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - "ALL"
       volumes:
         - name: db-client
           secret:

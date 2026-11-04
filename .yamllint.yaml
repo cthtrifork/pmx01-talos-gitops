@@ -13,6 +13,8 @@ rules:
   comments: disable
   comments-indentation: disable
   indentation: {spaces: 2}
+  brackets:
+    forbid: non-empty # block sequences only; [] is fine
   braces:
     max-spaces-inside: 1
   empty-lines:

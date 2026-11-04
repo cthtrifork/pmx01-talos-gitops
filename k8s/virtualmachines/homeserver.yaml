@@ -77,7 +77,8 @@ spec:
                 - name: cthtrifork
                   ssh_import_id:
                     - gh:cthtrifork
-                  sudo: ['ALL=(ALL) NOPASSWD:ALL']
+                  sudo:
+                    - 'ALL=(ALL) NOPASSWD:ALL'
                   groups: sudo
                   shell: /bin/bash
   dataVolumeTemplates:
