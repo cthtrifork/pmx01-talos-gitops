@@ -28,14 +28,14 @@ The pod reads a token from the Secret `claude-github-token` and hands it to git 
 fresh, with a token that expires every hour.
 
 `github-app.yaml` runs a CronJob that signs a JWT with the App's private key and exchanges it for a
-one-hour installation token, narrowed to this repository with Contents and Pull requests read/write. The
-pod holds only that short-lived token.
+one-hour installation token, with everything the App was granted on the repositories it is installed on (the request is not narrowed,
+so scope it in the App's settings). The pod holds only that short-lived token.
 
 1. Create the App (GitHub: Settings > Developer settings > GitHub Apps > New). Repository permissions:
-   **Contents: read and write**, **Pull requests: read and write**, **Metadata: read**. Leave everything
-   else off. Without **Workflows** the App cannot push changes under `.github/workflows/`; leave it off
-   unless you want that. Untick "Webhook active". Never make it a bypass actor in a ruleset.
-2. Generate a private key (downloads a `.pem`), install the App on this repository only, and note the
+   **Contents: read and write**, **Pull requests: read and write**, **Workflows: read and write**,
+   **Metadata: read**. Leave everything else off. **Workflows** lets the App push changes under
+   `.github/workflows/`; turn it off in the App's settings to forbid that. Untick "Webhook active". Never make it a bypass actor in a ruleset.
+2. Generate a private key (downloads a `.pem`), install the App only on the repositories Claude should reach, and note the
    **App ID** (App settings page) and the **installation ID** (the number at the end of the installation's
    URL, `https://github.com/settings/installations/<id>`).
 3. Create the credentials Secret yourself, in the same style as the others:
@@ -98,5 +98,5 @@ kubectl auth can-i create pods/exec -A --as=$SA                   # no
 ```
 
 Anything the pod reads from the cluster (logs, events, annotations) is input Claude acts on, so keep
-the GitHub token scoped to one repository. The `claude` ServiceAccount cannot read Secrets through the
+the App installed only on the repositories Claude needs and its permissions minimal; the token is not narrowed beyond that. The `claude` ServiceAccount cannot read Secrets through the
 API, but the GitHub token and your claude.ai login are in this pod, so treat the pod as holding both.

@@ -9,5 +9,5 @@ spec:
   interval: 12h
   url: oci://quay.io/metallb/chart/metallb
   ref:
-    tag: 0.16.1
-    digest: "sha256:814c5ef92f9354238eabe52d6313a64a0ccfe52e9b941b0319202960e36e483e" # 0.15.3
+    tag: 0.16.2
+    digest: "sha256:3980cbdddacec6e55c47b787461e057280e69808ad6f5190d2603d8c39733860" # 0.15.3

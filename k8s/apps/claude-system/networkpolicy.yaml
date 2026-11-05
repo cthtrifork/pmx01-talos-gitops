@@ -36,6 +36,14 @@ spec:
           rules:
             dns:
               - matchPattern: "*"
+    # Prometheus (read-only queries for disk and resource usage)
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "9090", protocol: TCP }
     # Kubernetes API (read-only through the ServiceAccount's RBAC)
     - toEntities:
         - kube-apiserver
