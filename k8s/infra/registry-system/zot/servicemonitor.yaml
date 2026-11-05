@@ -1,6 +1,7 @@
-# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/monitoring.coreos.com/servicemonitor_v1.json
 # Named zot-metrics, not zot: the chart's ServiceMonitor is called zot and Helm deletes it on upgrade, which
 # would remove one with the same name.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/monitoring.coreos.com/servicemonitor_v1.json
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
