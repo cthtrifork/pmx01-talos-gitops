@@ -4,8 +4,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.22.0
-    operator.prometheus.io/version: 0.95.0
+    controller-gen.kubebuilder.io/version: v0.23.0
+    operator.prometheus.io/version: 0.95.1
   name: prometheusagents.monitoring.coreos.com
   namespace: kube-prometheus-stack-system
 spec:
@@ -8289,6 +8289,7 @@ spec:
                                           reason is a brief CamelCase machine-parseable reason.
                                           Together with status it forms the unique identity of a condition entry.
                                           Maximum permitted length of a reason is 256 bytes.
+                                        minLength: 1
                                         type: string
                                       status:
                                         description: |-
@@ -8301,11 +8302,13 @@ spec:
                                           - DataLoss
                                           - Degraded
                                           - Inaccessible
+                                        minLength: 1
                                         type: string
                                     required:
                                       - reason
                                       - status
                                     type: object
+                                  maxItems: 16
                                   type: array
                                   x-kubernetes-list-map-keys:
                                     - status
@@ -11341,6 +11344,6 @@ spec:
           statusReplicasPath: .status.shards
         status: {}
 # Source: prometheus-operator-crds/charts/crds/templates/crd-prometheusagents.yaml
-# https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.95.0/example/prometheus-operator-crd/monitoring.coreos.com_prometheusagents.yaml
+# https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.95.1/example/prometheus-operator-crd/monitoring.coreos.com_prometheusagents.yaml
 ---
 
