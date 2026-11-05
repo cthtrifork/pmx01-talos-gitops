@@ -97,25 +97,30 @@ logged once per origin) and add it to the list:
 kubectl -n harper-pad logs deploy/harper-pad-sync | grep -i cors
 ```
 
-## Changing the database owner
+## Database owner
 
-`harper_admin` owns the database and runs the migrations; `harper_sync` is a plain login role (see `postgres-cluster.yaml`). `initdb` runs
-only when a cluster is first created, so editing `owner` on a cluster that already exists changes nothing. A database that an earlier
-version created with `harper_sync` as owner has to be created again. That is cheap here: there are no backups on purpose, because every
-device keeps a full copy of its drafts and Sync all repopulates an empty server.
+`harper_admin` owns the database and runs the migrations (`harper-pad-admin` connects as it); `harper_sync` is a plain login role that only
+the migrations' grants give rights to. `postgres-cluster.yaml` sets this for a new cluster with `initdb.owner`, which runs only once, and
+`postgres-database.yaml` is a CloudNativePG `Database` resource whose `owner` is reconciled continuously (it maps to
+`ALTER DATABASE ... OWNER TO`), so an existing cluster follows the file without being recreated. `databaseReclaimPolicy: retain` means
+deleting that object never drops the database.
 
-Do it in this order, because a new admin cannot migrate a database it does not own, and the new sync pod then stays not ready:
+CloudNativePG manages the database, not its content (its documentation: "it does not manage database content beyond extensions and schemas
+(e.g., tables)"), so tables that were created while `harper_sync` was the owner keep that owner, and `harper-pad-admin` could not alter them.
+Check once after the change, as the postgres user inside the pod (superuser access from outside is off):
 
-1. Merge the pull request that changes `owner` and the images.
-2. Delete the cluster and its volume. Flux creates the cluster again from this manifest.
+```sh
+kubectl -n harper-pad get database harper-pad-db-harper        # APPLIED should be true
+kubectl -n harper-pad exec harper-pad-db-1 -c postgres -- psql -d harper -c "select schemaname, tablename, tableowner from pg_tables where schemaname = 'public'"
+```
 
-   ```sh
-   kubectl -n harper-pad delete cluster harper-pad-db
-   kubectl -n harper-pad delete pvc -l cnpg.io/cluster=harper-pad-db
-   flux reconcile kustomization app --with-source
-   ```
+If every table is owned by `harper_admin`, or there are none yet, there is nothing to do. If some are owned by `harper_sync`, move them once:
 
-3. The new database is bootstrapped with `harper_admin` as owner, `harper-pad-admin` applies the schema, and `harper-pad-sync` becomes ready
-   (`kubectl -n harper-pad get cluster harper-pad-db`).
-4. Every device token went with the old database, so each device shows "Sign in again". Create an invite for each in the admin page and
-   paste it into the app. Drafts stay on the devices, and Sync all puts them back on the server.
+```sh
+kubectl -n harper-pad exec harper-pad-db-1 -c postgres -- psql -d harper -c "REASSIGN OWNED BY harper_sync TO harper_admin"
+```
+
+then check that `harper-pad-admin` starts without a migration error (`kubectl -n harper-pad logs deploy/harper-pad-admin -c admin`) and that
+`harper-pad-sync` becomes ready. A database you do not need to keep can instead be deleted and left for the controller to create again: there
+are no backups on purpose, because every device keeps a full copy of its drafts and Sync all repopulates an empty server, but every device
+token goes with it and each device has to enroll again.

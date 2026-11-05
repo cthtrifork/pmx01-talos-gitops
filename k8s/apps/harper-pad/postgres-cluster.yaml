@@ -22,13 +22,17 @@ spec:
     initdb:
       database: harper
       # harper_admin owns the database and so its tables, and harper-pad-admin runs the migrations as this role. harper_sync (the
-      # public API's role) is only a login role below; the migrations grant it row-level rights and it has no DDL. Changing this on a
-      # cluster that already exists does nothing: initdb runs once, so see "Changing the database owner" in README.md.
+      # public API's role) is only a login role below; the migrations grant it row-level rights and it has no DDL. initdb runs only when
+      # the cluster is first created: postgres-database.yaml keeps the owner right on a cluster that already exists.
       owner: harper_admin
       encoding: UTF8
   managed:
     roles:
       # No password: access is by client certificate only (see pg_hba below).
+      - name: harper_admin
+        ensure: present
+        login: true
+        comment: harper-pad-admin, the database owner; it applies the migrations
       - name: harper_sync
         ensure: present
         login: true

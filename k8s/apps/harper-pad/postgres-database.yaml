@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/database_v1.json
+# The database, declared, so its owner follows this file on a cluster that already exists. `initdb` (postgres-cluster.yaml) only runs when
+# a cluster is first created; a Database resource is reconciled continuously, and its `owner` maps to ALTER DATABASE ... OWNER TO
+# (https://cloudnative-pg.io/documentation/1.30/declarative_database_management/).
+#
+# harper_admin owns the database and runs the migrations (harper-pad-admin); harper_sync is a plain login role with only the grants the
+# migrations give it. CloudNativePG manages the database, not what is in it, so tables that were created while another role was the
+# owner keep that owner: see "Changing the database owner" in README.md.
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: harper-pad-db-harper
+  namespace: harper-pad
+spec:
+  cluster:
+    name: harper-pad-db
+  name: harper
+  owner: harper_admin
+  # Deleting this object must never drop the database.
+  databaseReclaimPolicy: retain
