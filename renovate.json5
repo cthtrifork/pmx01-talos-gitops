@@ -12,6 +12,9 @@
   // Renovate merges itself via the API (as the App, which bypasses main-protection) instead of
   // enabling GitHub native auto-merge, which does not honour the ruleset bypass.
   "platformAutomerge": false,
+  // Rate limits, explicit instead of Renovate's defaults (2 PRs an hour, 10 open).
+  "prHourlyLimit": 5,
+  "prConcurrentLimit": 10,
   "recreateWhen": "always",
   "pinDigests": true,
   "semanticCommits": "enabled",
@@ -145,6 +148,12 @@
       ],
       "groupName": "harper-pad images",
       "groupSlug": "harper-pad-images"
+    },
+    {
+      "description": "Renovate itself (the renovate_version pin and the renovatebot/github-action) automerges for every update type. Last, so it wins over the rules above.",
+      "matchPackageNames": ["renovate", "renovatebot/github-action"],
+      "automerge": true,
+      "automergeType": "pr"
     }
   ],
   "customManagers": [
