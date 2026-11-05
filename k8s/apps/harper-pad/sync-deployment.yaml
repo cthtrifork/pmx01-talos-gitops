@@ -6,7 +6,8 @@
 # probes, ports and env follow the app's contract (backend/README.md in harper-pad).
 #
 # Probes: /healthz is liveness and never touches PostgreSQL; /readyz is readiness and does a database round trip
-# (2 s limit, cached for 2 s), so timeoutSeconds is 3. Metrics are on the separate port 9102 (podmonitor.yaml).
+# (2 s limit, cached for 2 s), so timeoutSeconds is 3. Both are served on port 9102 next to /metrics (podmonitor.yaml), not on
+# the public port :9000, so the internet cannot see the database state. Needs a harper-pad-sync image that has the probes there.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -80,14 +81,14 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz
-              port: app
+              port: metrics
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /readyz
-              port: app
+              port: metrics
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
