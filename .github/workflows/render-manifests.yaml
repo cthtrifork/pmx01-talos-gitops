@@ -65,40 +65,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      # Commit through the API with the app token: GitHub signs these commits
-      # (Verified, authored by the Renovate app), which `git push` cannot do.
-      - name: Commit rendered changes
+      - name: Stage rendered changes
+        run: git add -A
+
+      # Creates the commit through the GitHub API with the app token, so it is
+      # signed (Verified) and authored by the Renovate app
+      - uses: qoomon/actions--create-commit@7102b1a8b3cb8716dc70dbeb6d774c375d779d2f # v1.2.5
+        id: commit
+        with:
+          message: "chore: render manifests"
+          skip-empty: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Push changes
+        if: ${{ steps.commit.outputs.commit }}
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
-          REPO: ${{ github.repository }}
-        run: |
-          if [ -z "$(git status --porcelain)" ]; then
-            echo "Rendered manifests are up to date"
-            exit 0
-          fi
-          tmp="$(mktemp -d)"
-          : > "$tmp/additions"
-          : > "$tmp/deletions"
-          # Each entry is "XY path"; file modes are not carried over by the API
-          git status --porcelain -z --untracked-files=all |
-            while IFS= read -r -d '' -n 3 xy && IFS= read -r -d '' path; do
-              case "$xy" in
-                *D*) jq -nc --arg p "$path" '{path: $p}' >> "$tmp/deletions" ;;
-                *) jq -nc --arg p "$path" --rawfile c <(base64 -w0 -- "$path") \
-                     '{path: $p, contents: $c}' >> "$tmp/additions" ;;
-              esac
-            done
-          # Fails if the branch moved since checkout; the next push re-runs the workflow
-          jq -n \
-            --arg repo "$REPO" --arg branch "$BRANCH" --arg oid "$(git rev-parse HEAD)" \
-            --slurpfile add "$tmp/additions" --slurpfile del "$tmp/deletions" '{
-              query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
-              variables: {input: {
-                branch: {repositoryNameWithOwner: $repo, branchName: $branch},
-                message: {headline: "chore: render manifests"},
-                expectedHeadOid: $oid,
-                fileChanges: {additions: $add, deletions: $del}
-              }}
-            }' |
-            gh api graphql --input - --jq '.data.createCommitOnBranch.commit.url'
+        run: git push origin "HEAD:$BRANCH"
