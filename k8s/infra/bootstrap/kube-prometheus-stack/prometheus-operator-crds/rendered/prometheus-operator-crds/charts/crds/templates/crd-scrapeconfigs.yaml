@@ -5,7 +5,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.22.0
-    operator.prometheus.io/version: 0.94.2
+    operator.prometheus.io/version: 0.95.0
   name: scrapeconfigs.monitoring.coreos.com
   namespace: kube-prometheus-stack-system
 spec:
@@ -4493,6 +4493,14 @@ spec:
                       - server
                     type: object
                   type: array
+                extraScrapeMetrics:
+                  description: |-
+                    extraScrapeMetrics defines whether to store additional time series for each scrape:
+                    `scrape_timeout_seconds`, `scrape_sample_limit` and `scrape_body_size_bytes`.
+                    These metrics help monitor how close targets are to their configured limits.
+
+                    It requires Prometheus >= v3.10.0.
+                  type: boolean
                 fallbackScrapeProtocol:
                   description: |-
                     fallbackScrapeProtocol defines the protocol to use if a scrape returns blank, unparseable, or otherwise invalid Content-Type.
@@ -12035,6 +12043,6 @@ spec:
       subresources:
         status: {}
 # Source: prometheus-operator-crds/charts/crds/templates/crd-scrapeconfigs.yaml
-# https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.94.2/example/prometheus-operator-crd/monitoring.coreos.com_scrapeconfigs.yaml
+# https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.95.0/example/prometheus-operator-crd/monitoring.coreos.com_scrapeconfigs.yaml
 ---
 
