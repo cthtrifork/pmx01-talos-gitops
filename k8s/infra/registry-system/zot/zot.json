@@ -34,6 +34,16 @@
           ]
         },
         {
+          "repositories": ["pr/**"],
+          "deleteReferrers": true,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "pushedWithin": "72h"
+            }
+          ]
+        },
+        {
           "repositories": ["**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
