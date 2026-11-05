@@ -8,7 +8,7 @@ metadata:
   labels:
     cnpg.io/reload: "true"
     cnpg.io/cluster: reports-server-postgres-cluster
-    helm.sh/chart: cluster-0.8.1
+    helm.sh/chart: cluster-0.9.0
     app.kubernetes.io/name: cluster
     app.kubernetes.io/instance: reports-server-postgres
     app.kubernetes.io/part-of: cloudnative-pg

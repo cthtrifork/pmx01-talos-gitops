@@ -5,10 +5,10 @@ kind: ClusterRole
 metadata:
   name: metallb-frr-k8s-controller
   labels:
-    helm.sh/chart: frr-k8s-0.0.25
+    helm.sh/chart: frr-k8s-0.0.27
     app.kubernetes.io/name: frr-k8s
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.0.25"
+    app.kubernetes.io/version: "v0.0.27"
     app.kubernetes.io/managed-by: Helm
   namespace: metallb-system
 rules:
@@ -53,10 +53,10 @@ kind: ClusterRoleBinding
 metadata:
   name: metallb-frr-k8s-controller
   labels:
-    helm.sh/chart: frr-k8s-0.0.25
+    helm.sh/chart: frr-k8s-0.0.27
     app.kubernetes.io/name: frr-k8s
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.0.25"
+    app.kubernetes.io/version: "v0.0.27"
     app.kubernetes.io/managed-by: Helm
   namespace: metallb-system
 roleRef:
@@ -75,10 +75,10 @@ metadata:
   name: metallb-frr-k8s-controller
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: frr-k8s-0.0.25
+    helm.sh/chart: frr-k8s-0.0.27
     app.kubernetes.io/name: frr-k8s
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.0.25"
+    app.kubernetes.io/version: "v0.0.27"
     app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups: [""]
@@ -95,10 +95,10 @@ metadata:
   name: metallb-frr-k8s-nodestate-cleaner
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: frr-k8s-0.0.25
+    helm.sh/chart: frr-k8s-0.0.27
     app.kubernetes.io/name: frr-k8s
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.0.25"
+    app.kubernetes.io/version: "v0.0.27"
     app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups: [""]
@@ -115,10 +115,10 @@ metadata:
   name: metallb-frr-k8s-controller
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: frr-k8s-0.0.25
+    helm.sh/chart: frr-k8s-0.0.27
     app.kubernetes.io/name: frr-k8s
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.0.25"
+    app.kubernetes.io/version: "v0.0.27"
     app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -135,10 +135,10 @@ metadata:
   name: metallb-frr-k8s-nodestate-cleaner
   namespace: "metallb-system"
   labels:
-    helm.sh/chart: frr-k8s-0.0.25
+    helm.sh/chart: frr-k8s-0.0.27
     app.kubernetes.io/name: frr-k8s
     app.kubernetes.io/instance: metallb
-    app.kubernetes.io/version: "v0.0.25"
+    app.kubernetes.io/version: "v0.0.27"
     app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io

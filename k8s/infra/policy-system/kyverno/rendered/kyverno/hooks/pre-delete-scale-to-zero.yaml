@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.8.2
-    helm.sh/chart: kyverno-3.8.2
+    app.kubernetes.io/version: 3.9.2
+    helm.sh/chart: kyverno-3.9.2
   annotations:
     helm.sh/hook: pre-delete
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
@@ -26,7 +26,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kubectl
-          image: "ghcr.io/kyverno/readiness-checker:v1.18.2"
+          image: "ghcr.io/kyverno/readiness-checker:v1.19.2"
           imagePullPolicy:
           args:
             - scale-deploy
@@ -49,3 +49,5 @@ spec:
             runAsUser: 65534
             seccompProfile:
               type: RuntimeDefault
+      nodeSelector:
+        kubernetes.io/os: linux

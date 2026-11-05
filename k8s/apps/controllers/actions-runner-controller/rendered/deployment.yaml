@@ -6,11 +6,11 @@ metadata:
   name: gha-runner-scale-set-controller-gha-rs-controller
   namespace: arc-controller-system
   labels:
-    helm.sh/chart: gha-rs-controller-0.14.2
+    helm.sh/chart: gha-rs-controller-0.15.1
     app.kubernetes.io/name: gha-rs-controller
     app.kubernetes.io/namespace: arc-controller-system
     app.kubernetes.io/instance: gha-runner-scale-set-controller
-    app.kubernetes.io/version: "0.14.2"
+    app.kubernetes.io/version: "0.15.1"
     app.kubernetes.io/part-of: gha-rs-controller
     app.kubernetes.io/managed-by: Helm
     actions.github.com/controller-service-account-namespace: arc-controller-system
@@ -29,7 +29,7 @@ spec:
       labels:
         app.kubernetes.io/part-of: gha-rs-controller
         app.kubernetes.io/component: controller-manager
-        app.kubernetes.io/version: 0.14.2
+        app.kubernetes.io/version: 0.15.1
         app.kubernetes.io/name: gha-rs-controller
         app.kubernetes.io/namespace: arc-controller-system
         app.kubernetes.io/instance: gha-runner-scale-set-controller
@@ -39,14 +39,16 @@ spec:
         fsGroup: 2000
       containers:
         - name: manager
-          image: "ghcr.io/actions/gha-runner-scale-set-controller:0.14.2"
+          image: "ghcr.io/actions/gha-runner-scale-set-controller:0.15.1"
           imagePullPolicy: IfNotPresent
           args:
             - "--auto-scaling-runner-set-only"
             - "--log-level=debug"
             - "--log-format=text"
-            - "--runner-max-concurrent-reconciles=2"
-            - "--update-strategy=eventual"
+            - "--autoscaling-runner-set-max-concurrent-reconciles=2"
+            - "--autoscaling-listener-max-concurrent-reconciles=2"
+            - "--ephemeral-runner-set-max-concurrent-reconciles=2"
+            - "--ephemeral-runner-max-concurrent-reconciles=4"
             - "--listener-metrics-addr=0"
             - "--listener-metrics-endpoint="
             - "--metrics-addr=0"
@@ -54,7 +56,7 @@ spec:
             - "/manager"
           env:
             - name: CONTROLLER_MANAGER_CONTAINER_IMAGE
-              value: "ghcr.io/actions/gha-runner-scale-set-controller:0.14.2"
+              value: "ghcr.io/actions/gha-runner-scale-set-controller:0.15.1"
             - name: CONTROLLER_MANAGER_POD_NAMESPACE
               valueFrom:
                 fieldRef:
@@ -76,7 +78,7 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
-      terminationGracePeriodSeconds: 10
+      terminationGracePeriodSeconds: 35
       volumes:
         - name: tmp
           emptyDir: {}

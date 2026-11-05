@@ -5,8 +5,8 @@ metadata:
     app.kubernetes.io/instance: zot
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: zot
-    app.kubernetes.io/version: v2.1.18
-    helm.sh/chart: zot-0.1.122
+    app.kubernetes.io/version: v2.1.23
+    helm.sh/chart: zot-0.1.130
   name: zot
   namespace: registry-system
 spec:
@@ -32,7 +32,7 @@ spec:
           value: 1600MiB
         - name: ZOT_CREDENTIALS_FILE
           value: /run/secrets/github_auth
-        image: ghcr.io/project-zot/zot:v2.1.20@sha256:542e25be4d32e7879c0cfad93492a93c81b1e059cbd2d30d485d4bd567318234
+        image: ghcr.io/project-zot/zot:v2.1.23@sha256:9d3de83ac2099e6f4843045b4c9b65b7e8baf40f92d28f54906dee9d4d390fd7
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -55,7 +55,7 @@ spec:
           limits:
             memory: 2Gi
           requests:
-            cpu: 600m
+            cpu: 200m
             memory: 2Gi
         securityContext: null
         startupProbe:
@@ -87,9 +87,11 @@ spec:
         key: node-role.kubernetes.io/control-plane
         operator: Exists
       volumes:
-      - configMap:
-          name: zot-config
-        name: zot-config
+      - name: zot-config
+        projected:
+          sources:
+          - configMap:
+              name: zot-config
       - name: zot-sync-creds
         secret:
           secretName: zot-sync-creds

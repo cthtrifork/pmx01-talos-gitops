@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: polaris
     app.kubernetes.io/part-of: polaris
-    app.kubernetes.io/version: "6.0.0"
-    helm.sh/chart: polaris-6.0.0
+    app.kubernetes.io/version: "6.0.1"
+    helm.sh/chart: polaris-6.0.1
     component: dashboard
   namespace: policy-system
 spec:
@@ -26,7 +26,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: '74bf8fbb82be9fd52bd12a27b3252ad13d4b86032aa6fe893f636a67f97a84c8'
+        checksum/config: '9f6374bcb93752915c2904c28f0673b8b0b85f114e8cf0a9a7ec66260b0b94a1'
       labels:
         app: polaris
         app.kubernetes.io/name: polaris

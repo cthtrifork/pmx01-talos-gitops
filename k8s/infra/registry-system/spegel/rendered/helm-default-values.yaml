@@ -1,5 +1,3 @@
-Pulled: ghcr.io/spegel-org/helm-charts/spegel:0.7.4
-Digest: sha256:eaf39cc0967adead1cb6b8c48080c0ecc301016870be7aa43f3e6a8fb8e78000
 image:
   # -- Image repository.
   repository: ghcr.io/spegel-org/spegel
@@ -8,7 +6,7 @@ image:
   # -- Overrides the image tag whose default is the chart appVersion.
   tag: ""
   # -- Image digest.
-  digest: "sha256:26c60b05e08ac738e8442bc389c5780bff0e1d8153956e45d810a2f1008cf56f"
+  digest: "sha256:bdc1d14e4ab76e9a74520d331f485d09a596110118bd1a7706fa0411f17b3703"
 # -- Image Pull Secrets
 imagePullSecrets: []
 # -- Overrides the name of the chart.
@@ -43,16 +41,9 @@ service:
     # -- Port to expose the registry via the service.
     port: 5000
     # -- Node port to expose the registry via the service.
-    nodePort: 30021
-    # -- Local host port to expose the registry.
-    hostPort: 30020
-    # -- If true adds topology aware hints annotation to node port service.
-    topologyAwareHintsEnabled: true
+    nodePort: 30020
     # -- Annotations to add to the registry service
     annotations: {}
-    # -- Use PreferSameNode traffic distribution on the node port service
-    # instead of using an additional mirror registry on a container host port.
-    usePreferSameNodeTrafficDistribution: false
   router:
     # -- Port to expose the router via the service.
     port: 5001
@@ -112,27 +103,9 @@ serviceMonitor:
   relabelings: []
   # -- List of relabeling rules to apply to the samples before ingestion.
   metricRelabelings: []
-grafanaDashboard:
-  # -- If true creates a Grafana dashboard.
+networkPolicy:
+  # -- If true creates a NetworkPolicy that limits libp2p router traffic to Spegel peers in the release namespace.
   enabled: false
-  # -- Mode for Grafana dashboard creation. Valid values are `Sidecar` and `GrafanaOperator`.
-  mode: Sidecar
-  # -- Labels to add to the Sidecar configMap or GrafanaDashboard.
-  labels: {}
-  # grafana_dashboard: "1"
-  # -- Annotations to add to the Sidecar configMap or GrafanaDashboard.
-  annotations: {}
-  # grafana_folder: "Spegel"
-  grafanaOperator:
-    # -- If true allows for a Grafana in any namespace to access this GrafanaDashboard.
-    allowCrossNamespaceImport: true
-    # -- Folder to create the dashboard in.
-    folder: ""
-    # -- Resync period for the Grafana operator to check for updates to the dashboard.
-    resyncPeriod: "10m"
-    # -- Selected labels for Grafana instance.
-    matchLabels: {}
-    # dashboards: grafana
 # -- Priority class name to use for the pod.
 priorityClassName: system-node-critical
 # -- Name of secret containing basic authentication credentials for registry.

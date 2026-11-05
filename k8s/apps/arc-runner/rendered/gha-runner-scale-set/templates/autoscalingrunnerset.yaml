@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: ca6ffaaf7e0bbd1864c0673745aa3287a6796548235c67931fa6efd0cb831d2
+    actions.github.com/values-hash: 5a827e13365c3b29aacdc681a92e3820d61bdc8fe859318e4e8e791b123153c
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -14,8 +14,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: arc-ubuntu
     app.kubernetes.io/part-of: gha-rs
-    app.kubernetes.io/version: 0.14.2
-    helm.sh/chart: gha-rs-0.14.2
+    app.kubernetes.io/version: 0.15.1
+    helm.sh/chart: gha-rs-0.15.1
   name: arc-ubuntu
   namespace: arc-runners-system
 spec:
@@ -25,6 +25,10 @@ spec:
       kubernetes.io/ingress-bandwidth: 300M
   githubConfigSecret: github-auth
   githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
+  listenerConfig:
+    scaler:
+      burst: 100
+      qps: 50
   listenerTemplate:
     spec:
       containers:
@@ -69,7 +73,7 @@ spec:
           value: /var/lib/registry
         - name: RUNNER_UPDATE_CA_CERTS
           value: "1"
-        image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.4.0@sha256:2d14bfcf5890fd1642f1ec055bf86dc3d90012cd550ef178109e2bb6861ec6e2
+        image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.8.0@sha256:06809a1a335243880f6aa07942d5ea68a1e28c2ee977e3fd0ff86a2cdc863809
         imagePullPolicy: IfNotPresent
         name: runner
         resources:
@@ -112,6 +116,11 @@ spec:
           name: tmp-memory
         - mountPath: /var/tmp
           name: podman-tmp
+        - mountPath: /run/udev
+          name: host-udev
+          readOnly: true
+        - mountPath: /host-dev
+          name: host-dev
       imagePullSecrets:
       - name: github-auth
       initContainers:
@@ -122,7 +131,7 @@ spec:
           set -e
           find /tmp/arc-cache -type f -mtime +14 -print -delete
           find /tmp/arc-cache -type d -empty -mtime +14 -print -delete || true
-        image: docker.io/library/busybox:1.38@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+        image: docker.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         imagePullPolicy: IfNotPresent
         name: data-retention
         resources:
@@ -144,7 +153,7 @@ spec:
         - -r
         - /home/runner/externals/.
         - /home/runner/tmpDir/
-        image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.4.0@sha256:2d14bfcf5890fd1642f1ec055bf86dc3d90012cd550ef178109e2bb6861ec6e2
+        image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.8.0@sha256:06809a1a335243880f6aa07942d5ea68a1e28c2ee977e3fd0ff86a2cdc863809
         imagePullPolicy: IfNotPresent
         name: init-dind-externals
         resources:
@@ -171,7 +180,7 @@ spec:
         env:
         - name: DOCKER_GROUP_GID
           value: "123"
-        image: docker.io/library/docker:29.7.2-dind@sha256:3ef33f2e220b79ed3ef3b99d81746f06f306cd6340e2cb7331d17ae996e74cb6
+        image: docker.io/library/docker:29.9.3-dind@sha256:d035bd30886e451b2727ef3cdb9af9a5c537a10d4bc5d18c08d0ffa597e46aeb
         imagePullPolicy: IfNotPresent
         name: dind
         resources:
@@ -211,6 +220,14 @@ spec:
           - key: ca.crt
             path: ca.crt
           secretName: arc-runner-cert
+      - hostPath:
+          path: /run/udev
+          type: Directory
+        name: host-udev
+      - hostPath:
+          path: /dev
+          type: Directory
+        name: host-dev
       - emptyDir:
           sizeLimit: 32Gi
         name: work
@@ -234,10 +251,9 @@ spec:
       - name: podman-tmp
         persistentVolumeClaim:
           claimName: podman-tmp
-      - hostPath:
-          path: /var/tmp/local-storage-cache/gha-cache/dnf
-          type: DirectoryOrCreate
-        name: dnf-cache
+      - name: dnf-cache
+        persistentVolumeClaim:
+          claimName: dnf-cache
       - name: container-shared-storage
         persistentVolumeClaim:
           claimName: container-shared-storage

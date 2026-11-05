@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/instance: kube-prometheus-stack
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: prom
-    app.kubernetes.io/version: 88.3.0
-    chart: kube-prometheus-stack-88.3.0
+    app.kubernetes.io/version: 92.17.1
+    chart: kube-prometheus-stack-92.17.1
     heritage: Helm
     release: kube-prometheus-stack
   name: kube-prom-prometheus
@@ -37,16 +37,16 @@ spec:
   enableRemoteWriteReceiver: true
   externalUrl: http://kube-prom-prometheus.kube-prometheus-stack-system:9090
   hostNetwork: false
-  image: quay.io/prometheus/prometheus:v3.13.2-distroless
+  image: quay.io/prometheus/prometheus:v3.15.1-distroless
   imagePullPolicy: IfNotPresent
   listenLocal: false
   logFormat: logfmt
   logLevel: info
+  nodeSelector:
+    kubernetes.io/os: linux
   paused: false
   podMonitorNamespaceSelector: {}
-  podMonitorSelector:
-    matchLabels:
-      release: kube-prometheus-stack
+  podMonitorSelector: {}
   portName: http-web
   probeNamespaceSelector: {}
   probeSelector:
@@ -65,11 +65,8 @@ spec:
   routePrefix: /
   ruleNamespaceSelector: {}
   ruleSelector:
-    matchExpressions:
-    - key: type
-      operator: In
-      values:
-      - rule
+    matchLabels:
+      release: kube-prometheus-stack
   scrapeConfigNamespaceSelector: {}
   scrapeConfigSelector:
     matchLabels:
@@ -85,9 +82,7 @@ spec:
       type: RuntimeDefault
   serviceAccountName: kube-prom-prometheus
   serviceMonitorNamespaceSelector: {}
-  serviceMonitorSelector:
-    matchLabels:
-      release: kube-prometheus-stack
+  serviceMonitorSelector: {}
   shards: 1
   storage:
     volumeClaimTemplate:
@@ -98,5 +93,5 @@ spec:
         storageClassName: local-path
   tsdb:
     outOfOrderTimeWindow: 0s
-  version: v3.13.2-distroless
+  version: v3.15.1-distroless
   walCompression: true
