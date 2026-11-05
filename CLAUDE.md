@@ -33,10 +33,7 @@ curl -s -G "$P/api/v1/query" --data-urlencode 'query=<promql>'
 - Do not rely on `kubelet_volume_stats_*`: no such series exist. The `local-path` PVs
   are `hostPath` volumes and the kubelet does not collect stats for those, so per-PVC usage is not
   available. node-exporter is healthy but only reports whole filesystems, never per-directory usage.
-- zot's own metrics (`zot_*`, e.g. per-repo storage) should be scraped by `k8s/infra/registry-system/zot/servicemonitor.yaml`.
-  The chart's ServiceMonitor was rejected by the operator (it references a missing Secret `basic-auth`).
-  If `zot_*` series are missing, check `kubectl logs -n kube-prometheus-stack-system deploy/kube-prom-operator | grep zot`.
-- Use `node_filesystem_size_bytes` / `node_filesystem_avail_bytes` instead. All `local-path` PVCs are
+- Use `node_filesystem_size_bytes` / `node_filesystem_avail_bytes` instead for disk usage. All `local-path` PVCs are
   directories under `/var/mnt/local-path-provisioner` on the node they are pinned to
   (`kubectl get pv -o custom-columns=N:.spec.claimRef.name,SZ:.spec.capacity.storage,NODE:.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]`).
   A PVC's size is not enforced, so the node filesystem is the real limit.
@@ -44,3 +41,6 @@ curl -s -G "$P/api/v1/query" --data-urlencode 'query=<promql>'
   `100*(1-node_filesystem_avail_bytes{mountpoint="/var/mnt/local-path-provisioner"}/node_filesystem_size_bytes{mountpoint="/var/mnt/local-path-provisioner"})`
 - Map `instance` (node IP) to node with `kubectl get nodes -o wide`.
 - `kubectl get pv`/`pvc` shows what is pinned to a node, but not how much each uses.
+- zot's own metrics (`zot_*`, e.g. per-repo storage) should be scraped by `k8s/infra/registry-system/zot/servicemonitor.yaml`.
+  The chart's ServiceMonitor was rejected by the operator (it references a missing Secret `basic-auth`).
+  If `zot_*` series are missing, check `kubectl logs -n kube-prometheus-stack-system deploy/kube-prom-operator | grep zot`.
