@@ -9,7 +9,7 @@ curl -fsS -X POST \
     -H "Authorization: Bearer $(cat /work/jwt)" \
     -H "Accept: application/vnd.github+json" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
-    -d "{\"repositories\":[\"${GITHUB_REPOSITORY}\"],\"permissions\":{\"contents\":\"write\",\"pull_requests\":\"write\"}}" \
+    -d "{\"repositories\":[\"${GITHUB_REPOSITORY}\"],\"permissions\":{\"contents\":\"write\",\"pull_requests\":\"write\",\"workflows\":\"write\"}}" \
     "https://api.github.com/app/installations/${installation_id}/access_tokens" |
     jq -er .token >/work/token
 

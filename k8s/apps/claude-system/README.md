@@ -28,13 +28,13 @@ The pod reads a token from the Secret `claude-github-token` and hands it to git 
 fresh, with a token that expires every hour.
 
 `github-app.yaml` runs a CronJob that signs a JWT with the App's private key and exchanges it for a
-one-hour installation token, narrowed to this repository with Contents and Pull requests read/write. The
+one-hour installation token, narrowed to this repository with Contents, Pull requests and Workflows read/write. The
 pod holds only that short-lived token.
 
 1. Create the App (GitHub: Settings > Developer settings > GitHub Apps > New). Repository permissions:
-   **Contents: read and write**, **Pull requests: read and write**, **Metadata: read**. Leave everything
-   else off. Without **Workflows** the App cannot push changes under `.github/workflows/`; leave it off
-   unless you want that. Untick "Webhook active". Never make it a bypass actor in a ruleset.
+   **Contents: read and write**, **Pull requests: read and write**, **Workflows: read and write**,
+   **Metadata: read**. Leave everything else off. **Workflows** lets the App push changes under
+   `.github/workflows/`; drop it (and `workflows` in `github-app/refresh-token.sh`) to forbid that. Untick "Webhook active". Never make it a bypass actor in a ruleset.
 2. Generate a private key (downloads a `.pem`), install the App on this repository only, and note the
    **App ID** (App settings page) and the **installation ID** (the number at the end of the installation's
    URL, `https://github.com/settings/installations/<id>`).

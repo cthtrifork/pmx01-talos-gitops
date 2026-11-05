@@ -42,8 +42,8 @@ there, not in the pod. Changes made in the pod are lost on restart.
 ## GitHub access
 
 - `gh` and `git` use a short-lived GitHub App token (refreshed hourly) scoped to the pmx01-talos-gitops
-  repository with Contents and Pull requests read/write. You cannot change workflow files under
-  `.github/workflows/`.
+  repository with Contents, Pull requests and Workflows read/write, so workflow changes under
+  `.github/workflows/` go through a PR like any other change.
 - Network egress is a Cilium allowlist (`k8s/apps/claude-system/networkpolicy.yaml`). If a command hangs
   on connect, the host is probably not allowed. Say so and propose the policy change as a PR.
 
