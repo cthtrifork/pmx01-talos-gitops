@@ -41,6 +41,9 @@ curl -s -G "$P/api/v1/query" --data-urlencode 'query=<promql>'
   `100*(1-node_filesystem_avail_bytes{mountpoint="/var/mnt/local-path-provisioner"}/node_filesystem_size_bytes{mountpoint="/var/mnt/local-path-provisioner"})`
 - Map `instance` (node IP) to node with `kubectl get nodes -o wide`.
 - `kubectl get pv`/`pvc` shows what is pinned to a node, but not how much each uses.
+- Per-PVC usage needs the Talos API, which I do not have (no `talosctl`). Ask the user to run
+  `talosctl -n <node-ip> usage -H /var/mnt/local-path-provisioner`; each PVC is a directory named
+  `pvc-<uid>_<namespace>_<claim>`.
 - zot's own metrics (`zot_*`, e.g. per-repo storage) should be scraped by `k8s/infra/registry-system/zot/servicemonitor.yaml`.
   The chart's ServiceMonitor was rejected by the operator (it references a missing Secret `basic-auth`).
   If `zot_*` series are missing, check `kubectl logs -n kube-prometheus-stack-system deploy/kube-prom-operator | grep zot`.
