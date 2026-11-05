@@ -1,0 +1,70 @@
+name: Render manifests
+
+on:
+  # Manual run on a chosen branch
+  workflow_dispatch:
+  # Render and commit the result back to the PR branch
+  pull_request:
+    paths:
+      - "k8s/**"
+      - "scripts/ci/render-manifests.sh"
+      - "Makefile"
+
+# One render per ref; a newer push supersedes the running one
+concurrency:
+  group: render-manifests-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  render-manifests:
+    # Fork PRs get a read-only token and cannot be pushed to
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+    permissions:
+      contents: write
+      packages: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # On pull_request the default ref is the merge commit; check out the branch to push to it
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@22c6ee1a6099ce252b729199c105a38319b587d4 # main
+
+      - name: Render manifests
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4
+        with: # give up to 3x5 minutes
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_on: timeout
+          command: make render-manifests -j $(nproc)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Commit and push rendered changes
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Rendered manifests are up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: render manifests"
+          # A concurrent push to the branch would otherwise make this fail
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:$BRANCH"
