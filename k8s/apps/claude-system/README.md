@@ -28,7 +28,7 @@ The pod reads a token from the Secret `claude-github-token` and hands it to git 
 fresh, with a token that expires every hour.
 
 `github-app.yaml` runs a CronJob that signs a JWT with the App's private key and exchanges it for a
-one-hour installation token, narrowed to this repository with Contents, Pull requests and Workflows read/write. The
+one-hour installation token, narrowed to this repository and homeserver-bootc with Contents, Pull requests and Workflows read/write. The
 pod holds only that short-lived token.
 
 1. Create the App (GitHub: Settings > Developer settings > GitHub Apps > New). Repository permissions:

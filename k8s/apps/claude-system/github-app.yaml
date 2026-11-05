@@ -107,8 +107,8 @@ spec:
                 - "sh"
                 - "/scripts/refresh-token.sh"
               env:
-                - name: GITHUB_REPOSITORY
-                  value: pmx01-talos-gitops # repository name only; the token is limited to it
+                - name: GITHUB_REPOSITORIES
+                  value: pmx01-talos-gitops,homeserver-bootc # repository names only; the token is limited to them
                 - name: HOME
                   value: /work
               volumeMounts:
