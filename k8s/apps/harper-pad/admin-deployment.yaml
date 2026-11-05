@@ -86,6 +86,8 @@ spec:
               value: /db-client/tls.crt
             - name: PGSSLKEY
               value: /db-client/tls.key
+            - name: SYNC_PUBLIC_URL
+              value: https://harper-sync.portableinfo.cloud/
           volumeMounts:
             - name: db-client
               mountPath: /db-client
