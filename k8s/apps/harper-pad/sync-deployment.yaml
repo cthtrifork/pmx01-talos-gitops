@@ -38,11 +38,17 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sync
-          image: ghcr.io/cthtrifork/harper-pad-sync:v1.2.0@sha256:5f11c30990b03f3631bb4016c8119ed119bb42a0ed312dd48c1b0cc1cd92dbd3
+          image: ghcr.io/cthtrifork/harper-pad-sync:v2.0.0@sha256:983d6aead44f91e255c8d1ccbef4ec0e952a4f2e7ba92ebe33dabb3ece4fdcb6
           env:
             # Must be https: or the service refuses to start; the scheme is taken from here, not from headers.
             - name: PUBLIC_URL
               value: https://harper-sync.portableinfo.cloud
+            # The browser origins that may call the API, exact and comma-separated (no path, no trailing slash, never "*").
+            # Empty allows none, and then the web app and the desktop app cannot sync. https://harper.portableinfo.cloud is the
+            # Pages site. Add the desktop window's origin once it is known: the service logs an origin it rejected, once, so read
+            # it from the log (kubectl -n harper-pad logs deploy/harper-pad-sync | grep -i cors). PR previews do not sync.
+            - name: CORS_ALLOWED_ORIGINS
+              value: https://harper.portableinfo.cloud
             - name: LISTEN_ADDR
               value: ":9000"
             # Standard libpq settings; no password, client certificate only.

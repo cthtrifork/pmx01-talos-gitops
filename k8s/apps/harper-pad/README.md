@@ -32,6 +32,9 @@ application's contract (harper-pad PR #82):
 `/readyz` queries the database, so Traefik does not route it (`ingressroute.yaml`); `/healthz` stays public. Both tunnel
 tokens exist.
 
+**The two images are versioned together.** The admin applies the schema and a new sync image is not ready until the matching admin has
+applied it, so bump both in one pull request.
+
 **Image pull secret.** Both ServiceAccounts use the `github-auth` pull secret in the `harper-pad` namespace.
 
 ## Tunnel tokens
@@ -80,3 +83,39 @@ Turn on **Always Use HTTPS** for the zone.
 ```sh
 curl -i https://harper-sync.portableinfo.cloud/healthz
 ```
+
+## Browser origins (CORS)
+
+`CORS_ALLOWED_ORIGINS` in `sync-deployment.yaml` lists the browser origins that may call the API: exact, comma-separated, no trailing
+slash, never `*`. It holds the Pages site, `https://harper.portableinfo.cloud`. Empty allows none, and then neither the web app nor the
+desktop app can sync, because the browser blocks the call (the service itself is fine, and `curl` works).
+
+The desktop app's window presents its own origin. Run the app once against the server, then read the origin the service rejected (it is
+logged once per origin) and add it to the list:
+
+```sh
+kubectl -n harper-pad logs deploy/harper-pad-sync | grep -i cors
+```
+
+## Changing the database owner
+
+`harper_admin` owns the database and runs the migrations; `harper_sync` is a plain login role (see `postgres-cluster.yaml`). `initdb` runs
+only when a cluster is first created, so editing `owner` on a cluster that already exists changes nothing. A database that an earlier
+version created with `harper_sync` as owner has to be created again. That is cheap here: there are no backups on purpose, because every
+device keeps a full copy of its drafts and Sync all repopulates an empty server.
+
+Do it in this order, because a new admin cannot migrate a database it does not own, and the new sync pod then stays not ready:
+
+1. Merge the pull request that changes `owner` and the images.
+2. Delete the cluster and its volume. Flux creates the cluster again from this manifest.
+
+   ```sh
+   kubectl -n harper-pad delete cluster harper-pad-db
+   kubectl -n harper-pad delete pvc -l cnpg.io/cluster=harper-pad-db
+   flux reconcile kustomization app --with-source
+   ```
+
+3. The new database is bootstrapped with `harper_admin` as owner, `harper-pad-admin` applies the schema, and `harper-pad-sync` becomes ready
+   (`kubectl -n harper-pad get cluster harper-pad-db`).
+4. Every device token went with the old database, so each device shows "Sign in again". Create an invite for each in the admin page and
+   paste it into the app. Drafts stay on the devices, and Sync all puts them back on the server.
