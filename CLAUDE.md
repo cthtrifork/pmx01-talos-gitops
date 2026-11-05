@@ -30,7 +30,7 @@ P=http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090
 curl -s -G "$P/api/v1/query" --data-urlencode 'query=<promql>'
 ```
 
-- Do not rely on `kubelet_volume_stats_*`: no such series exist (checked 2026-11-05). The `local-path` PVs
+- Do not rely on `kubelet_volume_stats_*`: no such series exist. The `local-path` PVs
   are `hostPath` volumes and the kubelet does not collect stats for those, so per-PVC usage is not
   available. node-exporter is healthy but only reports whole filesystems, never per-directory usage.
 - zot's own metrics (`zot_*`, e.g. per-repo storage) should be scraped by `k8s/infra/registry-system/zot/servicemonitor.yaml`.
@@ -44,10 +44,3 @@ curl -s -G "$P/api/v1/query" --data-urlencode 'query=<promql>'
   `100*(1-node_filesystem_avail_bytes{mountpoint="/var/mnt/local-path-provisioner"}/node_filesystem_size_bytes{mountpoint="/var/mnt/local-path-provisioner"})`
 - Map `instance` (node IP) to node with `kubectl get nodes -o wide`.
 - `kubectl get pv`/`pvc` shows what is pinned to a node, but not how much each uses.
-
-## Known state (2026-11-05, re-check before relying on it)
-
-- `talos-11a-esj` (192.168.1.184) hosts every `local-path` PVC: zot (60Gi), the ARC runner caches
-  (about 180Gi requested in total), Prometheus, Claude, adguard, harper-pad. Its
-  `/var/mnt/local-path-provisioner` is about 400GB and was 99% full (about 3.8GB free). zot's own share is unknown.
-- `/workspace` in `claude-rc` is on the same disk, so a full disk also breaks clones here.
