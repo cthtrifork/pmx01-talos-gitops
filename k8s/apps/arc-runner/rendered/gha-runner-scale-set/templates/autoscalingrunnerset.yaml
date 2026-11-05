@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 5a827e13365c3b29aacdc681a92e3820d61bdc8fe859318e4e8e791b123153c
+    actions.github.com/values-hash: 6f080a3b291a3d93e24a124f450d59a17b90184866b0bc8a676716510e21331
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -180,7 +180,7 @@ spec:
         env:
         - name: DOCKER_GROUP_GID
           value: "123"
-        image: docker.io/library/docker:29.9.3-dind@sha256:d035bd30886e451b2727ef3cdb9af9a5c537a10d4bc5d18c08d0ffa597e46aeb
+        image: docker.io/library/docker:29.9.3-dind@sha256:4495bd03abbe729dae065ecc187801a19820fd19159948f01d68a57a8d281bd0
         imagePullPolicy: IfNotPresent
         name: dind
         resources:
