@@ -6,10 +6,10 @@ metadata:
   name: cloudnative-pg
   namespace: storage-system
   labels:
-    helm.sh/chart: cloudnative-pg-0.29.0
+    helm.sh/chart: cloudnative-pg-0.29.1
     app.kubernetes.io/name: cloudnative-pg
     app.kubernetes.io/instance: cloudnative-pg
-    app.kubernetes.io/version: "1.30.0"
+    app.kubernetes.io/version: "1.30.1"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: cloudnative-pg/templates/rbac.yaml
@@ -18,10 +18,10 @@ kind: ClusterRole
 metadata:
   name: cloudnative-pg
   labels:
-    helm.sh/chart: cloudnative-pg-0.29.0
+    helm.sh/chart: cloudnative-pg-0.29.1
     app.kubernetes.io/name: cloudnative-pg
     app.kubernetes.io/instance: cloudnative-pg
-    app.kubernetes.io/version: "1.30.0"
+    app.kubernetes.io/version: "1.30.1"
     app.kubernetes.io/managed-by: Helm
   namespace: storage-system
 rules:
@@ -271,10 +271,10 @@ kind: ClusterRole
 metadata:
   name: cloudnative-pg-view
   labels:
-    helm.sh/chart: cloudnative-pg-0.29.0
+    helm.sh/chart: cloudnative-pg-0.29.1
     app.kubernetes.io/name: cloudnative-pg
     app.kubernetes.io/instance: cloudnative-pg
-    app.kubernetes.io/version: "1.30.0"
+    app.kubernetes.io/version: "1.30.1"
     app.kubernetes.io/managed-by: Helm
   namespace: storage-system
 rules:
@@ -304,10 +304,10 @@ kind: ClusterRole
 metadata:
   name: cloudnative-pg-edit
   labels:
-    helm.sh/chart: cloudnative-pg-0.29.0
+    helm.sh/chart: cloudnative-pg-0.29.1
     app.kubernetes.io/name: cloudnative-pg
     app.kubernetes.io/instance: cloudnative-pg
-    app.kubernetes.io/version: "1.30.0"
+    app.kubernetes.io/version: "1.30.1"
     app.kubernetes.io/managed-by: Helm
   namespace: storage-system
 rules:
@@ -339,10 +339,10 @@ kind: ClusterRoleBinding
 metadata:
   name: cloudnative-pg
   labels:
-    helm.sh/chart: cloudnative-pg-0.29.0
+    helm.sh/chart: cloudnative-pg-0.29.1
     app.kubernetes.io/name: cloudnative-pg
     app.kubernetes.io/instance: cloudnative-pg
-    app.kubernetes.io/version: "1.30.0"
+    app.kubernetes.io/version: "1.30.1"
     app.kubernetes.io/managed-by: Helm
   namespace: storage-system
 roleRef:

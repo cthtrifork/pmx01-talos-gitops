@@ -154,7 +154,7 @@ data:
   enable-host-firewall: "false"
   # List of devices used to attach bpf_host.o (implements BPF NodePort,
   # host-firewall and BPF masquerading)
-  devices: ""
+  devices: "en+ eth+"
   kube-proxy-replacement: "true"
   kube-proxy-replacement-healthz-bind-address: ""
   enable-no-service-endpoints-routable: "true"
@@ -257,7 +257,6 @@ data:
   envoy-access-log-enabled: "true"
   envoy-access-log-buffer-size: "4096"
   envoy-keep-cap-netbindservice: "false"
-  envoy-xds-mode: "ads"
   max-connected-clusters: "255"
   clustermesh-cache-ttl: "0s"
   clustermesh-enable-endpoint-sync: "false"

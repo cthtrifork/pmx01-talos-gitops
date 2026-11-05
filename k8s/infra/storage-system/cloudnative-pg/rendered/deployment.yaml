@@ -6,10 +6,10 @@ metadata:
   name: cloudnative-pg
   namespace: storage-system
   labels:
-    helm.sh/chart: cloudnative-pg-0.29.0
+    helm.sh/chart: cloudnative-pg-0.29.1
     app.kubernetes.io/name: cloudnative-pg
     app.kubernetes.io/instance: cloudnative-pg
-    app.kubernetes.io/version: "1.30.0"
+    app.kubernetes.io/version: "1.30.1"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -20,9 +20,9 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/rbac: 711c9e9cef66b43e3d48e725746829aaa012ca20a94e9c19fe53e83afe067955
-        checksum/config: 14f93c0718e2070110b996d9d62fb050ac460885f07d64c9f900beed6da58a31
-        checksum/monitoring-config: 2c1e166f9672ed340ce700c486b75943a92786dabac9477d529f6a824a7d138d
+        checksum/rbac: 5f72dc12c97f92f157c569e44fbdcd1c2631f3383ad2830da3dbe8922340a9e3
+        checksum/config: 2a54f0f5c157acca6754cdd314e1a36cdd5ae84014c2ca03a1e0d5e635b7dda8
+        checksum/monitoring-config: 660827b0e0ccaa3c4478c99cc3a9b044765245e05d0d4c3491da8feb13dc1fb6
       labels:
         app.kubernetes.io/name: cloudnative-pg
         app.kubernetes.io/instance: cloudnative-pg
@@ -38,14 +38,14 @@ spec:
             - /manager
           env:
             - name: OPERATOR_IMAGE_NAME
-              value: "ghcr.io/cloudnative-pg/cloudnative-pg:1.30.0"
+              value: "ghcr.io/cloudnative-pg/cloudnative-pg:1.30.1"
             - name: OPERATOR_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: MONITORING_QUERIES_CONFIGMAP
               value: "cnpg-default-monitoring"
-          image: "ghcr.io/cloudnative-pg/cloudnative-pg:1.30.0"
+          image: "ghcr.io/cloudnative-pg/cloudnative-pg:1.30.1"
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
@@ -103,8 +103,8 @@ spec:
       serviceAccountName: cloudnative-pg
       terminationGracePeriodSeconds: 10
       volumes:
-        - emptyDir: {}
-          name: scratch-data
+        - name: scratch-data
+          emptyDir: {}
         - name: webhook-certificates
           secret:
             defaultMode: 420

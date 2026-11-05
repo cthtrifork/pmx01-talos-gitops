@@ -7,10 +7,10 @@ metadata:
   namespace: registry-system
   labels:
     app.kubernetes.io/component: cleanup
-    helm.sh/chart: spegel-0.7.4
+    helm.sh/chart: spegel-0.8.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.4"
+    app.kubernetes.io/version: "v0.8.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     helm.sh/hook: "post-delete"
@@ -36,10 +36,10 @@ metadata:
   namespace: registry-system
   labels:
     app.kubernetes.io/component: cleanup
-    helm.sh/chart: spegel-0.7.4
+    helm.sh/chart: spegel-0.8.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.4"
+    app.kubernetes.io/version: "v0.8.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     helm.sh/hook: "post-delete"
@@ -62,8 +62,16 @@ spec:
       priorityClassName: system-node-critical
       containers:
         - name: cleanup
-          image: "ghcr.io/spegel-org/spegel@sha256:26c60b05e08ac738e8442bc389c5780bff0e1d8153956e45d810a2f1008cf56f"
+          image: "ghcr.io/spegel-org/spegel@sha256:bdc1d14e4ab76e9a74520d331f485d09a596110118bd1a7706fa0411f17b3703"
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           args:
             - cleanup
             - --containerd-registry-config-path=/etc/cri/conf.d/hosts
@@ -100,20 +108,36 @@ metadata:
   namespace: registry-system
   labels:
     app.kubernetes.io/component: cleanup-wait
-    helm.sh/chart: spegel-0.7.4
+    helm.sh/chart: spegel-0.8.1
     app.kubernetes.io/name: spegel
     app.kubernetes.io/instance: spegel
-    app.kubernetes.io/version: "v0.7.4"
+    app.kubernetes.io/version: "v0.8.1"
     app.kubernetes.io/managed-by: Helm
   annotations:
     helm.sh/hook: "post-delete"
     helm.sh/hook-delete-policy: "before-hook-creation, hook-succeeded"
     helm.sh/hook-weight: "1"
 spec:
+  securityContext: {}
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Exists
+    - effect: NoExecute
+      operator: Exists
+    - effect: NoSchedule
+      operator: Exists
   containers:
     - name: cleanup-wait
-      image: "ghcr.io/spegel-org/spegel@sha256:26c60b05e08ac738e8442bc389c5780bff0e1d8153956e45d810a2f1008cf56f"
+      image: "ghcr.io/spegel-org/spegel@sha256:bdc1d14e4ab76e9a74520d331f485d09a596110118bd1a7706fa0411f17b3703"
       imagePullPolicy: IfNotPresent
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        seccompProfile:
+          type: RuntimeDefault
       args:
         - cleanup-wait
         - --probe-endpoint=spegel-cleanup.registry-system.svc.cluster.local.:8080
