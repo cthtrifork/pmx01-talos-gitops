@@ -36,7 +36,8 @@ spec:
     - web
   routes:
     - kind: Rule
-      # /readyz runs a database query, so it is for the kubelet only (it probes the pod directly); /healthz stays public.
+      # The probes are on the pod's port 9102, which is not routed. /readyz stays excluded as a second line of defence for an image that
+      # still serves it on :9000.
       match: Host(`harper-sync.portableinfo.cloud`) && !Path(`/readyz`)
       middlewares:
         - name: sync-headers

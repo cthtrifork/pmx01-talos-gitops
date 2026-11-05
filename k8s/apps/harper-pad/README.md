@@ -25,12 +25,12 @@ application's contract (harper-pad PR #82):
 | | sync | admin |
 |---|---|---|
 | Listens on | `:9000` | `127.0.0.1:9001` |
-| Liveness | `GET /healthz` (process only) | none (loopback) |
-| Readiness | `GET /readyz` (PostgreSQL round trip) | none (loopback) |
+| Liveness | `GET :9102/healthz` (process only) | none (loopback) |
+| Readiness | `GET :9102/readyz` (PostgreSQL round trip) | none (loopback) |
 | Metrics | `:9102/metrics`, scraped through `podmonitor.yaml`; the NetworkPolicy lets only Prometheus in | off |
 
-`/readyz` queries the database, so Traefik does not route it (`ingressroute.yaml`); `/healthz` stays public. Both tunnel
-tokens exist.
+The probes are served on the metrics port, which Traefik does not route, so neither `/healthz` nor `/readyz` is public (the
+kubelet reaches the port directly). Both tunnel tokens exist.
 
 **The two images are versioned together.** The admin applies the schema and a new sync image is not ready until the matching admin has
 applied it, so bump both in one pull request.
@@ -81,7 +81,9 @@ Turn on **Always Use HTTPS** for the zone.
 ## Try it
 
 ```sh
-curl -i https://harper-sync.portableinfo.cloud/healthz
+curl -i https://harper-sync.portableinfo.cloud/docs   # 401: the API answers and wants a DPoP proof
+kubectl -n harper-pad port-forward deploy/harper-pad-sync 9102 &
+curl -i http://127.0.0.1:9102/readyz                   # 200 when PostgreSQL is reachable; /healthz and /metrics are there too
 ```
 
 ## Browser origins (CORS)
