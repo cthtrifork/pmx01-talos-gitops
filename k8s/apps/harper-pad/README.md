@@ -11,7 +11,7 @@ operator        -> Cloudflare Access -> tunnel -> cloudflared (sidecar) -> harpe
 | Resource | What |
 |---|---|
 | `harper-pad-db` | CloudNativePG cluster. Client-certificate auth only (cert-manager issues the certificates), no passwords |
-| `harper-pad-sync` | The API. Reached only from Traefik (`ingressroute.yaml` adds headers, rate limit and body cap) |
+| `harper-pad-sync` | The API. Reached only from Traefik (`ingressroute.yaml` adds headers and a body cap) |
 | `harper-pad-admin` | Admin UI. No Service; listens on loopback and is reached only by its own `cloudflared` sidecar |
 | `networkpolicy.yaml` | Default deny for the app pods, then only what is needed |
 
