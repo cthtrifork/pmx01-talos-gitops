@@ -12,6 +12,9 @@
   },
   "storage": {
     "rootDirectory": "/var/lib/registry",
+    "gc": true,
+    "gcDelay": "1h",
+    "gcInterval": "1h",
     "retention": {
       "dryRun": false,
       "delay": "24h",
@@ -30,6 +33,26 @@
               "mostRecentlyPulledCount": 1,
               "pulledWithin": "72h",
               "pushedWithin": "72h"
+            }
+          ]
+        },
+        {
+          "repositories": ["pr/**"],
+          "deleteReferrers": true,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "pushedWithin": "72h"
+            }
+          ]
+        },
+        {
+          "repositories": ["ghcr-cache/**"],
+          "deleteReferrers": true,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "pulledWithin": "168h"
             }
           ]
         },
