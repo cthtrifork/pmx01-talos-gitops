@@ -9,7 +9,7 @@ resources:
   #- kubevirt/
   - metrics-server/
   - metallb/
-  #- kube-prometheus-stack
+  - kube-prometheus-stack/
   - storage-system/
   - policy-system/
   - registry-system/
