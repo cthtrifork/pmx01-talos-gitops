@@ -9,6 +9,9 @@
     "prIgnoreNotification"
   ],
   "rebaseWhen": "conflicted",
+  // Renovate merges itself via the API (as the App, which bypasses main-protection) instead of
+  // enabling GitHub native auto-merge, which does not honour the ruleset bypass.
+  "platformAutomerge": false,
   "recreateWhen": "always",
   "pinDigests": true,
   "semanticCommits": "enabled",
