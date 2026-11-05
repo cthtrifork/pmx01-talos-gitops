@@ -38,7 +38,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sync
-          image: ghcr.io/cthtrifork/harper-pad-sync:v1.1.0
+          image: ghcr.io/cthtrifork/harper-pad-sync:v1.2.0@sha256:5f11c30990b03f3631bb4016c8119ed119bb42a0ed312dd48c1b0cc1cd92dbd3
           env:
             # Must be https: or the service refuses to start; the scheme is taken from here, not from headers.
             - name: PUBLIC_URL
