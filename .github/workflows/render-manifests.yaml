@@ -27,11 +27,23 @@ jobs:
       packages: read
 
     steps:
+      # Push as the Renovate GitHub App instead of GITHUB_TOKEN, so the render
+      # commit triggers the e2e and validate workflows.
+      - name: Get a GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          permission-contents: write # push the render commit
+
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # On pull_request the default ref is the merge commit; check out the branch to push to it
           ref: ${{ github.head_ref || github.ref_name }}
+          # Persisted for the push below
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Log in to the Container registry
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
@@ -61,8 +73,8 @@ jobs:
             echo "Rendered manifests are up to date"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "renovate[bot]"
+          git config user.email "29139614+renovate[bot]@users.noreply.github.com"
           git add -A
           git commit -m "chore: render manifests"
           # A concurrent push to the branch would otherwise make this fail
