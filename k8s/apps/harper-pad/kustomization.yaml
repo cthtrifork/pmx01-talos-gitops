@@ -6,6 +6,7 @@ resources:
   - serviceaccount.yaml
   - postgres-certificates.yaml
   - postgres-cluster.yaml
+  - postgres-database.yaml
   - sync-deployment.yaml
   - sync-service.yaml
   - ingressroute.yaml

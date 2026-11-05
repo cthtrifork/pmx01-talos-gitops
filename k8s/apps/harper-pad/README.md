@@ -11,7 +11,7 @@ operator        -> Cloudflare Access -> tunnel -> cloudflared (sidecar) -> harpe
 | Resource | What |
 |---|---|
 | `harper-pad-db` | CloudNativePG cluster. Client-certificate auth only (cert-manager issues the certificates), no passwords |
-| `harper-pad-sync` | The API. Reached only from Traefik (`ingressroute.yaml` adds headers, rate limit and body cap) |
+| `harper-pad-sync` | The API. Reached only from Traefik (`ingressroute.yaml` adds headers and a body cap) |
 | `harper-pad-admin` | Admin UI. No Service; listens on loopback and is reached only by its own `cloudflared` sidecar |
 | `networkpolicy.yaml` | Default deny for the app pods, then only what is needed |
 
@@ -31,6 +31,9 @@ application's contract (harper-pad PR #82):
 
 `/readyz` queries the database, so Traefik does not route it (`ingressroute.yaml`); `/healthz` stays public. Both tunnel
 tokens exist.
+
+**The two images are versioned together.** The admin applies the schema and a new sync image is not ready until the matching admin has
+applied it, so bump both in one pull request.
 
 **Image pull secret.** Both ServiceAccounts use the `github-auth` pull secret in the `harper-pad` namespace.
 
@@ -80,3 +83,44 @@ Turn on **Always Use HTTPS** for the zone.
 ```sh
 curl -i https://harper-sync.portableinfo.cloud/healthz
 ```
+
+## Browser origins (CORS)
+
+`CORS_ALLOWED_ORIGINS` in `sync-deployment.yaml` lists the browser origins that may call the API: exact, comma-separated, no trailing
+slash, never `*`. It holds the Pages site, `https://harper.portableinfo.cloud`. Empty allows none, and then neither the web app nor the
+desktop app can sync, because the browser blocks the call (the service itself is fine, and `curl` works).
+
+The desktop app's window presents its own origin. Run the app once against the server, then read the origin the service rejected (it is
+logged once per origin) and add it to the list:
+
+```sh
+kubectl -n harper-pad logs deploy/harper-pad-sync | grep -i cors
+```
+
+## Database owner
+
+`harper_admin` owns the database and runs the migrations (`harper-pad-admin` connects as it); `harper_sync` is a plain login role that only
+the migrations' grants give rights to. `postgres-cluster.yaml` sets this for a new cluster with `initdb.owner`, which runs only once, and
+`postgres-database.yaml` is a CloudNativePG `Database` resource whose `owner` is reconciled continuously (it maps to
+`ALTER DATABASE ... OWNER TO`), so an existing cluster follows the file without being recreated. `databaseReclaimPolicy: retain` means
+deleting that object never drops the database.
+
+CloudNativePG manages the database, not its content (its documentation: "it does not manage database content beyond extensions and schemas
+(e.g., tables)"), so tables that were created while `harper_sync` was the owner keep that owner, and `harper-pad-admin` could not alter them.
+Check once after the change, as the postgres user inside the pod (superuser access from outside is off):
+
+```sh
+kubectl -n harper-pad get database harper-pad-db-harper        # APPLIED should be true
+kubectl -n harper-pad exec harper-pad-db-1 -c postgres -- psql -d harper -c "select schemaname, tablename, tableowner from pg_tables where schemaname = 'public'"
+```
+
+If every table is owned by `harper_admin`, or there are none yet, there is nothing to do. If some are owned by `harper_sync`, move them once:
+
+```sh
+kubectl -n harper-pad exec harper-pad-db-1 -c postgres -- psql -d harper -c "REASSIGN OWNED BY harper_sync TO harper_admin"
+```
+
+then check that `harper-pad-admin` starts without a migration error (`kubectl -n harper-pad logs deploy/harper-pad-admin -c admin`) and that
+`harper-pad-sync` becomes ready. A database you do not need to keep can instead be deleted and left for the controller to create again: there
+are no backups on purpose, because every device keeps a full copy of its drafts and Sync all repopulates an empty server, but every device
+token goes with it and each device has to enroll again.
