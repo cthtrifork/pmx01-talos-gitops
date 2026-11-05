@@ -66,8 +66,10 @@ spec:
         value: "/run/secrets/github_auth"
     metrics:
       enabled: true
+      # The chart's ServiceMonitor always sets basicAuth from a Secret `basic-auth` and scrapes over
+      # HTTP, so Prometheus rejects it. zot has no auth and serves TLS; see servicemonitor.yaml.
       serviceMonitor:
-        enabled: true
+        enabled: false
     externalSecrets:
       - secretName: zot-sync-creds
         mountPath: /etc/zot/sync

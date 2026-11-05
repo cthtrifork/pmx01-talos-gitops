@@ -1,0 +1,27 @@
+# Named zot-metrics, not zot: the chart's ServiceMonitor is called zot and Helm deletes it on upgrade, which
+# would remove one with the same name.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/monitoring.coreos.com/servicemonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: zot-metrics
+  namespace: registry-system
+  labels:
+    app.kubernetes.io/component: metrics
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: zot
+      app.kubernetes.io/name: zot
+  namespaceSelector:
+    matchNames:
+      - registry-system
+  endpoints:
+    - port: zot
+      path: /metrics
+      interval: 30s
+      scheme: https
+      tlsConfig:
+        # The certificate is issued for the registry's DNS names, not the pod IP Prometheus connects to
+        insecureSkipVerify: true
