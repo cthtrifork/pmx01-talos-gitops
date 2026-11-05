@@ -57,6 +57,25 @@
           ]
         },
         {
+          "repositories": [
+            "ghcr-private/cthtrifork/homeserver-bootc/**",
+            "ghcr-private/cthtrifork/pmx01-talos-gitops/github-actions-runner"
+          ],
+          "deleteReferrers": true,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "patterns": ["latest"]
+            },
+            {
+              "mostRecentlyPushedCount": 2,
+              "mostRecentlyPulledCount": 2,
+              "pulledWithin": "168h",
+              "pushedWithin": "168h"
+            }
+          ]
+        },
+        {
           "repositories": ["**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
