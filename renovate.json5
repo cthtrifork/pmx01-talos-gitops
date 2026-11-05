@@ -133,6 +133,18 @@
       "groupName": "cilium",
       "groupSlug": "cilium",
       "automerge": false
+    },
+    {
+      "description": "harper-pad-sync and harper-pad-admin are versioned together: the admin applies the schema, and a new sync pod is not ready until the matching admin has. One pull request moves both.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/cthtrifork/harper-pad-sync",
+        "ghcr.io/cthtrifork/harper-pad-admin"
+      ],
+      "groupName": "harper-pad images",
+      "groupSlug": "harper-pad-images"
     }
   ],
   "customManagers": [
