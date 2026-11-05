@@ -73,23 +73,21 @@ jobs:
           BRANCH: ${{ github.head_ref || github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          git add -A
-          if git diff --cached --quiet; then
+          if [ -z "$(git status --porcelain)" ]; then
             echo "Rendered manifests are up to date"
             exit 0
           fi
           tmp="$(mktemp -d)"
           : > "$tmp/additions"
           : > "$tmp/deletions"
-          # Renames show up as a delete plus an add. File modes are not carried over.
-          git diff --cached --name-status --no-renames -z |
-            while IFS= read -r -d '' status && IFS= read -r -d '' path; do
-              if [ "$status" = D ]; then
-                jq -nc --arg p "$path" '{path: $p}' >> "$tmp/deletions"
-              else
-                jq -nc --arg p "$path" --rawfile c <(base64 -w0 -- "$path") \
-                  '{path: $p, contents: $c}' >> "$tmp/additions"
-              fi
+          # Each entry is "XY path"; file modes are not carried over by the API
+          git status --porcelain -z --untracked-files=all |
+            while IFS= read -r -d '' -n 3 xy && IFS= read -r -d '' path; do
+              case "$xy" in
+                *D*) jq -nc --arg p "$path" '{path: $p}' >> "$tmp/deletions" ;;
+                *) jq -nc --arg p "$path" --rawfile c <(base64 -w0 -- "$path") \
+                     '{path: $p, contents: $c}' >> "$tmp/additions" ;;
+              esac
             done
           # Fails if the branch moved since checkout; the next push re-runs the workflow
           jq -n \
