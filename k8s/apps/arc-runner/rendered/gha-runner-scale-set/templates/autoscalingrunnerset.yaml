@@ -69,8 +69,6 @@ spec:
           value: chroot
         - name: BUILDAH_LAYERS
           value: "true"
-        - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
-          value: /var/lib/registry
         - name: RUNNER_UPDATE_CA_CERTS
           value: "1"
         image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.8.0@sha256:06809a1a335243880f6aa07942d5ea68a1e28c2ee977e3fd0ff86a2cdc863809
@@ -102,8 +100,6 @@ spec:
           name: container-rootless-storage
         - mountPath: /var/lib/shared
           name: container-shared-storage
-        - mountPath: /var/lib/registry
-          name: container-shared-registry
         - mountPath: /var/lib/docker
           name: docker-lib
         - mountPath: /var/cache/dnf
@@ -257,9 +253,6 @@ spec:
       - name: container-shared-storage
         persistentVolumeClaim:
           claimName: container-shared-storage
-      - name: container-shared-registry
-        persistentVolumeClaim:
-          claimName: container-shared-registry
       - name: cross-run-cache
         persistentVolumeClaim:
           claimName: cross-run-cache

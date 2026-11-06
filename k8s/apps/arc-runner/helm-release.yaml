@@ -170,9 +170,6 @@ spec:
               - name: BUILDAH_LAYERS
                 value: "true"
 
-              - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
-                value: /var/lib/registry
-
               - name: RUNNER_UPDATE_CA_CERTS
                 value: "1"
 
@@ -202,9 +199,6 @@ spec:
               # Persistent additional image store.
               - name: container-shared-storage
                 mountPath: /var/lib/shared
-              # Persistent local registry/cache.
-              - name: container-shared-registry
-                mountPath: /var/lib/registry
               # Same transient Docker storage as DinD.
               - name: docker-lib
                 mountPath: /var/lib/docker
@@ -286,9 +280,6 @@ spec:
           - name: container-shared-storage
             persistentVolumeClaim:
               claimName: container-shared-storage
-          - name: container-shared-registry
-            persistentVolumeClaim:
-              claimName: container-shared-registry
           - name: cross-run-cache
             persistentVolumeClaim:
               claimName: cross-run-cache
@@ -352,19 +343,6 @@ spec:
   resources:
     requests:
       storage: 5Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: container-shared-registry
-  namespace: arc-runners-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 24Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
