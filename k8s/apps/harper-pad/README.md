@@ -89,7 +89,8 @@ curl -i http://127.0.0.1:9102/readyz                   # 200 when PostgreSQL is 
 ## Browser origins (CORS)
 
 `CORS_ALLOWED_ORIGINS` in `sync-deployment.yaml` lists the browser origins that may call the API: exact, comma-separated, no trailing
-slash, never `*`. It holds the Pages site, `https://harper.portableinfo.cloud`. Empty allows none, and then neither the web app nor the
+slash, never `*`. It holds the Pages site, `https://harper.portableinfo.cloud`, and the desktop window's origin: `wails://localhost` on Linux and macOS,
+`http://wails.localhost` on Windows. Empty allows none, and then neither the web app nor the
 desktop app can sync, because the browser blocks the call (the service itself is fine, and `curl` works).
 
 The desktop app's window presents its own origin. Run the app once against the server, then read the origin the service rejected (it is
