@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 76eac3ca463f3d01e3bf171564463558d990e411eee727c4c4223503a63a851
+    actions.github.com/values-hash: fbde64b58acb92f3184daaa575a12c0d1dd013c7bd3046675d6a8287a442c7e
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -69,8 +69,6 @@ spec:
           value: chroot
         - name: BUILDAH_LAYERS
           value: "true"
-        - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
-          value: /var/lib/registry
         - name: RUNNER_UPDATE_CA_CERTS
           value: "1"
         image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.8.0@sha256:06809a1a335243880f6aa07942d5ea68a1e28c2ee977e3fd0ff86a2cdc863809
@@ -102,8 +100,6 @@ spec:
           name: container-rootless-storage
         - mountPath: /var/lib/shared
           name: container-shared-storage
-        - mountPath: /var/lib/registry
-          name: container-shared-registry
         - mountPath: /var/lib/docker
           name: docker-lib
         - mountPath: /var/cache/dnf
@@ -257,9 +253,6 @@ spec:
       - name: container-shared-storage
         persistentVolumeClaim:
           claimName: container-shared-storage
-      - name: container-shared-registry
-        persistentVolumeClaim:
-          claimName: container-shared-registry
       - name: cross-run-cache
         persistentVolumeClaim:
           claimName: cross-run-cache

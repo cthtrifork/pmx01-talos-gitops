@@ -7,4 +7,3 @@ resources:
   - namespace.yaml
   - secret.enc.yaml
   - certificate.yaml
-  - pvc-usage-job.yaml
