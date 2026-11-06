@@ -1,0 +1,59 @@
+---
+# Temporary: prints per-PVC usage (read-only) to the Job's logs, as local-path PVCs report no kubelet stats.
+# Remove this file and its entry in kustomization.yaml once the usage has been read.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pvc-usage-probe
+  namespace: arc-runners-system
+spec:
+  ttlSecondsAfterFinished: 86400
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: du
+          image: docker.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
+          command:
+            - sh
+            - -c
+            - |
+              for d in /pvc/*; do
+                echo "== $(basename "$d")"; df -h "$d" | tail -1
+                du -x -d 2 -k "$d" 2>/dev/null | sort -rn | head -8
+              done
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_READ_SEARCH
+          resources:
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - { name: container-storage-rootful, mountPath: /pvc/container-storage-rootful, readOnly: true }
+            - { name: container-rootless-storage, mountPath: /pvc/container-rootless-storage, readOnly: true }
+            - { name: container-shared-storage, mountPath: /pvc/container-shared-storage, readOnly: true }
+            - { name: container-shared-registry, mountPath: /pvc/container-shared-registry, readOnly: true }
+            - { name: podman-tmp, mountPath: /pvc/podman-tmp, readOnly: true }
+            - { name: dnf-cache, mountPath: /pvc/dnf-cache, readOnly: true }
+            - { name: cross-run-cache, mountPath: /pvc/cross-run-cache, readOnly: true }
+      volumes:
+        - name: container-storage-rootful
+          persistentVolumeClaim: { claimName: container-storage-rootful, readOnly: true }
+        - name: container-rootless-storage
+          persistentVolumeClaim: { claimName: container-rootless-storage, readOnly: true }
+        - name: container-shared-storage
+          persistentVolumeClaim: { claimName: container-shared-storage, readOnly: true }
+        - name: container-shared-registry
+          persistentVolumeClaim: { claimName: container-shared-registry, readOnly: true }
+        - name: podman-tmp
+          persistentVolumeClaim: { claimName: podman-tmp, readOnly: true }
+        - name: dnf-cache
+          persistentVolumeClaim: { claimName: dnf-cache, readOnly: true }
+        - name: cross-run-cache
+          persistentVolumeClaim: { claimName: cross-run-cache, readOnly: true }
