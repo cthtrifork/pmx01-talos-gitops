@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/instance: kube-prometheus-stack
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: prom
-    app.kubernetes.io/version: 92.20.0
-    chart: kube-prometheus-stack-92.20.0
+    app.kubernetes.io/version: 92.21.2
+    chart: kube-prometheus-stack-92.21.2
     heritage: Helm
     release: kube-prometheus-stack
   name: kube-prom-apiserver
