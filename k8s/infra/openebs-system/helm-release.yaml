@@ -1,0 +1,53 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openebs-localpv
+  namespace: openebs-system
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: openebs-localpv
+  releaseName: openebs-localpv
+  driftDetection:
+    mode: enabled
+  interval: 30m
+  timeout: 10m
+  install:
+    crds: CreateReplace
+    strategy:
+      name: RetryOnFailure
+  upgrade:
+    crds: CreateReplace
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  # https://github.com/openebs/dynamic-localpv-provisioner/blob/develop/deploy/helm/charts/values.yaml
+  values:
+    analytics:
+      enabled: false
+    localpv:
+      # On the same XFS volume as local-path (patches/03-local-path-provisioner.yaml), which has
+      # project quotas enabled, so XFS quota can be set per PV directory
+      basePath: /var/mnt/local-path-provisioner/openebs
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 128Mi
+    hostpathClass:
+      name: openebs-hostpath-xfs
+      enabled: true
+      isDefaultClass: false
+      reclaimPolicy: Delete
+      xfsQuota:
+        enabled: true
+        # hard limit = PVC request, so a PVC cannot fill the node volume
+        softLimitGrace: "0%"
+        hardLimitGrace: "0%"

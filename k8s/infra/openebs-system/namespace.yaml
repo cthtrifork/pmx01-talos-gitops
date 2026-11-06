@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openebs-system
+  labels:
+    # The helper pods mount the host path and run xfs_quota
+    pod-security.kubernetes.io/enforce: privileged
