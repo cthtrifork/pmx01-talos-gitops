@@ -39,7 +39,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: claude
-          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.8.0@sha256:f40cd25b03dbfc1fb94b02017f3e82911681935b732a9ba0db526d68eb78dc07
+          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
           command:
             - "/bin/bash"
             - "-c"
