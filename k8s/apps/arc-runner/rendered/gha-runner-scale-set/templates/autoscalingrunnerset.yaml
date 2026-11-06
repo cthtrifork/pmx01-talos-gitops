@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 76eac3ca463f3d01e3bf171564463558d990e411eee727c4c4223503a63a851
+    actions.github.com/values-hash: fbde64b58acb92f3184daaa575a12c0d1dd013c7bd3046675d6a8287a442c7e
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
