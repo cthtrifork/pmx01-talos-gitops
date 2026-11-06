@@ -76,6 +76,9 @@ spec:
             - name: github-token
               mountPath: /etc/github
               readOnly: true
+            - name: ghcr-pull-token
+              mountPath: /etc/ghcr
+              readOnly: true
             - name: claude-md
               mountPath: /etc/claude-md
               readOnly: true
@@ -90,6 +93,11 @@ spec:
         - name: github-token
           secret:
             secretName: claude-github-token # minted by github-app.yaml
+            optional: true
+            defaultMode: 0400
+        - name: ghcr-pull-token
+          secret:
+            secretName: ghcr-pull-token # created by hand (not in Git), key `token`, a token with only read:packages
             optional: true
             defaultMode: 0400
         - name: claude-md

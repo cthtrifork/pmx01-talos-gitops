@@ -1,0 +1,17 @@
+#!/bin/sh
+# crane wrapper: logs in to ghcr.io with the read-only pull token mounted at /etc/ghcr/token (a token with
+# only read:packages), unless DOCKER_CONFIG is already set. The credentials go to a private throwaway
+# DOCKER_CONFIG that is removed when crane exits, so the token is never kept anywhere but the mounted Secret.
+real=/usr/local/libexec/crane
+if [ -z "${DOCKER_CONFIG:-}" ] && [ -r /etc/ghcr/token ]; then
+    umask 077
+    dir="$(mktemp -d)" || exit 1
+    trap 'rm -rf "$dir"' EXIT INT TERM
+    auth="$(printf 'claude:%s' "$(cat /etc/ghcr/token)" | base64 -w0)"
+    printf '{"auths":{"ghcr.io":{"auth":"%s"}}}' "$auth" > "$dir/config.json"
+    DOCKER_CONFIG="$dir"
+    export DOCKER_CONFIG
+    "$real" "$@"
+    exit $?
+fi
+exec "$real" "$@"

@@ -73,6 +73,18 @@ If the Job fails, look at `kubectl -n claude-system logs job/first-token -c sign
 The Secret `claude-github-app` is created by hand and is not in Git. Flux only prunes what it applied, so
 it leaves it alone.
 
+### Pull token for private images (optional)
+
+`crane` in the pod reads private ghcr.io packages with a token from the Secret `ghcr-pull-token` (key `token`),
+mounted at `/etc/ghcr/token`. Create it by hand from a token that has **only `read:packages`**, so the pod can
+read but never push (the Secret is not in Git; the pod starts without it):
+
+```sh
+kubectl -n claude-system create secret generic ghcr-pull-token --from-literal=token="$GHCR_PULL_TOKEN"
+```
+
+The `crane` wrapper in the image builds a throwaway Docker config from it on every call.
+
 ## 3. Sign in once
 
 The pod idles and logs "not logged in" until a login exists:
