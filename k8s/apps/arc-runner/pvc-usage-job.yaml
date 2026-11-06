@@ -4,7 +4,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: pvc-usage-probe
+  name: pvc-usage-probe-fast
   namespace: arc-runners-system
 spec:
   ttlSecondsAfterFinished: 86400
@@ -19,10 +19,18 @@ spec:
             - sh
             - -c
             - |
-              for d in /pvc/*; do
-                echo "== $(basename "$d")"; df -h "$d" | tail -1
-                du -x -d 2 -k "$d" 2>/dev/null | sort -rn | head -8
-              done
+              # Every PVC in parallel, and each PVC's top-level entries in parallel, as they hold millions of files.
+              probe() {
+                pvc=$1
+                for e in /pvc/"$pvc"/* /pvc/"$pvc"/.[!.]*; do
+                  [ -e "$e" ] && echo "$e"
+                done | xargs -r -P 8 -n 1 du -x -s -k 2>/dev/null |
+                  sort -rn | head -12 | sed "s|^|$pvc |" > /tmp/"$pvc".out
+              }
+              for d in /pvc/*; do probe "$(basename "$d")" & done
+              wait
+              for f in /tmp/*.out; do cat "$f"; done
+              df -h /pvc/podman-tmp | tail -1
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false
@@ -32,8 +40,10 @@ spec:
               add:
                 - DAC_READ_SEARCH
           resources:
+            requests:
+              cpu: 500m
             limits:
-              memory: 128Mi
+              memory: 256Mi
           volumeMounts:
             - { name: container-storage-rootful, mountPath: /pvc/container-storage-rootful, readOnly: true }
             - { name: container-rootless-storage, mountPath: /pvc/container-rootless-storage, readOnly: true }
