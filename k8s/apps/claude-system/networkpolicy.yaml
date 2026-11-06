@@ -69,6 +69,17 @@ spec:
         - matchPattern: "*.blob.core.windows.net"
         - matchName: "context7.com"
 
+        # Container registries (read-only inspection of images and layers with crane/skopeo). The blob
+        # redirects of ghcr.io go to pkg-containers.githubusercontent.com, covered by *.githubusercontent.com
+        - matchName: ghcr.io
+        - matchName: quay.io
+        - matchPattern: "*.quay.io"
+        - matchName: registry-1.docker.io
+        - matchName: auth.docker.io
+        - matchName: production.cloudflare.docker.com
+        - matchName: gcr.io
+        - matchName: mirror.gcr.io
+
         # Integrations
         - matchPattern: "*.portableinfo.cloud"
 
