@@ -80,6 +80,9 @@ spec:
         - matchName: gcr.io
         - matchName: mirror.gcr.io
 
+        # Bandwidth tests with curl (download __down, upload __up)
+        - matchName: speed.cloudflare.com
+
         # Integrations
         - matchPattern: "*.portableinfo.cloud"
 
