@@ -4,7 +4,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: pvc-usage-probe
+  name: pvc-usage-probe-fast
   namespace: arc-runners-system
 spec:
   ttlSecondsAfterFinished: 86400
@@ -19,10 +19,27 @@ spec:
             - sh
             - -c
             - |
-              for d in /pvc/*; do
-                echo "== $(basename "$d")"; df -h "$d" | tail -1
-                du -x -d 2 -k "$d" 2>/dev/null | sort -rn | head -8
-              done
+              # Fast and approximate: layer sizes come from the container-storage metadata, and du is capped per entry
+              # (an entry that hits the cap prints ">60s", which marks it as huge), run in parallel as the PVCs hold
+              # millions of files.
+              probe() {
+                pvc=$1; d=/pvc/$pvc
+                if [ -f "$d/overlay-layers/layers.json" ]; then
+                  layers=$(grep -o '"diff-size":[0-9]*' "$d/overlay-layers/layers.json" | cut -d: -f2 |
+                    awk '{s+=$1; n++} END {printf "%d layers, %.1f GiB", n, s/2^30}')
+                  dirs=$(find "$d/overlay" -maxdepth 1 2>/dev/null | wc -l)
+                  echo "$pvc metadata: $layers; overlay dirs: $dirs (orphans if far above the layer count)" > /tmp/"$pvc".meta
+                fi
+                for e in "$d"/* "$d"/.[!.]*; do
+                  [ -e "$e" ] && echo "$e"
+                done | xargs -r -P 8 -n 1 sh -c 'timeout 60 du -x -s -k "$0" 2>/dev/null || echo ">60s $0"' |
+                  sort -rn | head -12 | sed "s|^|$pvc |" > /tmp/"$pvc".out
+              }
+              for d in /pvc/*; do probe "$(basename "$d")" & done
+              wait
+              cat /tmp/*.meta 2>/dev/null
+              for f in /tmp/*.out; do cat "$f"; done
+              df -h /pvc/podman-tmp | tail -1
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false
@@ -32,8 +49,10 @@ spec:
               add:
                 - DAC_READ_SEARCH
           resources:
+            requests:
+              cpu: 500m
             limits:
-              memory: 128Mi
+              memory: 256Mi
           volumeMounts:
             - { name: container-storage-rootful, mountPath: /pvc/container-storage-rootful, readOnly: true }
             - { name: container-rootless-storage, mountPath: /pvc/container-rootless-storage, readOnly: true }
