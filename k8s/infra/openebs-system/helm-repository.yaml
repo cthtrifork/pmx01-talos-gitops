@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: openebs-localpv
+  namespace: openebs-system
+spec:
+  interval: 12h
+  url: oci://ghcr.io/openebs/helm/localpv-provisioner
+  ref:
+    tag: 4.6.0
+    digest: sha256:3b7277533e43c0bd921a11fefe0b73b99d4a16af50756cabcad1e9d94b74ba0d
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: extract

@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - cilium/
   - local-path-provisioner/
+  - openebs-system/
   - cert-manager/
   - flux-system/
   #- kubevirt/

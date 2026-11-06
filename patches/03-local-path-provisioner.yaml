@@ -8,3 +8,8 @@ provisioning:
   minSize: 200GB
   maxSize: 600GB
   grow: true
+filesystem:
+  type: xfs
+  # Needed by the OpenEBS hostpath provisioner's XFS quotas (k8s/infra/openebs-system).
+  # Changing it can require a remount of the volume.
+  projectQuotaSupport: true
