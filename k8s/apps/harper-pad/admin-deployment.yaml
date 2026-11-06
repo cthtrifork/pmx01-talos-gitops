@@ -66,7 +66,7 @@ spec:
       containers:
         - name: admin
           # No args: the image's CMD is "serve"; it listens on LISTEN_ADDR (loopback).
-          image: ghcr.io/cthtrifork/harper-pad-admin:v2.6.0@sha256:93f83a13e2eccd220d6e8440d2e8106c74269610ea4e6ed1d1205334fc037438
+          image: ghcr.io/cthtrifork/harper-pad-admin:v2.7.0@sha256:1e885bcf32cafae37cdf484846bd4afd6b131e4d2aa15a5a4e294330c7fad3bc
           env:
             - name: LISTEN_ADDR
               value: 127.0.0.1:9001
