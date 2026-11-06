@@ -49,6 +49,9 @@ spec:
         memory: ${CILIUM_MEMORY_REQUEST:=256Mi}
     bandwidthManager:
       enabled: true
+      # BBR congestion control for pods: copes much better than the default (CUBIC) with loss and latency on the
+      # WAN path (runner uploads to ghcr.io ran at ~6 Mbit/s). Needs kernel >= 5.18 (nodes run 6.18) and eBPF host routing.
+      bbr: true
     envoy:
       updateStrategy:
         rollingUpdate:
