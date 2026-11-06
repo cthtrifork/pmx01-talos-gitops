@@ -40,18 +40,15 @@ COPY gh-wrapper /usr/local/bin/gh
 RUN chmod +x /usr/local/bin/gh
 
 # crane, for read-only inspection of image manifests, configs and layer sizes, checksum verified against the
-# release's checksums file. The real binary lives outside PATH, like gh.
+# release's checksums file
 RUN base="https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}" \
  && tarball="go-containerregistry_Linux_x86_64.tar.gz" \
  && cd /tmp \
  && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
  && curl -fsSL "${base}/checksums.txt" | grep -F "  ${tarball}" | sha256sum -c - \
  && tar -xzf "${tarball}" crane \
- && install -D -m 0755 crane /usr/local/libexec/crane \
+ && install -m 0755 crane /usr/local/bin/crane \
  && rm -rf "${tarball}" crane
-# The wrapper logs in to ghcr.io with the read-only pull token mounted at /etc/ghcr/token (if there is one)
-COPY crane-wrapper /usr/local/bin/crane
-RUN chmod +x /usr/local/bin/crane
 
 # GitHub access: a token mounted at /etc/github/token, handed to git only for github.com
 COPY git-credential-github-token /usr/local/bin/git-credential-github-token

@@ -75,15 +75,14 @@ it leaves it alone.
 
 ### Pull token for private images (optional)
 
-`crane` in the pod reads private ghcr.io packages with a token from the Secret `ghcr-pull-token` (key `token`),
-mounted at `/etc/ghcr/token`. Create it by hand from a token that has **only `read:packages`**, so the pod can
-read but never push (the Secret is not in Git; the pod starts without it):
+`crane` in the pod reads private ghcr.io packages through a Docker config from the Secret `ghcr-pull`, mounted at
+`/etc/registry-auth/config.json` with `DOCKER_CONFIG=/etc/registry-auth`. Create it by hand from a token that has
+**only `read:packages`**, so the pod can read but never push (the Secret is not in Git; the pod starts without it):
 
 ```sh
-kubectl -n claude-system create secret generic ghcr-pull-token --from-literal=token="$GHCR_PULL_TOKEN"
+kubectl -n claude-system create secret docker-registry ghcr-pull \
+  --docker-server=ghcr.io --docker-username=<github-user> --docker-password="$GHCR_PULL_TOKEN"
 ```
-
-The `crane` wrapper in the image builds a throwaway Docker config from it on every call.
 
 ## 3. Sign in once
 
