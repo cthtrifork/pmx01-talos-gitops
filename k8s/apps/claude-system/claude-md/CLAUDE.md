@@ -50,6 +50,17 @@ there, not in the pod. Changes made in the pod are lost on restart.
   can be read. Never print, copy or pass that file anywhere else. The GitHub App token from `gh` does not have package
   access. If `crane` answers DENIED or UNAUTHORIZED, say so rather than working around it.
 
+## Bandwidth tests
+
+- Use `curl` against `speed.cloudflare.com` only, one stream first, then 4 in parallel (`xargs -P4`) to tell a
+  per-connection limit from the link rate. Download: `curl -s -o /dev/null -w '%{speed_download}\n'
+  'https://speed.cloudflare.com/__down?bytes=25000000'`. Upload: `head -c 10000000 /dev/urandom > <scratchpad>/up.bin`, then
+  `curl -s -o /dev/null -w '%{speed_upload}\n' --data-binary @<scratchpad>/up.bin https://speed.cloudflare.com/__up`
+  (bytes per second; multiply by 8 for bit/s).
+- The home uplink is about 6 Mbit/s and shared with CI. Keep uploads at 10 MB or less, run them one at a time, and do not run
+  one while an image push is in progress (check the runner pod's tx rate first). The claude-rc pod is not rate-limited by
+  Cilium, so this measures the node's path to the internet, not the runner's 300M cap.
+
 ## GitHub access
 
 - `gh` and `git` use a short-lived GitHub App token (refreshed hourly) not narrowed per
