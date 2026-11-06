@@ -10,6 +10,7 @@ ARG CLAUDE_CODE_VERSION=2.1.311 # renovate: datasource=npm depName=@anthropic-ai
 # Keep within one minor version of the cluster
 ARG KUBECTL_VERSION=v1.34.1
 ARG GH_VERSION=2.103.3 # renovate: datasource=github-releases depName=cli/cli
+ARG CRANE_VERSION=0.22.1 # renovate: datasource=github-releases depName=google/go-containerregistry
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git curl ca-certificates openssh-client jq python3 \
@@ -37,6 +38,17 @@ RUN base="https://github.com/cli/cli/releases/download/v${GH_VERSION}" \
  && rm -rf "${tarball}" "gh_${GH_VERSION}_linux_amd64"
 COPY gh-wrapper /usr/local/bin/gh
 RUN chmod +x /usr/local/bin/gh
+
+# crane, for read-only inspection of image manifests, configs and layer sizes, checksum verified against the
+# release's checksums file
+RUN base="https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}" \
+ && tarball="go-containerregistry_Linux_x86_64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
+ && curl -fsSL "${base}/checksums.txt" | grep -F "  ${tarball}" | sha256sum -c - \
+ && tar -xzf "${tarball}" crane \
+ && install -m 0755 crane /usr/local/bin/crane \
+ && rm -rf "${tarball}" crane
 
 # GitHub access: a token mounted at /etc/github/token, handed to git only for github.com
 COPY git-credential-github-token /usr/local/bin/git-credential-github-token
