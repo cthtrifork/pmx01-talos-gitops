@@ -44,7 +44,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: api-server
-          image: docker.io/dependencytrack/apiserver:5.2.1@sha256:a7ce7a42928c6c03e94e8255e2ee871f5268f55b638a69729cae7afc47ef43b8
+          image: mirror.gcr.io/dependencytrack/apiserver:5.2.1@sha256:a7ce7a42928c6c03e94e8255e2ee871f5268f55b638a69729cae7afc47ef43b8
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

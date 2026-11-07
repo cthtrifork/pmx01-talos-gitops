@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: e79b8f74d4db453e4022cb7d231340c355e938c8634b7f7c5a5655aaa582489
+    actions.github.com/values-hash: 00c015c4ea765aac4d50087c30eb837e2ff8916ef95b207bf6f53f1f44a7102
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -127,7 +127,7 @@ spec:
           set -e
           find /tmp/arc-cache -type f -mtime +14 -print -delete
           find /tmp/arc-cache -type d -empty -mtime +14 -print -delete || true
-        image: docker.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
+        image: mirror.gcr.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
         imagePullPolicy: IfNotPresent
         name: data-retention
         resources:
@@ -176,7 +176,7 @@ spec:
         env:
         - name: DOCKER_GROUP_GID
           value: "123"
-        image: docker.io/library/docker:29.9.3-dind@sha256:08a98015fce594af7c382883bea080ea206de74402a95da9dc52b6428c8cd121
+        image: mirror.gcr.io/library/docker:29.9.3-dind@sha256:08a98015fce594af7c382883bea080ea206de74402a95da9dc52b6428c8cd121
         imagePullPolicy: IfNotPresent
         name: dind
         resources:
