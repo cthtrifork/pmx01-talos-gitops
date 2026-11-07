@@ -5,3 +5,6 @@ repositories:
   - name: default
     url: https://github.com/aquasecurity/vexhub
     enabled: true
+  - name: kube-kraken-vexhub
+    url: https://github.com/cthtrifork/pmx01-talos-gitops
+    enabled: false
