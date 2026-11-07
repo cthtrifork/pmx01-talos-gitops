@@ -1,0 +1,21 @@
+---
+# The chart's flux-operator-web policy only admits pods (namespaceSelector: {}). The Omni service exposer runs on the
+# host network, so its traffic arrives as the host or remote-node entity and is dropped without this.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: flux-operator-web-omni-exposer
+  namespace: flux-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: flux-operator
+      app.kubernetes.io/name: flux-operator
+  ingress:
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "9080"
+              protocol: TCP
