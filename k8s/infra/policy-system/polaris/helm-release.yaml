@@ -49,7 +49,8 @@ spec:
       checks:
         # reliability
         priorityClassNotSet: ignore
-        missingPodDisruptionBudget: warning
+        # PDBs do not help at one replica per workload
+        missingPodDisruptionBudget: ignore
         pullPolicyNotAlways: ignore
         # single-node-class home cluster: these fire on almost every controller
         deploymentMissingReplicas: ignore
@@ -58,6 +59,8 @@ spec:
 
         # security
         linuxHardening: danger
+        # most pods need the token; the ones that do not are not worth a per-pod exemption
+        automountServiceAccountToken: ignore
         missingNetworkPolicy: ignore
 
         # efficiency
@@ -86,3 +89,62 @@ spec:
             - notification-controller
             - source-controller
           rules: []
+        # Cluster-admin and pods/exec by design: Flux reconciles everything, the CNPG operator execs into its database pods
+        - controllerNames:
+            - cluster-reconciler-flux-system
+            - flux-operator
+            - flux-operator-cluster-admin
+            - flux-web-admin
+            - flux-web-user
+            - cloudnative-pg
+          rules:
+            - clusterrolebindingClusterAdmin
+            - clusterrolebindingPodExecAttach
+            - clusterrolePodExecAttach
+        # Host-level components: they need the host network, host paths and extra capabilities to do their job
+        - controllerNames:
+            - kube-apiserver
+            - kube-controller-manager
+            - kube-scheduler
+            - kube-prometheus-stack-prometheus-node-exporter
+            - metallb-speaker
+            - metallb-frr-k8s
+            - omni-kube-service-exposer
+            - spegel
+          rules:
+            - hostNetworkSet
+            - hostPIDSet
+            - hostPathSet
+            - dangerousCapabilities
+            - insecureCapabilities
+        # Docker-in-Docker CI runner: privileged and root by design, isolated to its own namespace
+        - namespace: arc-runners-system
+          controllerNames:
+            - arc-ubuntu-runner
+          rules:
+            - runAsPrivileged
+            - runAsRootAllowed
+            - privilegeEscalationAllowed
+            - linuxHardening
+            - insecureCapabilities
+            - notReadOnlyRootFilesystem
+            - hostPathSet
+        # Keyword false positives: names and file paths such as METALLB_ML_SECRET_NAME, STAKATER_*_SECRET and
+        # DT_DATASOURCE_PASSWORD=${file::...}; the credentials themselves come from secretKeyRef or mounted files
+        - controllerNames:
+            - metallb-speaker
+            - metallb-controller
+            - zot
+            - harper-pad-admin
+            - traefik
+            - dependency-track-api-server
+            - adguard-deployment
+          rules:
+            - sensitiveContainerEnvVar
+        # Keyword false positives: ConfigMaps whose keys or scripts mention "token" or "secret", but hold no credentials
+        - controllerNames:
+            - claude-token-scripts
+            - talos-bootstrap-manifests-inventory
+            - trivy-operator-config
+          rules:
+            - sensitiveConfigmapContent
