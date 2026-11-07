@@ -37,6 +37,33 @@ spec:
         fsGroup: 65532
         seccompProfile:
           type: RuntimeDefault
+      # Claude refuses to bind its cross-session messaging socket under a shared directory, and every writable
+      # volume here is world- or group-writable without the sticky bit (fsGroup makes an emptyDir 2777). /tmp is
+      # therefore a private (0700, claude-owned) subdirectory of the workspace PVC. The restricted PSA rules out a
+      # root init container, but the PVC root is writable by the fsGroup, so a claude-owned directory can be made
+      # here. fsGroup re-applies g+rw to the PVC on each pod start, so it is wiped and re-chmodded every time.
+      initContainers:
+        - name: private-tmp
+          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
+          command:
+            - "/bin/bash"
+            - "-c"
+            - "rm -rf /mnt/workspace/.tmp && mkdir -m 0700 /mnt/workspace/.tmp"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          volumeMounts:
+            - name: workspace
+              mountPath: /mnt/workspace
       containers:
         - name: claude
           image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
@@ -86,8 +113,9 @@ spec:
               readOnly: true
             - name: workspace
               mountPath: /workspace
-            - name: tmp
+            - name: workspace
               mountPath: /tmp
+              subPath: .tmp # private-tmp init container
       volumes:
         - name: home
           persistentVolumeClaim:
@@ -113,6 +141,3 @@ spec:
         - name: workspace
           persistentVolumeClaim:
             claimName: claude-workspace
-        - name: tmp
-          emptyDir:
-            sizeLimit: 1Gi
