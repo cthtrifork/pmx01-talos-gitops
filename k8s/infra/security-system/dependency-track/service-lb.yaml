@@ -9,7 +9,7 @@ metadata:
   annotations:
     omni-kube-service-exposer.sidero.dev/label: Dependency-Track
     omni-kube-service-exposer.sidero.dev/port: "50089"
-    omni-kube-service-exposer.sidero.dev/prefix: dependency-track
+    omni-kube-service-exposer.sidero.dev/prefix: dtrack
     metallb.io/loadBalancerIPs: 192.168.1.241
 spec:
   type: LoadBalancer
@@ -31,7 +31,7 @@ metadata:
   annotations:
     omni-kube-service-exposer.sidero.dev/label: Dependency-Track API
     omni-kube-service-exposer.sidero.dev/port: "50090"
-    omni-kube-service-exposer.sidero.dev/prefix: dependency-track-api
+    omni-kube-service-exposer.sidero.dev/prefix: dtrackapi
     metallb.io/loadBalancerIPs: 192.168.1.242
 spec:
   type: LoadBalancer
