@@ -28,7 +28,7 @@ spec:
   values:
     image:
       registry: mirror.gcr.io
-    excludeNamespaces: "local-path-storage"
+    excludeNamespaces: "local-path-storage,arc-runners-system,arc-controller-system" # ephemeral CI runner pods are not worth scanning
     policiesBundle:
       registry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
     trivy:
@@ -204,7 +204,20 @@ spec:
       runAsNonRoot: true
       seccompProfile:
         type: RuntimeDefault
+    # Overriding these lists replaces the chart's defaults, so the /tmp mount the policies bundle needs is repeated.
+    # The operator pulls the policies bundle from zot, so it trusts zot's CA as well.
+    volumeMounts:
+      - name: zot-ca
+        mountPath: /etc/ssl/certs/zot-ca.crt
+        subPath: ca.crt
+        readOnly: true
+      - name: cache-policies
+        mountPath: /tmp
+        readOnly: false
     volumes:
+      - name: zot-ca
+        secret:
+          secretName: trivy-registry-ca
       - name: cache-policies
         emptyDir:
           sizeLimit: 100Mi
