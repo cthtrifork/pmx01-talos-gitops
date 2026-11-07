@@ -93,6 +93,10 @@ spec:
             - mountPath: /home/scanner/.cache
               name: data
               readOnly: false
+            - mountPath: /etc/ssl/certs/zot-ca.crt
+              name: zot-ca
+              readOnly: true
+              subPath: ca.crt
             - mountPath: /etc/trivy/trivy-config.yaml
               name: configfile
               subPath: trivy.configFile
@@ -110,6 +114,9 @@ spec:
         - configMap:
             name: trivy-operator-trivy-config
           name: configfile
+        - name: zot-ca
+          secret:
+            secretName: trivy-registry-ca
       tolerations:
         - effect: NoSchedule
           key: kube-kraken/role

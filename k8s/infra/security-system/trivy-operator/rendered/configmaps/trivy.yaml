@@ -33,7 +33,7 @@ data:
   trivy.javaDbRepository: "zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-java-db"
   trivy.command: "image"
   trivy.sbomSources: ""
-  trivy.dbRepositoryInsecure: "true"
+  trivy.dbRepositoryInsecure: "false"
   trivy.useBuiltinRegoPolicies: "false"
   trivy.useEmbeddedRegoPolicies: "true"
   trivy.supportedConfigAuditKinds: "Workload,Service,Role,ClusterRole,NetworkPolicy,Ingress,LimitRange,ResourceQuota"
