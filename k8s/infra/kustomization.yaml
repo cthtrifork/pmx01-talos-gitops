@@ -15,4 +15,4 @@ resources:
   - policy-system/
   - registry-system/
   - ingress-system/
-  #- security-system/
+  - security-system/

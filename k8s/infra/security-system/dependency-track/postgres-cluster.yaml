@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/postgresql.cnpg.io/cluster_v1.json
+# One instance, no backups. CNPG generates the credentials in the Secret dependency-track-db-app, which the release reads.
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: dependency-track-db
+  namespace: security-system
+spec:
+  instances: 1
+  enableSuperuserAccess: false
+  storage:
+    size: 8Gi
+    storageClass: local-path
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  bootstrap:
+    initdb:
+      database: dtrack
+      owner: dtrack
+      encoding: UTF8
+  monitoring:
+    enablePodMonitor: true

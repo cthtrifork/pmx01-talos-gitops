@@ -30,15 +30,15 @@ spec:
       registry: mirror.gcr.io
     excludeNamespaces: "local-path-storage"
     policiesBundle:
-      registry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+      registry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
     trivy:
       debug: "false"
       slow: ${TRIVY_SLOW:=false} # set to true to enable slow mode which reduces load on the trivy server
-      serverURL: "http://trivy-service.trivy-operator-system.svc.cluster.local:4954"
+      serverURL: "http://trivy-service.security-system.svc.cluster.local:4954"
       imageScanCacheDir: "/tmp/trivy/.cache"
       #httpProxy: ""
       #httpsProxy: "${HTTPS_PROXY}"
-      #noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
+      #noProxy: "${NO_PROXY},trivy-service.security-system"
       # Skip DB updates for Trivy client (scanjobs)
       clientServerSkipUpdate: true
       skipJavaDBUpdate: false
@@ -51,8 +51,15 @@ spec:
         repository: aquasecurity/trivy
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
         tag: 0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
-      dbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
-      javaDbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+      # The vulnerability databases are published to ghcr.io (aquasecurity/trivy-db and trivy-java-db), so they are
+      # pulled through zot's ghcr-cache and zot becomes the only thing that talks to the internet.
+      dbRegistry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
+      dbRepository: aquasecurity/trivy-db
+      javaDbRegistry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
+      javaDbRepository: aquasecurity/trivy-java-db
+      # zot serves a certificate from the cluster issuer, which the trivy pods do not trust: skip verification for
+      # this in-cluster hop. Remove once the CA is mounted into the trivy pods.
+      dbRepositoryInsecure: "true"
       registry:
         mirror:
           "ghcr.io": zot.registry-system.svc.cluster.local:5000/ghcr-cache
@@ -127,7 +134,7 @@ spec:
       logDevMode: false
       #httpProxy: ""
       #httpsProxy: "${HTTPS_PROXY}"
-      #noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
+      #noProxy: "${NO_PROXY},trivy-service.security-system"
       podLabels:
         kube-kraken.dk/mount-root-ca: "true" # todo
       # Setting this option to true will enable the Client Server mode, managed by the Trivy Operator.
