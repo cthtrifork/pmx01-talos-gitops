@@ -1,0 +1,89 @@
+---
+# Source: dependency-track/templates/frontend/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-track-frontend
+  namespace: security-system
+  labels:
+    helm.sh/chart: dependency-track-2.9.0
+    app.kubernetes.io/part-of: dependency-track
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/name: dependency-track-frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/version: 5.2.1
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: dependency-track
+      app.kubernetes.io/name: dependency-track-frontend
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: dependency-track
+        app.kubernetes.io/name: dependency-track-frontend
+        app.kubernetes.io/component: frontend
+    spec:
+      serviceAccountName: dependency-track
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: frontend
+          image: docker.io/dependencytrack/frontend:5.2.1@sha256:1c0f63b083af8e89ff4ede5e7ed5cfc4e23ab871fa140ed101e8dc56f53eb51c
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 150m
+              memory: 64Mi
+          env:
+            - name: API_BASE_URL
+              value: http://192.168.1.242:8080
+          ports:
+            - name: web
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              port: web
+              path: /static/config.json
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              port: web
+              path: /static/config.json
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

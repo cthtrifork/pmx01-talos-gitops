@@ -150,6 +150,18 @@
       "groupSlug": "harper-pad-images"
     },
     {
+      "description": "The Dependency-Track api-server and frontend are released together at the same version.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "mirror.gcr.io/dependencytrack/apiserver",
+        "mirror.gcr.io/dependencytrack/frontend"
+      ],
+      "groupName": "dependency-track images",
+      "groupSlug": "dependency-track-images"
+    },
+    {
       "description": "Renovate itself (the renovate_version pin and the renovatebot/github-action) automerges for every update type. Last, so it wins over the rules above.",
       "matchPackageNames": ["renovate", "renovatebot/github-action"],
       "automerge": true,
