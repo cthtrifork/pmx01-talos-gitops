@@ -195,3 +195,15 @@ spec:
           rules:
             - livenessProbeMissing
             - readinessProbeMissing
+        # Storage provisioners, deliberately not hardened yet: they create and chmod host directories for every PVC, directly
+        # (openebs) or through the helper pods they launch (local-path), and a wrong security context would stop all
+        # provisioning. Revisit once there is a way to test it on a throwaway PVC.
+        - controllerNames:
+            - local-path-provisioner
+            - openebs-localpv-localpv-provisioner
+          rules:
+            - runAsRootAllowed
+            - privilegeEscalationAllowed
+            - linuxHardening
+            - insecureCapabilities
+            - notReadOnlyRootFilesystem

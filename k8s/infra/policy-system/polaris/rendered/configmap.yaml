@@ -141,3 +141,12 @@ data:
         rules:
         - livenessProbeMissing
         - readinessProbeMissing
+      - controllerNames:
+        - local-path-provisioner
+        - openebs-localpv-localpv-provisioner
+        rules:
+        - runAsRootAllowed
+        - privilegeEscalationAllowed
+        - linuxHardening
+        - insecureCapabilities
+        - notReadOnlyRootFilesystem
