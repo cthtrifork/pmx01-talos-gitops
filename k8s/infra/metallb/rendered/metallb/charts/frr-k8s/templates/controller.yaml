@@ -162,7 +162,7 @@ spec:
       initContainers:
         # Copies the initial config files with the right permissions to the shared volume.
         - name: cp-frr-files
-          image: quay.io/frrouting/frr:10.6.2
+          image: quay.io/frrouting/frr:10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
           securityContext:
             runAsUser: 100
             runAsGroup: 101
@@ -260,7 +260,7 @@ spec:
                 - SYS_ADMIN
                 - NET_BIND_SERVICE
             readOnlyRootFilesystem: true
-          image: quay.io/frrouting/frr:10.6.2
+          image: quay.io/frrouting/frr:10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
           env:
             - name: TINI_SUBREAPER
               value: "true"
@@ -292,7 +292,7 @@ spec:
             failureThreshold: 30
             periodSeconds: 5
         - name: reloader
-          image: quay.io/frrouting/frr:10.6.2
+          image: quay.io/frrouting/frr:10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
           command: ["/etc/frr_reloader/frr-reloader.sh"]
           volumeMounts:
             - name: frr-sockets
@@ -302,7 +302,7 @@ spec:
             - name: reloader
               mountPath: /etc/frr_reloader
         - name: frr-metrics
-          image: quay.io/frrouting/frr:10.6.2
+          image: quay.io/frrouting/frr:10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
           command: ["/etc/frr_metrics/frr-metrics"]
           args:
             - --metrics-port=9141
@@ -339,7 +339,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-          image: quay.io/frrouting/frr:10.6.2
+          image: quay.io/frrouting/frr:10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
           volumeMounts:
             - mountPath: /var/run/frr
               name: frr-sockets
