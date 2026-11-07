@@ -14,13 +14,20 @@ metadata:
   name: dependency-track-kek
   namespace: security-system
 rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["create"]
-  - apiGroups: [""]
-    resources: ["secrets"]
-    resourceNames: ["dependency-track-kek"]
-    verbs: ["get"]
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    verbs:
+      - "create"
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    resourceNames:
+      - "dependency-track-kek"
+    verbs:
+      - "get"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

@@ -14,9 +14,13 @@ kind: ClusterRole
 metadata:
   name: dependency-track-sbom-uploader
 rules:
-  - apiGroups: ["aquasecurity.github.io"]
-    resources: ["sbomreports"]
-    verbs: ["get", "list"]
+  - apiGroups:
+      - "aquasecurity.github.io"
+    resources:
+      - "sbomreports"
+    verbs:
+      - "get"
+      - "list"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
