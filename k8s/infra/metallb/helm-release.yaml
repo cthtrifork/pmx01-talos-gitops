@@ -26,36 +26,36 @@ spec:
           limits:
             memory: 128Mi
           requests:
-            cpu: 10m
-            memory: 64Mi
+            cpu: 5m
+            memory: 16Mi
         frr:
           image:
             # renovate: datasource=docker depName=quay.io/frrouting/frr versioning=docker
             tag: 10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
           resources:
             limits:
-              memory: 256Mi
+              memory: 128Mi
             requests:
-              cpu: 25m
-              memory: 64Mi
+              cpu: 5m
+              memory: 32Mi
         reloader:
           resources:
             limits:
-              memory: 64Mi
+              memory: 32Mi
             requests:
               cpu: 5m
-              memory: 16Mi
+              memory: 8Mi
         frrMetrics:
           resources:
             limits:
-              memory: 64Mi
+              memory: 96Mi
             requests:
-              cpu: 5m
+              cpu: 10m
               memory: 16Mi
         frrStatus:
           resources:
             limits:
-              memory: 64Mi
+              memory: 96Mi
             requests:
               cpu: 5m
               memory: 16Mi
