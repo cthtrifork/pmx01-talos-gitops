@@ -1,0 +1,81 @@
+---
+# Source: connect/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sbom-hook
+  namespace: security-system
+  labels:
+    helm.sh/chart: redpanda-connect-3.2.36
+    app.kubernetes.io/name: redpanda-connect
+    app.kubernetes.io/instance: sbom-hook
+    app.kubernetes.io/version: "4.115.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redpanda-connect
+      app.kubernetes.io/instance: sbom-hook
+  template:
+    metadata:
+      annotations:
+        checksum/config: 54411f8d90b68aae6f5ef2a9c45a0c549cf08041a5b5f173eca173bad766c3d4
+      labels:
+        app.kubernetes.io/name: redpanda-connect
+        app.kubernetes.io/instance: sbom-hook
+    spec:
+      serviceAccountName: sbom-hook
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: connect
+          securityContext: {}
+          image: "mirror.gcr.io/redpandadata/connect:4.116.1@sha256:47ff773082146b6e538c527509af1a736b53063e68f0eb1266253a0832b39396"
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-c"
+            - "/redpanda-connect.yaml"
+            - --disable-telemetry
+          ports:
+            - name: http
+              containerPort: 4195
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 2
+          readinessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 2
+          env:
+            - name: DT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: api-key
+                  name: dependency-track-api-key
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 128Mi
+          volumeMounts:
+            - name: config
+              mountPath: "/redpanda-connect.yaml"
+              subPath: "redpanda-connect.yaml"
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: sbom-hook-config

@@ -1,0 +1,73 @@
+---
+# Source: connect/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sbom-hook-config
+  namespace: security-system
+  labels:
+    helm.sh/chart: redpanda-connect-3.2.36
+    app.kubernetes.io/name: redpanda-connect
+    app.kubernetes.io/instance: sbom-hook
+    app.kubernetes.io/version: "4.115.1"
+    app.kubernetes.io/managed-by: Helm
+data:
+  redpanda-connect.yaml: |
+    http:
+      address: 0.0.0.0:4195
+      cors:
+        enabled: false
+      debug_endpoints: false
+      enabled: true
+      root_path: /redpanda-connect
+    buffer:
+      memory:
+        limit: 52428800
+    cache_resources:
+    - label: sbom_seen
+      memory:
+        default_ttl: 24h
+    input:
+      http_server:
+        allowed_verbs:
+        - POST
+        path: /sbom
+    output:
+      http_client:
+        drop_on:
+        - 400
+        - 404
+        - 409
+        - 422
+        headers:
+          Content-Type: application/json
+          X-Api-Key: ${DT_API_KEY}
+        max_in_flight: 4
+        retries: 3
+        timeout: 60s
+        url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
+        verb: PUT
+    pipeline:
+      processors:
+      - mapping: |
+          if this.kind != "SbomReport" {
+            root = deleted()
+          } else {
+            # one Dependency-Track project per image, as in sbom-uploader.yaml
+            let server = this.report.registry.server.or("")
+            let repo = this.report.artifact.repository
+            let name = if $server != "" { $server + "/" + $repo } else { $repo }
+            let version = this.report.artifact.tag.not_empty().or(this.report.artifact.digest)
+            let digest = this.report.artifact.digest.or("")
+            meta dedupe_key = $name + ":" + $version + ":" + $digest
+            root = {
+              "projectName": $name,
+              "projectVersion": $version,
+              "autoCreate": true,
+              "projectTags": [{"name": "kubernetes"}],
+              "bom": this.report.components.format_json().encode("base64")
+            }
+          }
+      - dedupe:
+          cache: sbom_seen
+          key: ${!metadata("dedupe_key")}
