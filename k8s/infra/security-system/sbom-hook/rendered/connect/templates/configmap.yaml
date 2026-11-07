@@ -1,0 +1,31 @@
+---
+# Source: connect/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sbom-hook-config
+  namespace: security-system
+  labels:
+    helm.sh/chart: redpanda-connect-3.2.36
+    app.kubernetes.io/name: redpanda-connect
+    app.kubernetes.io/instance: sbom-hook
+    app.kubernetes.io/version: "4.115.1"
+    app.kubernetes.io/managed-by: Helm
+data:
+  redpanda-connect.yaml: |
+    http:
+      address: 0.0.0.0:4195
+      cors:
+        enabled: false
+      debug_endpoints: false
+      enabled: true
+      root_path: /redpanda-connect
+    input:
+      label: "no_config_in"
+      generate:
+        mapping: root = "This Redpanda Connect instance is unconfigured!"
+        interval: 1m
+    output:
+      label: "no_config_out"
+      stdout:
+        codec: lines

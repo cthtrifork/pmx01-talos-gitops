@@ -1,0 +1,65 @@
+---
+# Receives trivy-operator's webhook broadcast (operator.webhookBroadcastURL) and uploads each SbomReport to
+# Dependency-Track as it changes. The sbom-uploader CronJob stays as the slower safety net.
+# https://aquasecurity.github.io/trivy-operator/v0.30.1/tutorials/integrations/webhook/
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sbom-hook
+  namespace: security-system
+spec:
+  chart:
+    spec:
+      chart: connect
+      version: 3.2.36
+      sourceRef:
+        kind: HelmRepository
+        name: redpanda
+  driftDetection:
+    mode: enabled
+  interval: 30m
+  timeout: 10m
+  install:
+    strategy:
+      name: RetryOnFailure
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  # https://github.com/redpanda-data/helm-charts/blob/main/charts/connect/values.yaml
+  values:
+    fullnameOverride: sbom-hook
+    image:
+      repository: mirror.gcr.io/redpandadata/connect
+      # renovate: datasource=docker depName=docker.io/redpandadata/connect versioning=docker
+      tag: 4.116.1@sha256:47ff773082146b6e538c527509af1a736b53063e68f0eb1266253a0832b39396
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+    env:
+      - name: DT_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: dependency-track-api-key
+            key: api-key
+    deployment:
+      podAnnotations:
+        reloader.stakater.com/auto: "true" # restart on a change of the config ConfigMap
+    # the config is a file of its own (redpanda-connect.yaml), mounted from the generated ConfigMap
+    args:
+      - -c
+      - /etc/connect/redpanda-connect.yaml
+      - --disable-telemetry
+    extraVolumes:
+      - name: connect-config
+        configMap:
+          name: sbom-hook-connect-config
+    extraVolumeMounts:
+      - name: connect-config
+        mountPath: /etc/connect/redpanda-connect.yaml
+        subPath: redpanda-connect.yaml
+        readOnly: true

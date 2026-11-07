@@ -1,0 +1,23 @@
+---
+# Source: connect/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: sbom-hook
+  namespace: security-system
+  labels:
+    helm.sh/chart: redpanda-connect-3.2.36
+    app.kubernetes.io/name: redpanda-connect
+    app.kubernetes.io/instance: sbom-hook
+    app.kubernetes.io/version: "4.115.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: redpanda-connect
+    app.kubernetes.io/instance: sbom-hook

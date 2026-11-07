@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - trivy-operator/
   - dependency-track/
+  - sbom-hook/
