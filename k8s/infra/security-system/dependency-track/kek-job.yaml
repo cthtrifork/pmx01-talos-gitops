@@ -1,0 +1,77 @@
+# Creates the Secret dependency-track-kek (key `kek`, 32 random bytes, base64) once, if it does not exist, so the key
+# is not in Git. It is never rotated or overwritten by this Job; delete the Secret by hand to start over (that makes
+# everything Dependency-Track stored encrypted in its database unreadable).
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dependency-track-kek
+  namespace: security-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dependency-track-kek
+  namespace: security-system
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["dependency-track-kek"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dependency-track-kek
+  namespace: security-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dependency-track-kek
+subjects:
+  - kind: ServiceAccount
+    name: dependency-track-kek
+    namespace: security-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dependency-track-kek
+  namespace: security-system
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: dependency-track-kek
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: create
+          image: docker.io/alpine/k8s:1.37.2@sha256:dcb7185e112a453aa72f426754849a97357727ef8f40168fb208c8cf59952042
+          command:
+            - sh
+            - -ec
+            - |
+              if kubectl get secret dependency-track-kek >/dev/null 2>&1; then
+                echo "dependency-track-kek exists, leaving it alone"
+                exit 0
+              fi
+              kubectl create secret generic dependency-track-kek \
+                --from-literal=kek="$(head -c 32 /dev/urandom | base64)"
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

@@ -5,12 +5,13 @@
   them on demand from `ghcr.io`. Scanned images are also pulled through zot via `trivy.registry.mirror`.
 - `dependency-track/`: Dependency-Track 5 with a single-instance CNPG PostgreSQL (`dependency-track-db`).
 
-## One manual step: the Dependency-Track KEK
+## The Dependency-Track KEK
 
-The chart does not generate the key encryption key, and the release reads it from the Secret `dependency-track-kek`
-(key `kek`). Create it SOPS-encrypted like the other secrets, e.g. `k8s/infra/security-system/dependency-track/kek.enc.yaml`
-(add it to that directory's `kustomization.yaml`), with the value from `openssl rand -base64 32`. Until it exists the
-api-server pods stay in `CreateContainerConfigError`.
+The chart does not generate the key encryption key. `dependency-track/kek-job.yaml` creates the Secret
+`dependency-track-kek` (key `kek`, random 32 bytes) once, if it is missing, and never overwrites it. The key is therefore
+not in Git: if the Secret is lost, everything Dependency-Track stored encrypted in its database becomes unreadable. Back it
+up (`kubectl -n security-system get secret dependency-track-kek`, needs Secret read access) if that matters.
+Until the Job has run, the api-server pods wait in `CreateContainerConfigError` and then start on their own.
 
 ## Access
 
