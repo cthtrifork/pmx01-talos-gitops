@@ -27,7 +27,7 @@ data:
   compliance.failEntriesLimit: "10"
   report.recordFailedChecksOnly: "true"
   trivy.serverURL: "http://trivy-service.security-system:4954"
-  node.collector.imageRef: "ghcr.io/aquasecurity/node-collector:0.3.1"
+  node.collector.imageRef: "ghcr.io/aquasecurity/node-collector:0.3.1@sha256:f4702ce4667388f0219d6248d623a7e816231c2d4561d6af01c3ae053e524025"
   policies.bundle.oci.ref: "zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasec/trivy-checks:1"
   policies.bundle.insecure: "false"
   node.collector.nodeSelector: "true"

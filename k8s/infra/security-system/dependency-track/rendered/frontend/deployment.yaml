@@ -37,7 +37,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: frontend
-          image: docker.io/dependencytrack/frontend:5.2.1
+          image: docker.io/dependencytrack/frontend:5.2.1@sha256:1c0f63b083af8e89ff4ede5e7ed5cfc4e23ab871fa140ed101e8dc56f53eb51c
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
