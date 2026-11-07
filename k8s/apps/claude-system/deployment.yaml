@@ -52,7 +52,9 @@ spec:
                 echo "not logged in: kubectl -n claude-system exec -it deploy/claude-rc -- claude"
                 sleep 30
               done
-              exec claude remote-control --name pmx01-talos
+              # /tmp is an emptyDir with fsGroup, so it is mode 2777 without the sticky bit (restricted PSA rules out a
+              # root init container to chmod it); Claude refuses it for the cross-session messaging socket.
+              exec claude remote-control --name pmx01-talos --messaging-socket-path "$HOME/.claude/messaging.sock"
           env:
             - name: DISABLE_AUTOUPDATER
               value: "1" # the binary is baked into the image
