@@ -62,7 +62,8 @@ spec:
               drop:
                 - "ALL"
     service:
-      type: ClusterIP # reached through the tunnel only
+      spec:
+        type: ClusterIP # reached through the tunnel only
     ports:
       web:
         port: 8000
