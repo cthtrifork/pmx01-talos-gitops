@@ -1,0 +1,32 @@
+---
+# Source: dependency-track/templates/api-server/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dependency-track-api-server-metrics
+  namespace: security-system
+  labels:
+    helm.sh/chart: dependency-track-2.9.0
+    app.kubernetes.io/part-of: dependency-track
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/name: dependency-track-api-server
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/version: 5.2.1
+spec:
+  namespaceSelector:
+    matchNames:
+      - security-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: dependency-track
+      app.kubernetes.io/name: dependency-track-api-server
+      app.kubernetes.io/component: api-server
+  # `dependencytrack_io_role` distinguishes web/worker in PromQL.
+  podTargetLabels:
+    - dependencytrack.io/role
+  endpoints:
+    - port: management
+      path: /metrics
+      interval: 60s
+      scrapeTimeout: 30s
