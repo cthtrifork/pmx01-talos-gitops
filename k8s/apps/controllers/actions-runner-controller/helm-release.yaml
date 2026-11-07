@@ -22,6 +22,8 @@ spec:
     watchSingleNamespace: arc-runners-system
     flags:
       updateStrategy: "eventual"
+      # adds /healthz liveness and readiness probes to the controller
+      healthProbeBindAddress: ":8081"
     resources:
       limits:
         cpu: 100m
@@ -31,6 +33,7 @@ spec:
         memory: 128Mi
 
     securityContext:
+      allowPrivilegeEscalation: false
       capabilities:
         drop:
           - ALL
@@ -40,3 +43,5 @@ spec:
 
     podSecurityContext:
       fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
