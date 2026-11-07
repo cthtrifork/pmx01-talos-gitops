@@ -239,6 +239,12 @@ spec:
             timeoutSeconds: 1
             successThreshold: 1
             failureThreshold: 3
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -277,6 +283,12 @@ spec:
             - "/sbin/tini"
             - --
             - "/usr/lib/frr/docker-start"
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 25m
+              memory: 64Mi
           livenessProbe:
             httpGet:
               path: /livez
@@ -301,6 +313,12 @@ spec:
               mountPath: /etc/frr
             - name: reloader
               mountPath: /etc/frr_reloader
+          resources:
+            limits:
+              memory: 64Mi
+            requests:
+              cpu: 5m
+              memory: 16Mi
         - name: frr-metrics
           image: quay.io/frrouting/frr:10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
           command: ["/etc/frr_metrics/frr-metrics"]
@@ -317,6 +335,12 @@ spec:
               mountPath: /etc/frr
             - name: metrics
               mountPath: /etc/frr_metrics
+          resources:
+            limits:
+              memory: 64Mi
+            requests:
+              cpu: 5m
+              memory: 16Mi
         - name: frr-status
           args:
             - --node-name=$(NODE_NAME)
@@ -347,6 +371,12 @@ spec:
               name: frr-conf
             - mountPath: /etc/frr_status
               name: frr-status
+          resources:
+            limits:
+              memory: 64Mi
+            requests:
+              cpu: 5m
+              memory: 16Mi
       nodeSelector:
         "kubernetes.io/os": linux
       tolerations:

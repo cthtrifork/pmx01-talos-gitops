@@ -18,11 +18,14 @@ data:
   config.yaml: |
     checks:
       cpuLimitsMissing: ignore
+      deploymentMissingReplicas: ignore
       linuxHardening: danger
+      metadataAndInstanceMismatched: ignore
       missingNetworkPolicy: ignore
       missingPodDisruptionBudget: warning
       priorityClassNotSet: ignore
       pullPolicyNotAlways: ignore
+      topologySpreadConstraint: ignore
     exemptions:
       - controllerNames:
         - cilium
