@@ -108,3 +108,36 @@ data:
         rules:
         - readinessProbeMissing
         - livenessProbeMissing
+        - notReadOnlyRootFilesystem
+      - controllerNames:
+        - coredns
+        - spegel
+        - metallb-speaker
+        - metallb-frr-k8s
+        - omni-kube-service-exposer
+        rules:
+        - runAsRootAllowed
+        - privilegeEscalationAllowed
+        - linuxHardening
+        - notReadOnlyRootFilesystem
+        - livenessProbeMissing
+        - readinessProbeMissing
+      - controllerNames:
+        - omni-kube-service-exposer
+        rules:
+        - cpuRequestsMissing
+        - memoryRequestsMissing
+        - memoryLimitsMissing
+      - controllerNames:
+        - claude-rc
+        - harper-pad-admin
+        rules:
+        - livenessProbeMissing
+        - readinessProbeMissing
+      - containerNames:
+        - cloudflared
+        controllerNames:
+        - traefik
+        rules:
+        - livenessProbeMissing
+        - readinessProbeMissing

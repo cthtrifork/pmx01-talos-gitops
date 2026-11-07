@@ -1,0 +1,72 @@
+# Default deny both ways for the namespace, then what the CloudNativePG operator needs: DNS, the Kubernetes API,
+# the instance managers of the Postgres clusters in other namespaces, and ingress for the webhook and metrics.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: storage-system-default-deny
+  namespace: storage-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: storage-system-allow-dns-apiserver
+  namespace: storage-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudnative-pg
+  namespace: storage-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: cloudnative-pg
+  ingress:
+    # Admission webhook (service port 443 to 9443), called by the API server on the host network
+    - fromEntities:
+        - kube-apiserver
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "9443", protocol: TCP }
+    # Metrics
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+  egress:
+    # Instance managers of the clusters in any namespace: status on 8000, SQL on 5432
+    - toEndpoints:
+        - matchExpressions:
+            - { key: cnpg.io/cluster, operator: Exists }
+            - { key: k8s:io.kubernetes.pod.namespace, operator: Exists }
+      toPorts:
+        - ports:
+            - { port: "8000", protocol: TCP }
+            - { port: "5432", protocol: TCP }
