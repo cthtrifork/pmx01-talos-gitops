@@ -48,7 +48,7 @@ spec:
     image:
       registry: mirror.gcr.io
       # renovate: datasource=docker depName=mirror.gcr.io/aquasec/trivy-operator versioning=semver
-      tag: 0.30.1@sha256:448484ece65e26f1c7237c8d20dab997f5a8319968286a09e188140b863cf1f9
+      tag: 0.36.1@sha256:05191a514247ae644dd5cc71306a94f44faff0a6a3fa817235911b911ecebcb9
     excludeNamespaces: "local-path-storage,arc-runners-system,arc-controller-system" # ephemeral CI runner pods are not worth scanning
     policiesBundle:
       registry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
