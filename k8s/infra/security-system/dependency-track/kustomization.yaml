@@ -1,0 +1,10 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - postgres-cluster.yaml
+  - kek-job.yaml
+  - sbom-uploader.yaml
+  - service-lb.yaml
+  - helm-release.yaml
+  - helm-repository.yaml

@@ -1,0 +1,40 @@
+# LAN-only access through MetalLB, as for zot-lb. The browser loads the frontend from one address and calls the
+# api-server on the other (frontend.apiBaseUrl in helm-release.yaml), so both need an address. Plain HTTP.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dependency-track-frontend-lb
+  namespace: security-system
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.1.241
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      targetPort: web
+      protocol: TCP
+      name: web
+  selector:
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/name: dependency-track-frontend
+    app.kubernetes.io/component: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dependency-track-api-server-lb
+  namespace: security-system
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.1.242
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      targetPort: web
+      protocol: TCP
+      name: web
+  selector:
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/name: dependency-track-api-server
+    app.kubernetes.io/component: api-server
