@@ -130,7 +130,7 @@ spec:
             - notReadOnlyRootFilesystem
             - hostPathSet
         # Keyword false positives: names and file paths such as METALLB_ML_SECRET_NAME, STAKATER_*_SECRET and
-        # DT_DATASOURCE_PASSWORD=${file::...}; the credentials themselves come from secretKeyRef or mounted files
+        # DT_DATASOURCE_PASSWORD with a file reference; the credentials themselves come from secretKeyRef or mounted files
         - controllerNames:
             - metallb-speaker
             - metallb-controller
