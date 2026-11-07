@@ -1,0 +1,128 @@
+---
+# Mirror of two VEX repositories for the Trivy scan jobs, turned into a ConfigMap by the configMapGenerator in
+# kustomization.yaml: the Trivy VEX hub (aquasecurity/vexhub) and our own (vex/ in this repository). Every 6 hours (and
+# at start) it fetches the tarballs and manifests from GitHub into a memory cache and serves them, so the scan jobs never
+# reach github.com. For a non-GitHub URL Trivy requests <url>/.well-known/vex-repository.json, and the location in that
+# manifest is rewritten here to point at the tarball served by this mirror. The cache keys are the request paths.
+# Flux post-build substitution runs over this file, hence the $$ escapes.
+http:
+  enabled: true
+  address: 0.0.0.0:4195
+  debug_endpoints: false
+
+input:
+  broker:
+    inputs:
+      # refresh at start and then every 6 hours; these messages carry no http_server_request_path
+      - generate:
+          count: 1
+          interval: ""
+          mapping: root = ""
+      - generate:
+          interval: 6h
+          mapping: root = ""
+      # what the scan jobs request: / is the Trivy VEX hub, /kube-kraken/ ours
+      - http_server:
+          path: /vexhub-main.tar.gz
+          allowed_verbs:
+            - GET
+      - http_server:
+          path: /.well-known/vex-repository.json
+          allowed_verbs:
+            - GET
+      - http_server:
+          path: /kube-kraken.tar.gz
+          allowed_verbs:
+            - GET
+      - http_server:
+          path: /kube-kraken/.well-known/vex-repository.json
+          allowed_verbs:
+            - GET
+
+pipeline:
+  processors:
+    - switch:
+        - check: 'metadata("http_server_request_path").or("") == ""'
+          processors:
+            # Trivy VEX hub
+            - branch:
+                request_map: root = ""
+                processors:
+                  - http:
+                      url: https://codeload.github.com/aquasecurity/vexhub/tar.gz/refs/heads/main
+                      verb: GET
+                      timeout: 60s
+                      retries: 3
+                  - cache:
+                      resource: vex
+                      operator: set
+                      key: /vexhub-main.tar.gz
+                      value: '$${! content() }'
+            - branch:
+                request_map: root = ""
+                processors:
+                  - http:
+                      url: https://raw.githubusercontent.com/aquasecurity/vexhub/main/vex-repository.json
+                      verb: GET
+                      timeout: 30s
+                      retries: 3
+                  # point the location at this mirror instead of GitHub
+                  - mapping: |
+                      let loc = "http://vex-hub.security-system.svc.cluster.local/vexhub-main.tar.gz//vexhub-main"
+                      root = this
+                      root.versions = this.versions.map_each(v -> v.without("locations").merge({"locations": [{"url": $loc}]}))
+                  - cache:
+                      resource: vex
+                      operator: set
+                      key: /.well-known/vex-repository.json
+                      value: '$${! content() }'
+            # our VEX hub: the vex/ directory of this repository
+            - branch:
+                request_map: root = ""
+                processors:
+                  - http:
+                      url: https://codeload.github.com/cthtrifork/pmx01-talos-gitops/tar.gz/refs/heads/main
+                      verb: GET
+                      timeout: 60s
+                      retries: 3
+                  - cache:
+                      resource: vex
+                      operator: set
+                      key: /kube-kraken.tar.gz
+                      value: '$${! content() }'
+            - branch:
+                request_map: root = ""
+                processors:
+                  - http:
+                      url: https://raw.githubusercontent.com/cthtrifork/pmx01-talos-gitops/main/vex/vex-repository.json
+                      verb: GET
+                      timeout: 30s
+                      retries: 3
+                  - mapping: |
+                      let loc = "http://vex-hub.security-system.svc.cluster.local/kube-kraken.tar.gz//pmx01-talos-gitops-main/vex"
+                      root = this
+                      root.versions = this.versions.map_each(v -> v.without("locations").merge({"locations": [{"url": $loc}]}))
+                  - cache:
+                      resource: vex
+                      operator: set
+                      key: /kube-kraken/.well-known/vex-repository.json
+                      value: '$${! content() }'
+        - processors:
+            - cache:
+                resource: vex
+                operator: get
+                key: '$${! metadata("http_server_request_path") }'
+
+cache_resources:
+  - label: vex
+    memory:
+      default_ttl: 48h
+
+output:
+  switch:
+    cases:
+      - check: 'metadata("http_server_request_path").or("") == ""'
+        output:
+          drop: {}
+      - output:
+          sync_response: {}

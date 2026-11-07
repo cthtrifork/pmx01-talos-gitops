@@ -17,12 +17,13 @@ metadata:
 data:
   config.yaml: |
     checks:
+      automountServiceAccountToken: ignore
       cpuLimitsMissing: ignore
       deploymentMissingReplicas: ignore
       linuxHardening: danger
       metadataAndInstanceMismatched: ignore
       missingNetworkPolicy: ignore
-      missingPodDisruptionBudget: warning
+      missingPodDisruptionBudget: ignore
       priorityClassNotSet: ignore
       pullPolicyNotAlways: ignore
       topologySpreadConstraint: ignore
@@ -47,3 +48,63 @@ data:
         - source-controller
         namespace: flux-system
         rules: []
+      - controllerNames:
+        - cluster-reconciler-flux-system
+        - flux-operator
+        - flux-operator-cluster-admin
+        - flux-web-admin
+        - flux-web-user
+        - cloudnative-pg
+        rules:
+        - clusterrolebindingClusterAdmin
+        - clusterrolebindingPodExecAttach
+        - clusterrolePodExecAttach
+      - controllerNames:
+        - kube-apiserver
+        - kube-controller-manager
+        - kube-scheduler
+        - kube-prometheus-stack-prometheus-node-exporter
+        - metallb-speaker
+        - metallb-frr-k8s
+        - omni-kube-service-exposer
+        - spegel
+        rules:
+        - hostNetworkSet
+        - hostPIDSet
+        - hostPathSet
+        - dangerousCapabilities
+        - insecureCapabilities
+      - controllerNames:
+        - arc-ubuntu-runner
+        namespace: arc-runners-system
+        rules:
+        - runAsPrivileged
+        - runAsRootAllowed
+        - privilegeEscalationAllowed
+        - linuxHardening
+        - insecureCapabilities
+        - notReadOnlyRootFilesystem
+        - hostPathSet
+      - controllerNames:
+        - metallb-speaker
+        - metallb-controller
+        - zot
+        - harper-pad-admin
+        - traefik
+        - dependency-track-api-server
+        - adguard-deployment
+        rules:
+        - sensitiveContainerEnvVar
+      - controllerNames:
+        - claude-token-scripts
+        - talos-bootstrap-manifests-inventory
+        - trivy-operator-config
+        rules:
+        - sensitiveConfigmapContent
+      - controllerNames:
+        - cert-manager
+        - cert-manager-cainjector
+        - arc-ubuntu
+        rules:
+        - readinessProbeMissing
+        - livenessProbeMissing

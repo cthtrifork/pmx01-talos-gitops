@@ -1,0 +1,15 @@
+{
+  "name": "kube-kraken VEX",
+  "description": "VEX statements for the images that run on the pmx01 cluster",
+  "versions": [
+    {
+      "spec_version": "0.1",
+      "locations": [
+        {
+          "url": "https://github.com/cthtrifork/pmx01-talos-gitops/archive/refs/heads/main.tar.gz//pmx01-talos-gitops-main/vex"
+        }
+      ],
+      "update_interval": "24h"
+    }
+  ]
+}

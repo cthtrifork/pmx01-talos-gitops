@@ -2,9 +2,11 @@
 # Trivy VEX repositories, mounted at /.trivy/vex/repository.yaml in the scan jobs (trivy reads ~/.trivy/vex/repository.yaml).
 # https://trivy.dev/docs/latest/supply-chain/vex/repo/
 repositories:
+  # the Trivy VEX hub through the in-cluster mirror (vex-hub/), so the scan jobs do not download from github.com
   - name: default
-    url: https://github.com/aquasecurity/vexhub
+    url: http://vex-hub.security-system.svc.cluster.local
     enabled: true
+  # our own statements: vex/ in this repository (see vex/README.md), also through the mirror
   - name: kube-kraken-vexhub
-    url: https://github.com/cthtrifork/pmx01-talos-gitops
-    enabled: false
+    url: http://vex-hub.security-system.svc.cluster.local/kube-kraken
+    enabled: true
