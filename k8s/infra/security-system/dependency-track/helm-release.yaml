@@ -24,6 +24,8 @@ spec:
       retries: 3
   # https://github.com/DependencyTrack/helm-charts/blob/main/charts/dependency-track/values.yaml
   values:
+    image:
+      registry: mirror.gcr.io
     database:
       # -rw is the CNPG read-write service of postgres-cluster.yaml
       jdbcUrl: "jdbc:postgresql://dependency-track-db-rw.security-system.svc.cluster.local:5432/dtrack"
@@ -43,7 +45,7 @@ spec:
         storageClassName: ${DEFAULT_STORAGE_CLASS:=local-path}
     apiServer:
       image:
-        # renovate: datasource=docker depName=docker.io/dependencytrack/apiserver versioning=semver
+        # renovate: datasource=docker depName=mirror.gcr.io/dependencytrack/apiserver versioning=semver
         tag: 5.2.1@sha256:a7ce7a42928c6c03e94e8255e2ee871f5268f55b638a69729cae7afc47ef43b8
       serviceMonitor:
         enabled: true
@@ -64,7 +66,7 @@ spec:
             memory: 2Gi
     frontend:
       image:
-        # renovate: datasource=docker depName=docker.io/dependencytrack/frontend versioning=semver
+        # renovate: datasource=docker depName=mirror.gcr.io/dependencytrack/frontend versioning=semver
         tag: 5.2.1@sha256:1c0f63b083af8e89ff4ede5e7ed5cfc4e23ab871fa140ed101e8dc56f53eb51c
       # The SPA calls the API from the browser, so this is the LAN address of dependency-track-api-server-lb (service-lb.yaml).
       apiBaseUrl: "http://192.168.1.242:8080"
