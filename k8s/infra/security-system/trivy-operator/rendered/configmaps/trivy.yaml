@@ -39,6 +39,8 @@ data:
   trivy.supportedConfigAuditKinds: "Workload,Service,Role,ClusterRole,NetworkPolicy,Ingress,LimitRange,ResourceQuota"
   trivy.timeout: "5m0s"
   trivy.configFile: |
+    ignore-policy: /etc/trivy/ignore-policy.rego
+    ignorefile: /etc/trivy/.trivyignore.yaml
     scan:
       disable-telemetry: true
       offline: true
@@ -53,6 +55,8 @@ data:
       severity-source:
       - redhat
       - auto
+      vex:
+      - repo
   trivy.ignoreFileName: "/etc/trivy/.trivyignore.yaml"
   trivy.serverURL: "http://trivy-service.security-system:4954"
   trivy.mode: "ClientServer"
