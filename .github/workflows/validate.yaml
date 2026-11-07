@@ -14,7 +14,7 @@ jobs:
   renovate:
     runs-on: ubuntu-latest
     env:
-      RENOVATE_VERSION: "44.206.2" # renovate: datasource=npm depName=renovate
+      RENOVATE_VERSION: "44.215.0" # renovate: datasource=npm depName=renovate
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,7 +26,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup yq
-        uses: fluxcd/pkg/actions/yq@44154096c295bf4a6e3fa9a072e18ddb8bb9eaf2 # main
+        uses: fluxcd/pkg/actions/yq@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: yamllint
         run: |
           pip install --quiet "yamllint==${YAMLLINT_VERSION}"
@@ -49,11 +49,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup yq
-        uses: fluxcd/pkg/actions/yq@44154096c295bf4a6e3fa9a072e18ddb8bb9eaf2 # main
+        uses: fluxcd/pkg/actions/yq@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Setup kubeconform
-        uses: fluxcd/pkg/actions/kubeconform@44154096c295bf4a6e3fa9a072e18ddb8bb9eaf2 # main
+        uses: fluxcd/pkg/actions/kubeconform@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Setup kustomize
-        uses: fluxcd/pkg/actions/kustomize@44154096c295bf4a6e3fa9a072e18ddb8bb9eaf2 # main
+        uses: fluxcd/pkg/actions/kustomize@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       # The directory is relative to the repository root; a bare "apps" matched nothing and validated nothing.
       - name: Validate manifests -- /apps
         run: ./scripts/validate.sh --dir k8s/apps
@@ -70,10 +70,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup yq
-        uses: fluxcd/pkg/actions/yq@44154096c295bf4a6e3fa9a072e18ddb8bb9eaf2 # main
+        uses: fluxcd/pkg/actions/yq@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Setup kubeconform
-        uses: fluxcd/pkg/actions/kubeconform@44154096c295bf4a6e3fa9a072e18ddb8bb9eaf2 # main
+        uses: fluxcd/pkg/actions/kubeconform@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Setup kustomize
-        uses: fluxcd/pkg/actions/kustomize@44154096c295bf4a6e3fa9a072e18ddb8bb9eaf2 # main
+        uses: fluxcd/pkg/actions/kustomize@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Build Flux Kustomization paths
         run: ./scripts/ci/build-flux-paths.sh k8s/clusters/pmx01-talos-gitops

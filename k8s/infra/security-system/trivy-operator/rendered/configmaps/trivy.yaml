@@ -1,44 +1,17 @@
----
-# Source: trivy-operator/templates/configmaps/trivy.yaml
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: trivy-operator-trivy-config
-  namespace: security-system
-  labels:
-    helm.sh/chart: trivy-operator-0.32.1
-    app.kubernetes.io/name: trivy-operator
-    app.kubernetes.io/instance: trivy-operator
-    app.kubernetes.io/version: "0.30.1"
-    app.kubernetes.io/managed-by: Helm
 data:
-  trivy.repository: "ghcr.io/aquasecurity/trivy"
-  trivy.tag: "0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb"
-  trivy.imagePullPolicy: "IfNotPresent"
+  TRIVY_CACHE_DIR: /home/scanner/.cache/trivy
+  TRIVY_DB_REPOSITORY: zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-db
+  TRIVY_DEBUG: "false"
+  TRIVY_INSECURE: "false"
+  TRIVY_JAVA_DB_REPOSITORY: zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-java-db
+  TRIVY_LISTEN: 0.0.0.0:4954
+  TRIVY_SKIP_DB_UPDATE: "false"
   trivy.additionalVulnerabilityReportFields: ""
-  trivy.registry.mirror.docker.io: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache"
-  trivy.registry.mirror.ghcr.io: "zot.registry-system.svc.cluster.local:5000/ghcr-cache"
-  trivy.registry.mirror.index.docker.io: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache"
-  trivy.registry.mirror.mirror.gcr.io: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache"
-  trivy.registry.mirror.quay.io: "zot.registry-system.svc.cluster.local:5000/quay-cache"
-  trivy.registry.mirror.registry-1.docker.io: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache"
-  trivy.registry.mirror.registry.k8s.io: "zot.registry-system.svc.cluster.local:5000/k8s-cache"
-  trivy.severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-  trivy.slow: "false"
-  trivy.skipJavaDBUpdate: "false"
-  trivy.includeDevDeps: "false"
-  trivy.imageScanCacheDir: "/tmp/trivy/.cache"
-  trivy.filesystemScanCacheDir: "/var/trivyoperator/trivy-db"
-  trivy.dbRepository: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-db"
-  trivy.javaDbRepository: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-java-db"
-  trivy.command: "image"
-  trivy.sbomSources: ""
-  trivy.dbRepositoryInsecure: "false"
-  trivy.useBuiltinRegoPolicies: "false"
-  trivy.useEmbeddedRegoPolicies: "true"
-  trivy.supportedConfigAuditKinds: "Workload,Service,Role,ClusterRole,NetworkPolicy,Ingress,LimitRange,ResourceQuota"
-  trivy.timeout: "5m0s"
+  trivy.command: image
   trivy.configFile: |
+    ignore-policy: /etc/trivy/ignore-policy.rego
+    ignorefile: /etc/trivy/.trivyignore.yaml
     scan:
       disable-telemetry: true
       offline: true
@@ -53,19 +26,48 @@ data:
       severity-source:
       - redhat
       - auto
-  trivy.ignoreFileName: "/etc/trivy/.trivyignore.yaml"
-  trivy.serverURL: "http://trivy-service.security-system:4954"
-  trivy.mode: "ClientServer"
-  trivy.resources.requests.cpu: "100m"
-  trivy.resources.requests.memory: "256Mi"
-  trivy.resources.requests.ephemeral-storage: "100Mi"
-  trivy.resources.limits.cpu: "500m"
-  trivy.resources.limits.memory: "4Gi"
-  trivy.resources.limits.ephemeral-storage: "2Gi"
-  TRIVY_LISTEN: "0.0.0.0:4954"
-  TRIVY_CACHE_DIR: "/home/scanner/.cache/trivy"
-  TRIVY_DEBUG: "false"
-  TRIVY_SKIP_DB_UPDATE: "false"
-  TRIVY_DB_REPOSITORY: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-db"
-  TRIVY_JAVA_DB_REPOSITORY: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-java-db"
-  TRIVY_INSECURE: "false"
+      vex:
+      - repo
+  trivy.dbRepository: zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-db
+  trivy.dbRepositoryInsecure: "false"
+  trivy.filesystemScanCacheDir: /var/trivyoperator/trivy-db
+  trivy.ignoreFileName: /etc/trivy/.trivyignore.yaml
+  trivy.imagePullPolicy: IfNotPresent
+  trivy.imageScanCacheDir: /tmp/trivy/.cache
+  trivy.includeDevDeps: "false"
+  trivy.javaDbRepository: zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-java-db
+  trivy.mode: ClientServer
+  trivy.registry.mirror.docker.io: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+  trivy.registry.mirror.ghcr.io: zot.registry-system.svc.cluster.local:5000/ghcr-cache
+  trivy.registry.mirror.index.docker.io: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+  trivy.registry.mirror.mirror.gcr.io: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+  trivy.registry.mirror.quay.io: zot.registry-system.svc.cluster.local:5000/quay-cache
+  trivy.registry.mirror.registry-1.docker.io: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+  trivy.registry.mirror.registry.k8s.io: zot.registry-system.svc.cluster.local:5000/k8s-cache
+  trivy.repository: ghcr.io/aquasecurity/trivy
+  trivy.resources.limits.cpu: 500m
+  trivy.resources.limits.ephemeral-storage: 2Gi
+  trivy.resources.limits.memory: 4Gi
+  trivy.resources.requests.cpu: 100m
+  trivy.resources.requests.ephemeral-storage: 100Mi
+  trivy.resources.requests.memory: 256Mi
+  trivy.sbomSources: ""
+  trivy.serverURL: http://trivy-service.security-system:4954
+  trivy.severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+  trivy.skipJavaDBUpdate: "false"
+  trivy.slow: "false"
+  trivy.supportedConfigAuditKinds: Workload,Service,Role,ClusterRole,NetworkPolicy,Ingress,LimitRange,ResourceQuota
+  trivy.tag: 0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+  trivy.timeout: 5m0s
+  trivy.useBuiltinRegoPolicies: "false"
+  trivy.useEmbeddedRegoPolicies: "true"
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/instance: trivy-operator
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: trivy-operator
+    app.kubernetes.io/version: 0.30.1
+    helm.sh/chart: trivy-operator-0.32.1
+  name: trivy-operator-trivy-config
+  namespace: security-system

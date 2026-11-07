@@ -26,7 +26,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kubectl
-          image: "ghcr.io/kyverno/readiness-checker:v1.19.2"
+          image: "ghcr.io/kyverno/readiness-checker:v1.19.2@sha256:02600428e7c956e222f4376413525866ed9fec28e6bcb1222774ce6bf5fc904a"
           imagePullPolicy:
           args:
             - scale-deploy

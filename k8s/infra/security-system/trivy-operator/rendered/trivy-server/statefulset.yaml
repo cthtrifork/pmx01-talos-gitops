@@ -1,45 +1,107 @@
----
-# Source: trivy-operator/templates/trivy-server/statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  labels:
+    app.kubernetes.io/instance: trivy-server
+    app.kubernetes.io/name: trivy-server
   name: trivy-server
   namespace: security-system
-  labels:
-    app.kubernetes.io/name: trivy-server
-    app.kubernetes.io/instance: trivy-server
 spec:
-  podManagementPolicy: "Parallel"
-  serviceName: trivy-service
+  podManagementPolicy: Parallel
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: trivy-server
       app.kubernetes.io/instance: trivy-server
-  volumeClaimTemplates:
-    - apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: data
-      spec:
-        resources:
-          requests:
-            storage: 5Gi
-        accessModes:
-          - ReadWriteOnce
-        storageClassName:
+      app.kubernetes.io/name: trivy-server
+  serviceName: trivy-service
   template:
     metadata:
       annotations:
         checksum/config: 7fcc66ace3f98462349856795765021e7bf7a0106f28439a9f6dc74257404370
       labels:
+        app.kubernetes.io/instance: trivy-server
+        app.kubernetes.io/name: trivy-server
         kube-kraken.dk/mount-root-ca: "true"
         kube-kraken.dk/with-https-proxy: "true"
-        app.kubernetes.io/name: trivy-server
-        app.kubernetes.io/instance: trivy-server
     spec:
-      serviceAccountName: trivy-operator
       automountServiceAccountToken: false
+      containers:
+      - args:
+        - server
+        envFrom:
+        - configMapRef:
+            name: trivy-operator-trivy-config
+        - secretRef:
+            name: trivy-operator-trivy-config
+        image: ghcr.io/aquasecurity/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /healthz
+            port: trivy-http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+        name: trivy-server
+        ports:
+        - containerPort: 4954
+          name: trivy-http
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: trivy-http
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            ephemeral-storage: 2Gi
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        startupProbe:
+          failureThreshold: 180
+          httpGet:
+            path: /healthz
+            port: trivy-http
+            scheme: HTTP
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp-data
+          readOnly: false
+        - mountPath: /home/scanner/.cache
+          name: data
+          readOnly: false
+        - mountPath: /etc/ssl/certs/zot-ca.crt
+          name: zot-ca
+          readOnly: true
+          subPath: ca.crt
+        - mountPath: /etc/trivy/trivy-config.yaml
+          name: configfile
+          subPath: trivy.configFile
+        - mountPath: /.trivy/vex/repository.yaml
+          name: repository-config
+          subPath: repository.yaml
+        - mountPath: /etc/trivy/.trivyignore.yaml
+          name: ignore-file
+          subPath: .trivyignore.yaml
+        - mountPath: /etc/trivy/ignore-policy.rego
+          name: ignore-policy
+          subPath: ignorePolicy
       securityContext:
         fsGroup: 65534
         runAsGroup: 65534
@@ -47,71 +109,39 @@ spec:
         runAsUser: 65534
         seccompProfile:
           type: RuntimeDefault
-      containers:
-        - name: trivy-server
-          image: "ghcr.io/aquasecurity/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb"
-          imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-          args:
-            - server
-          envFrom:
-            - configMapRef:
-                name: trivy-operator-trivy-config
-            - secretRef:
-                name: trivy-operator-trivy-config
-          ports:
-            - name: trivy-http
-              containerPort: 4954
-          livenessProbe:
-            httpGet:
-              scheme: HTTP
-              path: /healthz
-              port: trivy-http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 10
-          readinessProbe:
-            httpGet:
-              scheme: HTTP
-              path: /healthz
-              port: trivy-http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 3
-          volumeMounts:
-            - mountPath: /tmp
-              name: tmp-data
-              readOnly: false
-            - mountPath: /home/scanner/.cache
-              name: data
-              readOnly: false
-            - mountPath: /etc/trivy/trivy-config.yaml
-              name: configfile
-              subPath: trivy.configFile
-          resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
-            requests:
-              cpu: 100m
-              ephemeral-storage: 2Gi
-              memory: 512Mi
-      volumes:
-        - name: tmp-data
-          emptyDir: {}
-        - configMap:
-            name: trivy-operator-trivy-config
-          name: configfile
+      serviceAccountName: trivy-operator
       tolerations:
-        - effect: NoSchedule
-          key: kube-kraken/role
-          operator: Equal
-          value: tool
+      - effect: NoSchedule
+        key: kube-kraken/role
+        operator: Equal
+        value: tool
+      volumes:
+      - emptyDir: {}
+        name: tmp-data
+      - configMap:
+          name: trivy-operator-trivy-config
+        name: configfile
+      - configMap:
+          name: vex-repository-config
+        name: repository-config
+      - configMap:
+          name: trivy-ignorefile
+        name: ignore-file
+      - configMap:
+          name: trivy-ignorepolicy
+        name: ignore-policy
+      - name: zot-ca
+        secret:
+          secretName: trivy-registry-ca
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
+      storageClassName: null

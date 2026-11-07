@@ -1,33 +1,31 @@
----
-# Source: trivy-operator/templates/configmaps/operator.yaml
 apiVersion: v1
+data:
+  compliance.failEntriesLimit: "10"
+  configAuditReports.scanner: Trivy
+  node.collector.imageRef: ghcr.io/aquasecurity/node-collector:0.3.1@sha256:f4702ce4667388f0219d6248d623a7e816231c2d4561d6af01c3ae053e524025
+  node.collector.nodeSelector: "true"
+  nodeCollector.tolerations: '[{"effect":"NoSchedule","key":"node-role.kubernetes.io/control-plane","operator":"Exists"}]'
+  nodeCollector.volumeMounts: '[{"mountPath":"/var/lib/etcd","name":"var-lib-etcd","readOnly":true},{"mountPath":"/var/lib/kubelet","name":"var-lib-kubelet","readOnly":true},{"mountPath":"/var/lib/kube-scheduler","name":"var-lib-kube-scheduler","readOnly":true},{"mountPath":"/var/lib/kube-controller-manager","name":"var-lib-kube-controller-manager","readOnly":true},{"mountPath":"/etc/systemd","name":"etc-systemd","readOnly":true},{"mountPath":"/lib/systemd/","name":"lib-systemd","readOnly":true},{"mountPath":"/etc/kubernetes","name":"etc-kubernetes","readOnly":true},{"mountPath":"/etc/cni/net.d/","name":"etc-cni-netd","readOnly":true}]'
+  nodeCollector.volumes: '[{"hostPath":{"path":"/var/lib/etcd"},"name":"var-lib-etcd"},{"hostPath":{"path":"/var/lib/kubelet"},"name":"var-lib-kubelet"},{"hostPath":{"path":"/var/lib/kube-scheduler"},"name":"var-lib-kube-scheduler"},{"hostPath":{"path":"/var/lib/kube-controller-manager"},"name":"var-lib-kube-controller-manager"},{"hostPath":{"path":"/etc/systemd"},"name":"etc-systemd"},{"hostPath":{"path":"/lib/systemd"},"name":"lib-systemd"},{"hostPath":{"path":"/etc/kubernetes"},"name":"etc-kubernetes"},{"hostPath":{"path":"/etc/cni/net.d/"},"name":"etc-cni-netd"}]'
+  policies.bundle.insecure: "false"
+  policies.bundle.oci.ref: zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasec/trivy-checks:1
+  report.recordFailedChecksOnly: "true"
+  scanJob.customVolumes: '[{"name":"zot-ca","secret":{"secretName":"trivy-registry-ca"}},{"configMap":{"name":"vex-repository-config"},"name":"repository-config"},{"configMap":{"name":"trivy-ignorefile"},"name":"ignore-file"},{"configMap":{"name":"trivy-ignorepolicy"},"name":"ignore-policy"},{"ephemeral":{"volumeClaimTemplate":{"metadata":{"labels":{"app":"trivy-operator-scanjob-cache"}},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"10Gi"}},"storageClassName":"local-path"}}},"name":"trivy-cache"}]'
+  scanJob.customVolumesMount: '[{"mountPath":"/tmp/trivy/.cache","name":"trivy-cache"},{"mountPath":"/etc/ssl/certs/zot-ca.crt","name":"zot-ca","readOnly":true,"subPath":"ca.crt"},{"mountPath":"/.trivy/vex/repository.yaml","name":"repository-config","subPath":"repository.yaml"},{"mountPath":"/etc/trivy/.trivyignore.yaml","name":"ignore-file","subPath":".trivyignore.yaml"},{"mountPath":"/etc/trivy/ignore-policy.rego","name":"ignore-policy","subPath":"ignorePolicy"}]'
+  scanJob.podTemplateContainerSecurityContext: '{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"privileged":false,"readOnlyRootFilesystem":true}'
+  scanJob.podTemplatePodSecurityContext: '{"fsGroup":65534,"runAsGroup":65534,"runAsNonRoot":true,"runAsUser":65534,"seccompProfile":{"type":"RuntimeDefault"}}'
+  scanJob.tolerations: '[{"effect":"NoSchedule","key":"kube-kraken/role","operator":"Equal","value":"tool"}]'
+  scanJob.useGCRServiceAccount: "true"
+  trivy.serverURL: http://trivy-service.security-system:4954
+  vulnerabilityReports.scanJobsInSameNamespace: "false"
+  vulnerabilityReports.scanner: Trivy
 kind: ConfigMap
 metadata:
+  labels:
+    app.kubernetes.io/instance: trivy-operator
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: trivy-operator
+    app.kubernetes.io/version: 0.30.1
+    helm.sh/chart: trivy-operator-0.32.1
   name: trivy-operator
   namespace: security-system
-  labels:
-    helm.sh/chart: trivy-operator-0.32.1
-    app.kubernetes.io/name: trivy-operator
-    app.kubernetes.io/instance: trivy-operator
-    app.kubernetes.io/version: "0.30.1"
-    app.kubernetes.io/managed-by: Helm
-data:
-  scanJob.tolerations: "[{\"effect\":\"NoSchedule\",\"key\":\"kube-kraken/role\",\"operator\":\"Equal\",\"value\":\"tool\"}]"
-  scanJob.customVolumesMount: "[{\"mountPath\":\"/tmp/trivy/.cache\",\"name\":\"trivy-cache\"}]"
-  scanJob.customVolumes: "[{\"ephemeral\":{\"volumeClaimTemplate\":{\"metadata\":{\"labels\":{\"app\":\"trivy-operator-scanjob-cache\"}},\"spec\":{\"accessModes\":[\"ReadWriteOnce\"],\"resources\":{\"requests\":{\"storage\":\"10Gi\"}},\"storageClassName\":\"local-path\"}}},\"name\":\"trivy-cache\"}]"
-  nodeCollector.tolerations: "[{\"effect\":\"NoSchedule\",\"key\":\"node-role.kubernetes.io/control-plane\",\"operator\":\"Exists\"}]"
-  nodeCollector.volumes: "[{\"hostPath\":{\"path\":\"/var/lib/etcd\"},\"name\":\"var-lib-etcd\"},{\"hostPath\":{\"path\":\"/var/lib/kubelet\"},\"name\":\"var-lib-kubelet\"},{\"hostPath\":{\"path\":\"/var/lib/kube-scheduler\"},\"name\":\"var-lib-kube-scheduler\"},{\"hostPath\":{\"path\":\"/var/lib/kube-controller-manager\"},\"name\":\"var-lib-kube-controller-manager\"},{\"hostPath\":{\"path\":\"/etc/systemd\"},\"name\":\"etc-systemd\"},{\"hostPath\":{\"path\":\"/lib/systemd\"},\"name\":\"lib-systemd\"},{\"hostPath\":{\"path\":\"/etc/kubernetes\"},\"name\":\"etc-kubernetes\"},{\"hostPath\":{\"path\":\"/etc/cni/net.d/\"},\"name\":\"etc-cni-netd\"}]"
-  nodeCollector.volumeMounts: "[{\"mountPath\":\"/var/lib/etcd\",\"name\":\"var-lib-etcd\",\"readOnly\":true},{\"mountPath\":\"/var/lib/kubelet\",\"name\":\"var-lib-kubelet\",\"readOnly\":true},{\"mountPath\":\"/var/lib/kube-scheduler\",\"name\":\"var-lib-kube-scheduler\",\"readOnly\":true},{\"mountPath\":\"/var/lib/kube-controller-manager\",\"name\":\"var-lib-kube-controller-manager\",\"readOnly\":true},{\"mountPath\":\"/etc/systemd\",\"name\":\"etc-systemd\",\"readOnly\":true},{\"mountPath\":\"/lib/systemd/\",\"name\":\"lib-systemd\",\"readOnly\":true},{\"mountPath\":\"/etc/kubernetes\",\"name\":\"etc-kubernetes\",\"readOnly\":true},{\"mountPath\":\"/etc/cni/net.d/\",\"name\":\"etc-cni-netd\",\"readOnly\":true}]"
-  scanJob.useGCRServiceAccount: "true"
-  scanJob.podTemplatePodSecurityContext: "{\"fsGroup\":65534,\"runAsGroup\":65534,\"runAsNonRoot\":true,\"runAsUser\":65534,\"seccompProfile\":{\"type\":\"RuntimeDefault\"}}"
-  scanJob.podTemplateContainerSecurityContext: "{\"allowPrivilegeEscalation\":false,\"capabilities\":{\"drop\":[\"ALL\"]},\"privileged\":false,\"readOnlyRootFilesystem\":true}"
-  vulnerabilityReports.scanner: "Trivy"
-  vulnerabilityReports.scanJobsInSameNamespace: "false"
-  configAuditReports.scanner: "Trivy"
-  compliance.failEntriesLimit: "10"
-  report.recordFailedChecksOnly: "true"
-  trivy.serverURL: "http://trivy-service.security-system:4954"
-  node.collector.imageRef: "ghcr.io/aquasecurity/node-collector:0.3.1"
-  policies.bundle.oci.ref: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-checks:1"
-  policies.bundle.insecure: "false"
-  node.collector.nodeSelector: "true"

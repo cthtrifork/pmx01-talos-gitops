@@ -1,103 +1,107 @@
----
-# Source: trivy-operator/templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app.kubernetes.io/instance: trivy-operator
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: trivy-operator
+    app.kubernetes.io/version: 0.30.1
+    helm.sh/chart: trivy-operator-0.32.1
   name: trivy-operator
   namespace: security-system
-  labels:
-    helm.sh/chart: trivy-operator-0.32.1
-    app.kubernetes.io/name: trivy-operator
-    app.kubernetes.io/instance: trivy-operator
-    app.kubernetes.io/version: "0.30.1"
-    app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 2
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: trivy-operator
       app.kubernetes.io/instance: trivy-operator
+      app.kubernetes.io/name: trivy-operator
+  strategy:
+    type: Recreate
   template:
     metadata:
       annotations:
-        checksum/config: c1f32e69f985708754a08f1428cdbe3b6b037f14d5f990157156e9bb85659ec9
+        checksum/config: bd215546cf65ab4e5e9e7454f44b652b2e00eaa91127e4957795cf64dc0acfd4
       labels:
-        app.kubernetes.io/name: trivy-operator
         app.kubernetes.io/instance: trivy-operator
+        app.kubernetes.io/name: trivy-operator
         kube-kraken.dk/mount-root-ca: "true"
     spec:
-      serviceAccountName: trivy-operator
       automountServiceAccountToken: true
       containers:
-        - name: "trivy-operator"
-          image: "mirror.gcr.io/aquasec/trivy-operator:0.30.1"
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: OPERATOR_NAMESPACE
-              value: security-system
-            - name: OPERATOR_TARGET_NAMESPACES
-              value: ""
-            - name: OPERATOR_EXCLUDE_NAMESPACES
-              value: "local-path-storage"
-            - name: OPERATOR_TARGET_WORKLOADS
-              value: "pod,replicaset,replicationcontroller,statefulset,daemonset,cronjob,job"
-            - name: OPERATOR_SERVICE_ACCOUNT
-              value: "trivy-operator"
-          envFrom:
-            - configMapRef:
-                name: trivy-operator-config
-          ports:
-            - name: metrics
-              containerPort: 8080
-            - name: probes
-              containerPort: 9090
-          readinessProbe:
-            httpGet:
-              path: /readyz/
-              port: probes
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /healthz/
-              port: probes
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 10
-          resources:
-            limits:
-              ephemeral-storage: 2Gi
-              memory: 2Gi
-            requests:
-              cpu: 100m
-              memory: 512Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-          volumeMounts:
-            - mountPath: /tmp
-              name: cache-policies
-              readOnly: false
+      - env:
+        - name: OPERATOR_NAMESPACE
+          value: security-system
+        - name: OPERATOR_TARGET_NAMESPACES
+          value: ""
+        - name: OPERATOR_EXCLUDE_NAMESPACES
+          value: local-path-storage,arc-runners-system,arc-controller-system
+        - name: OPERATOR_TARGET_WORKLOADS
+          value: pod,replicaset,replicationcontroller,statefulset,daemonset,cronjob,job
+        - name: OPERATOR_SERVICE_ACCOUNT
+          value: trivy-operator
+        envFrom:
+        - configMapRef:
+            name: trivy-operator-config
+        image: mirror.gcr.io/aquasec/trivy-operator:0.30.1@sha256:448484ece65e26f1c7237c8d20dab997f5a8319968286a09e188140b863cf1f9
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 10
+          httpGet:
+            path: /healthz/
+            port: probes
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+        name: trivy-operator
+        ports:
+        - containerPort: 8080
+          name: metrics
+        - containerPort: 9090
+          name: probes
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readyz/
+            port: probes
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+        resources:
+          limits:
+            ephemeral-storage: 2Gi
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /etc/ssl/certs/zot-ca.crt
+          name: zot-ca
+          readOnly: true
+          subPath: ca.crt
+        - mountPath: /tmp
+          name: cache-policies
+          readOnly: false
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      # ── but only add runAsUser/fsGroup if alternateReportStorage is on ─────────
-      volumes:
-        - emptyDir:
-            sizeLimit: 100Mi
-          name: cache-policies
+      serviceAccountName: trivy-operator
       tolerations:
-        - effect: NoSchedule
-          key: kube-kraken/role
-          operator: Equal
-          value: tool
+      - effect: NoSchedule
+        key: kube-kraken/role
+        operator: Equal
+        value: tool
+      volumes:
+      - name: zot-ca
+        secret:
+          secretName: trivy-registry-ca
+      - emptyDir:
+          sizeLimit: 100Mi
+        name: cache-policies

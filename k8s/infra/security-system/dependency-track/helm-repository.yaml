@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/ocirepository_v1beta2.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: dependency-track
+  namespace: security-system
+spec:
+  interval: 12h
+  url: oci://ghcr.io/dependencytrack/helm-charts/dependency-track
+  ref:
+    tag: 2.9.0
+    digest: sha256:bad00e1ee9528595ed2b70af6b0193ea6d6d8f76e57a94ea4e5ebd1da6492dc5
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: extract

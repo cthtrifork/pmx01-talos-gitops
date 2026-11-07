@@ -1,0 +1,7 @@
+# MetalLB speakers skip nodes with this label, which Talos sets on control plane nodes by default.
+# All nodes here are control plane nodes, so without this no speaker announces any LoadBalancer IP.
+# https://docs.siderolabs.com/talos/latest/deploy-and-manage-workloads/workers-on-controlplane
+machine:
+  nodeLabels:
+    node.kubernetes.io/exclude-from-external-load-balancers:
+      $patch: delete

@@ -1,0 +1,9 @@
+---
+# Accepted findings, applied by trivy to every scan (trivy.ignoreFileName in helm-release.yaml).
+# https://trivy.dev/docs/latest/configuration/filtering/#by-finding-ids
+# Prefer a VEX statement for "not affected"; use this file for accepted risk, always with an expiry.
+#
+# vulnerabilities:
+#   - id: CVE-2024-00000
+#     statement: why it is accepted
+#     expired_at: 2027-01-01

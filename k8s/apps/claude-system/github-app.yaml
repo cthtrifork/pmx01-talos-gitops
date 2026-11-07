@@ -83,7 +83,7 @@ spec:
               type: RuntimeDefault
           initContainers:
             - name: sign-jwt
-              image: docker.io/alpine/openssl:3.5.9@sha256:96e53bf9b9041fdc8a33ea61356688506bbddc368c70d6e8a9acdd28475e8537
+              image: mirror.gcr.io/alpine/openssl:3.5.9@sha256:6821afa2476e11be343f29275f2ca24291720ff0a7148bd131fd8e314ff26d9e
               command:
                 - "sh"
                 - "/scripts/sign-jwt.sh"
@@ -102,7 +102,7 @@ spec:
                     - "ALL"
           containers:
             - name: refresh
-              image: docker.io/alpine/k8s:1.37.2@sha256:dcb7185e112a453aa72f426754849a97357727ef8f40168fb208c8cf59952042
+              image: mirror.gcr.io/alpine/k8s:1.37.2@sha256:dcb7185e112a453aa72f426754849a97357727ef8f40168fb208c8cf59952042
               command:
                 - "sh"
                 - "/scripts/refresh-token.sh"

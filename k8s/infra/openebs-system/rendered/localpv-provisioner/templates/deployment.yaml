@@ -38,7 +38,7 @@ spec:
       securityContext: {}
       containers:
         - name: openebs-localpv-localpv-provisioner
-          image: "ghcr.io/openebs/dev/provisioner-localpv:4.6.0"
+          image: "ghcr.io/openebs/dev/provisioner-localpv:4.6.0@sha256:99f5116f5cb83fb9d046ef5ff5b8ea98da90e7da5250d7b101bd650662238a0a"
           imagePullPolicy: IfNotPresent
           resources:
             limits:

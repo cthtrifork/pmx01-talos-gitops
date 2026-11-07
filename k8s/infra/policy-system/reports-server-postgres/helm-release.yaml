@@ -20,6 +20,8 @@ spec:
     mode: standalone
     type: postgresql
     cluster:
+      # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=docker
+      imageName: ghcr.io/cloudnative-pg/postgresql:16@sha256:34cd4159d07b3410a1b29da35072e2e927a0905e717a61afa3814624a2e8859a
       storage:
         size: 8Gi
         storageClass: "local-path"

@@ -52,6 +52,9 @@ rules:
       - notification.toolkit.fluxcd.io
       - fluxcd.controlplane.io
       - kubevirt.io
+      - metallb.io
+      - frrk8s.metallb.io
+      - aquasecurity.github.io
     resources:
       - "*"
     verbs:

@@ -20,6 +20,10 @@ spec:
     mode: enabled
   # https://github.com/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml
   values:
+    image:
+      # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
+      # renovate: datasource=docker depName=registry.k8s.io/metrics-server/metrics-server versioning=docker
+      tag: v0.9.0
     args:
       - --kubelet-insecure-tls
       - --kubelet-preferred-address-types=InternalIP

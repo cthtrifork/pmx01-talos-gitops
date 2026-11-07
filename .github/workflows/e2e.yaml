@@ -130,7 +130,7 @@ jobs:
             crd/certificates.cert-manager.io crd/issuers.cert-manager.io crd/clusters.postgresql.cnpg.io \
             crd/middlewares.traefik.io crd/ingressroutes.traefik.io crd/podmonitors.monitoring.coreos.com
         env:
-          TRAEFIK_CHART_VERSION: "42.3.0" # renovate: datasource=docker depName=ghcr.io/traefik/helm/traefik
+          TRAEFIK_CHART_VERSION: "42.3.1" # renovate: datasource=docker depName=ghcr.io/traefik/helm/traefik
       - name: Dry-run harper-pad against the API server
         run: |
           kubectl kustomize k8s/apps/harper-pad > "${RUNNER_TEMP}/harper-pad.yaml"

@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: prometheus-node-exporter
     app.kubernetes.io/part-of: prometheus-node-exporter
     app.kubernetes.io/version: 1.12.1
-    helm.sh/chart: prometheus-node-exporter-4.60.1
+    helm.sh/chart: prometheus-node-exporter-5.0.0
     release: kube-prometheus-stack
   name: kube-prometheus-stack-prometheus-node-exporter
   namespace: kube-prometheus-stack-system
@@ -58,7 +58,7 @@ spec:
         env:
         - name: HOST_IP
           value: 0.0.0.0
-        image: quay.io/prometheus/node-exporter:v1.12.1-distroless
+        image: quay.io/prometheus/node-exporter:v1.12.1-distroless@sha256:8c9bac11973b94b59be88d6e11fee4429aa743c8846cdc75d65b18db33f6a106
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -94,7 +94,13 @@ spec:
             cpu: 50m
             memory: 32Mi
         securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
           readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
         volumeMounts:
         - mountPath: /host/proc
           name: proc

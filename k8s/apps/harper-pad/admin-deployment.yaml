@@ -37,7 +37,7 @@ spec:
       initContainers:
         # Native sidecar: up before the app, outlives it.
         - name: cloudflared
-          image: docker.io/cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
+          image: mirror.gcr.io/cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
           restartPolicy: Always
           args:
             - "tunnel"
@@ -66,7 +66,7 @@ spec:
       containers:
         - name: admin
           # No args: the image's CMD is "serve"; it listens on LISTEN_ADDR (loopback).
-          image: ghcr.io/cthtrifork/harper-pad-admin:v2.7.0@sha256:1e885bcf32cafae37cdf484846bd4afd6b131e4d2aa15a5a4e294330c7fad3bc
+          image: ghcr.io/cthtrifork/harper-pad-admin:v3.0.0@sha256:2bb20a79c4babdcd4c5cc5b0460e339d7aa3ad0e98e1a278ffbf50bc892ceee6
           env:
             - name: LISTEN_ADDR
               value: 127.0.0.1:9001
