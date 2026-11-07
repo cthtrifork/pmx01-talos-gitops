@@ -1,0 +1,98 @@
+# Default deny both ways for the namespace. AdGuard is the LAN's DNS server (adguard-dns, 192.168.1.253), so the
+# ingress rules admit world as well as the cluster.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: adguard-system-default-deny
+  namespace: adguard-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: adguard-system-allow-dns-apiserver
+  namespace: adguard-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: adguard-home
+  namespace: adguard-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: adguard-home
+  ingress:
+    # DNS (53 plain, 853 DNS-over-TLS) and DNS-over-HTTPS (443) from the LAN and the cluster
+    - fromEntities:
+        - world
+        - cluster
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+            - { port: "853", protocol: TCP }
+            - { port: "443", protocol: TCP }
+    # Web UI (adguard-web, 80 to 3000): the Omni service exposer on the host network, and the exporter
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "3000", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            app: adguard-exporter
+      toPorts:
+        - ports:
+            - { port: "3000", protocol: TCP }
+  egress:
+    # Upstream resolvers, blocklists, and the LAN (reverse lookups)
+    - toEntities:
+        - world
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: adguard-exporter
+  namespace: adguard-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: adguard-exporter
+  ingress:
+    # Prometheus scrape
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "9617", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: adguard-home
+      toPorts:
+        - ports:
+            - { port: "3000", protocol: TCP }

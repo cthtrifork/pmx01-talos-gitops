@@ -1,0 +1,114 @@
+# Default deny both ways for the namespace. Image pulls depend on this namespace (containerd pulls through Spegel on
+# the nodes and from zot), so the ingress rules admit the node entities (host, remote-node) as well as pods.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: registry-system-default-deny
+  namespace: registry-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: registry-system-allow-dns-apiserver
+  namespace: registry-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+# zot (registry and pull-through cache): pulled from by the nodes and the LAN (zot-lb 192.168.1.240 is world),
+# pushed to by the ARC runners, queried by trivy-operator scan jobs, scraped by Prometheus.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: zot
+  namespace: registry-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: zot
+  ingress:
+    - fromEntities:
+        - world
+        - host
+        - remote-node
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - { port: "5000", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: arc-runners-system
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: security-system
+      toPorts:
+        - ports:
+            - { port: "5000", protocol: TCP }
+  egress:
+    # Upstream registries for the sync (ghcr.io, quay.io, registry.k8s.io, ...)
+    - toEntities:
+        - world
+    # Trivy extension
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: security-system
+            k8s:app.kubernetes.io/name: trivy-server
+      toPorts:
+        - ports:
+            - { port: "4954", protocol: TCP }
+---
+# Spegel (node-local mirror): containerd on each node reaches it through the NodePort (host or remote-node), the
+# instances find each other on 5000 and 5001 (TCP and UDP) and use the nodes and the internet as upstream.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: spegel
+  namespace: registry-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: spegel
+  ingress:
+    - fromEntities:
+        - host
+        - remote-node
+        - kube-apiserver
+    - fromEndpoints:
+        - matchLabels:
+            k8s:app.kubernetes.io/name: spegel
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "9090", protocol: TCP }
+  egress:
+    - toEntities:
+        - world
+        - host
+        - remote-node
+    - toEndpoints:
+        - matchLabels:
+            k8s:app.kubernetes.io/name: spegel

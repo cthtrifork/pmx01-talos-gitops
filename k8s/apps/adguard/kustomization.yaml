@@ -9,6 +9,7 @@ resources:
   - service.yaml
   - secret.enc.yaml
   - namespace.yaml
+  - networkpolicy.yaml
 configMapGenerator:
   - name: adguard-initial-config
     namespace: adguard-system
