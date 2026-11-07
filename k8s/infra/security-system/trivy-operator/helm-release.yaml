@@ -24,6 +24,25 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  # The trivy server only listens after it has downloaded the vulnerability DB (about 140 MB) and the Java DB (about 1 GB) from
+  # zot, which takes many minutes on a cold zot cache and the home uplink. The chart's liveness probe gives up after ~100 s and
+  # restarts the pod in a loop, so a startup probe holds liveness back for up to 30 minutes.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: trivy-server
+            patch: |
+              - op: add
+                path: /spec/template/spec/containers/0/startupProbe
+                value:
+                  httpGet:
+                    scheme: HTTP
+                    path: /healthz
+                    port: trivy-http
+                  periodSeconds: 10
+                  failureThreshold: 180
   # https://github.com/aquasecurity/trivy-operator/blob/main/deploy/helm/values.yaml
   values:
     image:
@@ -172,7 +191,8 @@ spec:
       exposedSecretScannerEnabled: false # we do not use this feature
       scannerReportTTL: "${TRIVY_SCANNER_TTL:=24h}"
       scanJobTTL: "5m" # set to 1m to keep jobs for a little while for troubleshooting
-      scanJobsConcurrentLimit: "${TRIVY_SCANNER_CONCURRENTLIMIT:=5}"
+      # the nodes are control-plane nodes too (etcd, apiserver) and one has ~5 GB RAM: keep few scan jobs, each limited to 4Gi, running at once
+      scanJobsConcurrentLimit: "${TRIVY_SCANNER_CONCURRENTLIMIT:=2}"
       sbomGenerationEnabled: true
       clusterComplianceEnabled: true
       infraAssessmentScannerEnabled: false # requires priviledges that we do not like
