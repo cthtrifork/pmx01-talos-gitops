@@ -37,6 +37,15 @@ spec:
                   key: password
             - name: adguard_port
               value: "80"
+          readinessProbe:
+            tcpSocket:
+              port: 9617
+            periodSeconds: 20
+          livenessProbe:
+            tcpSocket:
+              port: 9617
+            initialDelaySeconds: 15
+            periodSeconds: 30
           resources:
             limits:
               memory: 128Mi
