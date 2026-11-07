@@ -18,9 +18,14 @@ spec:
     crds:
       enabled: true
     frr-k8s:
-      image:
-        # renovate: datasource=docker depName=quay.io/metallb/frr-k8s versioning=docker
-        tag: v0.0.27@sha256:de862b74a3a314eb76c8fb4cabc9d2c55cca51002cd022704c32df717f9366b7
+      frrk8s:
+        image:
+          # renovate: datasource=docker depName=quay.io/metallb/frr-k8s versioning=docker
+          tag: v0.0.27@sha256:de862b74a3a314eb76c8fb4cabc9d2c55cca51002cd022704c32df717f9366b7
+      frr:
+        image:
+          # renovate: datasource=docker depName=quay.io/frrouting/frr versioning=docker
+          tag: 10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
       prometheus:
         serviceMonitor:
           enabled: false
@@ -43,10 +48,6 @@ spec:
       image:
         # renovate: datasource=docker depName=quay.io/metallb/speaker versioning=docker
         tag: v0.16.2@sha256:01666518b091a6651d68891c802db84b2219495d7e0e41c2e61c46f9976be231
-      frr:
-        image:
-          # renovate: datasource=docker depName=quay.io/frrouting/frr versioning=docker
-          tag: 10.6.2@sha256:89e5e1ec8b17c5dffaf57dbac58a29ebeb3731a84e5bc09dad1662adff2ba7f5
       tolerations:
         # Tolerate the control plane taint
         - key: node-role.kubernetes.io/control-plane

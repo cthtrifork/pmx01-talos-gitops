@@ -71,6 +71,11 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
+    kube-state-metrics:
+      image:
+        # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
+        # renovate: datasource=docker depName=registry.k8s.io/kube-state-metrics/kube-state-metrics versioning=docker
+        tag: v2.20.0
     kubeStateMetrics:
       enabled: true
       resources:
@@ -92,6 +97,8 @@ spec:
         kubelet: true
     prometheus-node-exporter:
       image:
+        # The chart would append "-distroless" after the digest, so the variant is part of the tag instead.
+        distroless: false
         # renovate: datasource=docker depName=quay.io/prometheus/node-exporter versioning=docker
         tag: v1.12.1-distroless@sha256:8c9bac11973b94b59be88d6e11fee4429aa743c8846cdc75d65b18db33f6a106
       resources:
