@@ -37,6 +37,8 @@ spec:
       serviceAccountName: gha-runner-scale-set-controller-gha-rs-controller
       securityContext:
         fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: manager
           image: "ghcr.io/actions/gha-runner-scale-set-controller:0.15.1@sha256:4b51a20db717b194e2f3fa96cfe2ddcb21602811f79053c75fd1a383517b9f90"
@@ -52,8 +54,21 @@ spec:
             - "--listener-metrics-addr=0"
             - "--listener-metrics-endpoint="
             - "--metrics-addr=0"
+            - "--health-probe-bind-address=:8081"
           command:
             - "/manager"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
           env:
             - name: CONTROLLER_MANAGER_CONTAINER_IMAGE
               value: "ghcr.io/actions/gha-runner-scale-set-controller:0.15.1@sha256:4b51a20db717b194e2f3fa96cfe2ddcb21602811f79053c75fd1a383517b9f90"
@@ -69,6 +84,7 @@ spec:
               cpu: 100m
               memory: 128Mi
           securityContext:
+            allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
