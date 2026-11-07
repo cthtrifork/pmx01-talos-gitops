@@ -40,6 +40,18 @@ spec:
         memory: 128Mi
       limits:
         memory: 256Mi
+    # the image already runs as the non-root user "connect" (uid 10001); make that explicit so it is enforced
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 10001
+      runAsGroup: 10001
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     env:
       - name: DT_API_KEY
         valueFrom:
