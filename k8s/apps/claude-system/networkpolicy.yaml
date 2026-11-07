@@ -53,6 +53,22 @@ spec:
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
+    # Redpanda Connect mirror and hook (read-only GETs of the VEX manifests and /metrics to check them); the service's
+    # port 80 maps to 4195 on the pod
+    - toEndpoints:
+        - matchExpressions:
+            - key: k8s:io.kubernetes.pod.namespace
+              operator: In
+              values:
+                - security-system
+            - key: k8s:app.kubernetes.io/instance
+              operator: In
+              values:
+                - vex-hub
+                - sbom-hook
+      toPorts:
+        - ports:
+            - { port: "4195", protocol: TCP }
     # Kubernetes API (read-only through the ServiceAccount's RBAC)
     - toEntities:
         - kube-apiserver
