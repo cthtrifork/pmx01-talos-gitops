@@ -57,9 +57,6 @@ spec:
       dbRepository: aquasecurity/trivy-db
       javaDbRegistry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
       javaDbRepository: aquasecurity/trivy-java-db
-      # zot serves a certificate from the cluster issuer, which the trivy pods do not trust: skip verification for
-      # this in-cluster hop. Remove once the CA is mounted into the trivy pods.
-      dbRepositoryInsecure: "true"
       registry:
         mirror:
           "ghcr.io": zot.registry-system.svc.cluster.local:5000/ghcr-cache
@@ -110,6 +107,11 @@ spec:
             memory: 2Gi
         extraServerVolumes:
           volumeMounts:
+            # zot's certificate is from the cluster issuer; Go also reads extra files in /etc/ssl/certs
+            - name: zot-ca
+              mountPath: /etc/ssl/certs/zot-ca.crt
+              subPath: ca.crt
+              readOnly: true
             # trivy image docker.io/library/hello-world --vex repo --show-suppressed --format table --cache-dir=/home/scanner/.cache
             - name: configfile
               mountPath: /etc/trivy/trivy-config.yaml
@@ -118,6 +120,9 @@ spec:
             - name: configfile
               configMap:
                 name: trivy-operator-trivy-config
+            - name: zot-ca
+              secret:
+                secretName: trivy-registry-ca
       resources:
         requests:
           cpu: 100m
@@ -166,7 +171,14 @@ spec:
       scanJobCustomVolumesMount:
         - name: trivy-cache
           mountPath: /tmp/trivy/.cache
+        - name: zot-ca # the scan jobs pull images through zot
+          mountPath: /etc/ssl/certs/zot-ca.crt
+          subPath: ca.crt
+          readOnly: true
       scanJobCustomVolumes:
+        - name: zot-ca
+          secret:
+            secretName: trivy-registry-ca
         - name: trivy-cache
           ephemeral: # we are using ephemeral volumes to not fill out nodes through emptydir
             volumeClaimTemplate:
