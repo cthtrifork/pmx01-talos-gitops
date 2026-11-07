@@ -51,6 +51,10 @@ spec:
         priorityClassNotSet: ignore
         missingPodDisruptionBudget: warning
         pullPolicyNotAlways: ignore
+        # single-node-class home cluster: these fire on almost every controller
+        deploymentMissingReplicas: ignore
+        metadataAndInstanceMismatched: ignore
+        topologySpreadConstraint: ignore
 
         # security
         linuxHardening: danger

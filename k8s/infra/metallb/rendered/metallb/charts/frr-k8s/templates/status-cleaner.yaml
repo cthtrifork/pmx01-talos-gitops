@@ -63,6 +63,12 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 3
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 5m
+              memory: 16Mi
           volumeMounts:
             - name: cert
               mountPath: /tmp/k8s-webhook-server/serving-certs

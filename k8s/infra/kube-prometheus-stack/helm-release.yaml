@@ -76,15 +76,15 @@ spec:
         # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
         # renovate: datasource=docker depName=registry.k8s.io/kube-state-metrics/kube-state-metrics versioning=docker
         tag: v2.20.0
-    kubeStateMetrics:
-      enabled: true
       resources:
         requests:
-          cpu: 50m
-          memory: 64Mi
+          cpu: 10m
+          memory: 32Mi
         limits:
           cpu: 100m
-          memory: 256Mi
+          memory: 128Mi
+    kubeStateMetrics:
+      enabled: true
     grafana:
       enabled: false
     nodeExporter:
