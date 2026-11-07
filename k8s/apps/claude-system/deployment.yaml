@@ -37,6 +37,33 @@ spec:
         fsGroup: 65532
         seccompProfile:
           type: RuntimeDefault
+      # Claude refuses to bind its cross-session messaging socket under a shared directory (every parent must be
+      # private or sticky). An emptyDir is 0777 and fsGroup makes it 2777; emptyDir.mode (sticky bit) is alpha
+      # from Kubernetes 1.37. The local-path PVCs are hostPath volumes, which fsGroup does not touch (root 0777),
+      # so /tmp is a claude-owned 0700 subdirectory of the workspace PVC, made by the init container below
+      # (the restricted PSA rules out a root one). Wiped on every pod start, like the emptyDir it replaces.
+      initContainers:
+        - name: private-tmp
+          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
+          command:
+            - "/bin/bash"
+            - "-c"
+            - "rm -rf /mnt/workspace/.tmp && mkdir -m 0700 /mnt/workspace/.tmp"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+          volumeMounts:
+            - name: workspace
+              mountPath: /mnt/workspace
       containers:
         - name: claude
           image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
@@ -86,8 +113,9 @@ spec:
               readOnly: true
             - name: workspace
               mountPath: /workspace
-            - name: tmp
+            - name: workspace
               mountPath: /tmp
+              subPath: .tmp # private-tmp init container
       volumes:
         - name: home
           persistentVolumeClaim:
@@ -113,6 +141,3 @@ spec:
         - name: workspace
           persistentVolumeClaim:
             claimName: claude-workspace
-        - name: tmp
-          emptyDir:
-            sizeLimit: 1Gi
