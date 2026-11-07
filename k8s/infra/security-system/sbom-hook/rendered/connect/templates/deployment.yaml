@@ -28,11 +28,20 @@ spec:
     spec:
       serviceAccountName: sbom-hook
       restartPolicy: Always
-      securityContext: {}
+      securityContext:
+        runAsGroup: 10001
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
       terminationGracePeriodSeconds: 60
       containers:
         - name: connect
-          securityContext: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           image: "mirror.gcr.io/redpandadata/connect:4.116.1@sha256:47ff773082146b6e538c527509af1a736b53063e68f0eb1266253a0832b39396"
           imagePullPolicy: IfNotPresent
           args:
