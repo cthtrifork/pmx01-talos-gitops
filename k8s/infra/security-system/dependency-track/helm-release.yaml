@@ -42,6 +42,9 @@ spec:
         size: 5Gi
         storageClassName: ${DEFAULT_STORAGE_CLASS:=local-path}
     apiServer:
+      image:
+        # renovate: datasource=docker depName=docker.io/dependencytrack/apiserver versioning=semver
+        tag: 5.2.1@sha256:a7ce7a42928c6c03e94e8255e2ee871f5268f55b638a69729cae7afc47ef43b8
       serviceMonitor:
         enabled: true
         namespace: security-system
@@ -60,5 +63,8 @@ spec:
           limits:
             memory: 2Gi
     frontend:
+      image:
+        # renovate: datasource=docker depName=docker.io/dependencytrack/frontend versioning=semver
+        tag: 5.2.1@sha256:1c0f63b083af8e89ff4ede5e7ed5cfc4e23ab871fa140ed101e8dc56f53eb51c
       # The SPA calls the API from the browser, so this is the LAN address of dependency-track-api-server-lb (service-lb.yaml).
       apiBaseUrl: "http://192.168.1.242:8080"

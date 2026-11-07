@@ -28,6 +28,8 @@ spec:
   values:
     image:
       registry: mirror.gcr.io
+      # renovate: datasource=docker depName=docker.io/aquasec/trivy-operator versioning=semver
+      tag: 0.30.1@sha256:448484ece65e26f1c7237c8d20dab997f5a8319968286a09e188140b863cf1f9
     excludeNamespaces: "local-path-storage,arc-runners-system,arc-controller-system" # ephemeral CI runner pods are not worth scanning
     policiesBundle:
       registry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
@@ -228,6 +230,8 @@ spec:
         effect: "NoSchedule"
     nodeCollector:
       registry: ghcr.io
+      # renovate: datasource=docker depName=ghcr.io/aquasecurity/node-collector versioning=semver
+      tag: 0.3.1@sha256:f4702ce4667388f0219d6248d623a7e816231c2d4561d6af01c3ae053e524025
       tolerations:
         # Allow the node collector to run on control plane nodes
         - key: node-role.kubernetes.io/control-plane
