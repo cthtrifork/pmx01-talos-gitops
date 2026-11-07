@@ -21,7 +21,7 @@ spec:
     type: postgresql
     cluster:
       # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=docker
-      imageName: ghcr.io/cloudnative-pg/postgresql:16@sha256:34cd4159d07b3410a1b29da35072e2e927a0905e717a61afa3814624a2e8859a
+      imageName: ghcr.io/cloudnative-pg/postgresql:18@sha256:899d3ed526b659d77935dde0e6bf2d69dbbf17d3d8c6486ca8cfd04bd3c18533
       storage:
         size: 8Gi
         storageClass: "local-path"
