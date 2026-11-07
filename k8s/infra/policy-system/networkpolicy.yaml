@@ -1,0 +1,55 @@
+# Default deny both ways for the namespace, then DNS and the Kubernetes API for the controllers.
+# Hubble reports anything dropped here as hubble_drop_total{reason="POLICY_DENIED"}.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: policy-system-default-deny
+  namespace: policy-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: policy-system-allow-dns-apiserver
+  namespace: policy-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+# Polaris dashboard: read by the claude-rc pod (/results.json) only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: polaris-dashboard-ingress
+  namespace: policy-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: polaris
+      component: dashboard
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: claude-system
+            k8s:app: claude-rc
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }

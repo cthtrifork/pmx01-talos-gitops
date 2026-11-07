@@ -87,7 +87,9 @@ spec:
       metrics:
         enabled:
           #- dns:query;ignoreAAAA
-          - drop:destinationContext=dns|workload-name;labelsContext=source_namespace,source_workload,destination_namespace,destination_workload,traffic_direction
+          # Dropped traffic, incl. reason="POLICY_DENIED" from the default-deny policies. The IPs identify
+          # world and host peers that have no workload name.
+          - drop:destinationContext=dns|workload-name;labelsContext=source_ip,source_namespace,source_workload,destination_ip,destination_namespace,destination_workload,traffic_direction
           - tcp
           - flow:sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity
         enableOpenMetrics: true
