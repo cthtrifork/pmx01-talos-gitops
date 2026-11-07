@@ -191,7 +191,8 @@ spec:
       exposedSecretScannerEnabled: false # we do not use this feature
       scannerReportTTL: "${TRIVY_SCANNER_TTL:=24h}"
       scanJobTTL: "5m" # set to 1m to keep jobs for a little while for troubleshooting
-      scanJobsConcurrentLimit: "${TRIVY_SCANNER_CONCURRENTLIMIT:=5}"
+      # the nodes are control-plane nodes too (etcd, apiserver) and one has ~5 GB RAM: keep few scan jobs, each limited to 4Gi, running at once
+      scanJobsConcurrentLimit: "${TRIVY_SCANNER_CONCURRENTLIMIT:=2}"
       sbomGenerationEnabled: true
       clusterComplianceEnabled: true
       infraAssessmentScannerEnabled: false # requires priviledges that we do not like
