@@ -43,6 +43,21 @@ Findings come from the projects/SBOMs uploaded to Dependency-Track. `dependency-
 
 Until the Secret exists the CronJob fails with a message saying so.
 
+## VEX hub, ignore file and ignore policy
+
+Trivy filters its findings with three inputs, all generated into ConfigMaps by the `configMapGenerator` in
+`trivy-operator/kustomization.yaml` (fixed names, no hash suffix) from files you edit in Git, and mounted into the
+trivy server and the scan jobs:
+
+- `trivy-operator/vex/repository.yaml` (`vex-repository-config`): the VEX repositories, by default the Trivy VEX hub
+  (`github.com/aquasecurity/vexhub`). The scan jobs refresh it into their cache at start, so they need egress to
+  `github.com`. VEX statements mark CVEs as not exploitable in a product, which complements KEV.
+- `trivy-operator/ignore/trivyignore.yaml` (`trivy-ignorefile`): accepted findings, with an expiry.
+- `trivy-operator/ignore/ignore-policy.rego` (`trivy-ignorepolicy`): a Rego policy, `ignore` is false by default.
+
+They are wired through the `configFile` in `trivy-operator/helm-release.yaml` (`vex`, `ignorefile`, `ignore-policy`).
+A change takes effect for the next scan job; reports are regenerated after `scannerReportTTL`.
+
 ## Zot CA trust
 
 zot's certificate comes from `certificate-cluster-issuer`. `trivy-operator/ca-certificate.yaml` issues a throwaway

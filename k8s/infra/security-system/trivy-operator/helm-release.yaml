@@ -71,6 +71,9 @@ spec:
       storageSize: "${TRIVY_STORAGE_SIZE:=5Gi}"
       ignoreFileName: /etc/trivy/.trivyignore.yaml
       configFile:
+        # the files come from the configMapGenerator in kustomization.yaml and are mounted below
+        ignorefile: /etc/trivy/.trivyignore.yaml
+        ignore-policy: /etc/trivy/ignore-policy.rego
         vulnerability:
           severity-source: # https://github.com/aquasecurity/trivy-db/blob/main/pkg/vulnsrc/vulnerability/const.go#L51
             - redhat # redhat is more mature and a more trusted source, while NVD pulls in from many sources and can be quite volatile
@@ -78,8 +81,10 @@ spec:
           ignore-status:
             - will_not_fix
             - not_affected
-          #vex:
-          #  - repo
+          # VEX hub: statements from vendors/projects that a CVE is not exploitable. The scan jobs refresh the repository
+          # into their ephemeral cache when they start (needs egress to github.com).
+          vex:
+            - repo
         scan:
           offline: true
           disable-telemetry: true
@@ -118,10 +123,28 @@ spec:
             - name: configfile
               mountPath: /etc/trivy/trivy-config.yaml
               subPath: trivy.configFile
+            - name: repository-config
+              mountPath: /.trivy/vex/repository.yaml
+              subPath: repository.yaml
+            - name: ignore-file
+              mountPath: /etc/trivy/.trivyignore.yaml
+              subPath: .trivyignore.yaml
+            - name: ignore-policy
+              mountPath: /etc/trivy/ignore-policy.rego
+              subPath: ignorePolicy
           volumes:
             - name: configfile
               configMap:
                 name: trivy-operator-trivy-config
+            - name: repository-config
+              configMap:
+                name: vex-repository-config
+            - name: ignore-file
+              configMap:
+                name: trivy-ignorefile
+            - name: ignore-policy
+              configMap:
+                name: trivy-ignorepolicy
             - name: zot-ca
               secret:
                 secretName: trivy-registry-ca
@@ -177,10 +200,28 @@ spec:
           mountPath: /etc/ssl/certs/zot-ca.crt
           subPath: ca.crt
           readOnly: true
+        - name: repository-config
+          mountPath: /.trivy/vex/repository.yaml
+          subPath: repository.yaml
+        - name: ignore-file
+          mountPath: /etc/trivy/.trivyignore.yaml
+          subPath: .trivyignore.yaml
+        - name: ignore-policy
+          mountPath: /etc/trivy/ignore-policy.rego
+          subPath: ignorePolicy
       scanJobCustomVolumes:
         - name: zot-ca
           secret:
             secretName: trivy-registry-ca
+        - name: repository-config
+          configMap:
+            name: vex-repository-config
+        - name: ignore-file
+          configMap:
+            name: trivy-ignorefile
+        - name: ignore-policy
+          configMap:
+            name: trivy-ignorepolicy
         - name: trivy-cache
           ephemeral: # we are using ephemeral volumes to not fill out nodes through emptydir
             volumeClaimTemplate:

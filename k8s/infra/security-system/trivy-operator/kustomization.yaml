@@ -5,3 +5,18 @@ resources:
   - ca-certificate.yaml
   - helm-release.yaml
   - helm-repository.yaml
+configMapGenerator:
+  - name: vex-repository-config
+    namespace: security-system
+    files:
+      - repository.yaml=vex/repository.yaml
+  - name: trivy-ignorefile
+    namespace: security-system
+    files:
+      - .trivyignore.yaml=ignore/trivyignore.yaml
+  - name: trivy-ignorepolicy
+    namespace: security-system
+    files:
+      - ignorePolicy=ignore/ignore-policy.rego
+generatorOptions:
+  disableNameSuffixHash: true # the helm values refer to the ConfigMaps by name
