@@ -1,0 +1,7 @@
+---
+# Trivy VEX repositories, mounted at /.trivy/vex/repository.yaml in the scan jobs (trivy reads ~/.trivy/vex/repository.yaml).
+# https://trivy.dev/docs/latest/supply-chain/vex/repo/
+repositories:
+  - name: default
+    url: https://github.com/aquasecurity/vexhub
+    enabled: true

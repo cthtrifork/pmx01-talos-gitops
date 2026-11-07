@@ -28,17 +28,19 @@ spec:
   values:
     image:
       registry: mirror.gcr.io
-    excludeNamespaces: "local-path-storage"
+      # renovate: datasource=docker depName=mirror.gcr.io/aquasec/trivy-operator versioning=semver
+      tag: 0.30.1@sha256:448484ece65e26f1c7237c8d20dab997f5a8319968286a09e188140b863cf1f9
+    excludeNamespaces: "local-path-storage,arc-runners-system,arc-controller-system" # ephemeral CI runner pods are not worth scanning
     policiesBundle:
-      registry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+      registry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
     trivy:
       debug: "false"
       slow: ${TRIVY_SLOW:=false} # set to true to enable slow mode which reduces load on the trivy server
-      serverURL: "http://trivy-service.trivy-operator-system.svc.cluster.local:4954"
+      serverURL: "http://trivy-service.security-system.svc.cluster.local:4954"
       imageScanCacheDir: "/tmp/trivy/.cache"
       #httpProxy: ""
       #httpsProxy: "${HTTPS_PROXY}"
-      #noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
+      #noProxy: "${NO_PROXY},trivy-service.security-system"
       # Skip DB updates for Trivy client (scanjobs)
       clientServerSkipUpdate: true
       skipJavaDBUpdate: false
@@ -51,8 +53,12 @@ spec:
         repository: aquasecurity/trivy
         # renovate: datasource=docker depName=ghcr.io/aquasecurity/trivy versioning=semver
         tag: 0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
-      dbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
-      javaDbRegistry: zot.registry-system.svc.cluster.local:5000/docker-hub-cache
+      # The vulnerability databases are published to ghcr.io (aquasecurity/trivy-db and trivy-java-db), so they are
+      # pulled through zot's ghcr-cache and zot becomes the only thing that talks to the internet.
+      dbRegistry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
+      dbRepository: aquasecurity/trivy-db
+      javaDbRegistry: zot.registry-system.svc.cluster.local:5000/ghcr-cache
+      javaDbRepository: aquasecurity/trivy-java-db
       registry:
         mirror:
           "ghcr.io": zot.registry-system.svc.cluster.local:5000/ghcr-cache
@@ -65,6 +71,9 @@ spec:
       storageSize: "${TRIVY_STORAGE_SIZE:=5Gi}"
       ignoreFileName: /etc/trivy/.trivyignore.yaml
       configFile:
+        # the files come from the configMapGenerator in kustomization.yaml and are mounted below
+        ignorefile: /etc/trivy/.trivyignore.yaml
+        ignore-policy: /etc/trivy/ignore-policy.rego
         vulnerability:
           severity-source: # https://github.com/aquasecurity/trivy-db/blob/main/pkg/vulnsrc/vulnerability/const.go#L51
             - redhat # redhat is more mature and a more trusted source, while NVD pulls in from many sources and can be quite volatile
@@ -72,8 +81,10 @@ spec:
           ignore-status:
             - will_not_fix
             - not_affected
-          #vex:
-          #  - repo
+          # VEX hub: statements from vendors/projects that a CVE is not exploitable. The scan jobs refresh the repository
+          # into their ephemeral cache when they start (needs egress to github.com).
+          vex:
+            - repo
         scan:
           offline: true
           disable-telemetry: true
@@ -103,14 +114,40 @@ spec:
             memory: 2Gi
         extraServerVolumes:
           volumeMounts:
+            # zot's certificate is from the cluster issuer; Go also reads extra files in /etc/ssl/certs
+            - name: zot-ca
+              mountPath: /etc/ssl/certs/zot-ca.crt
+              subPath: ca.crt
+              readOnly: true
             # trivy image docker.io/library/hello-world --vex repo --show-suppressed --format table --cache-dir=/home/scanner/.cache
             - name: configfile
               mountPath: /etc/trivy/trivy-config.yaml
               subPath: trivy.configFile
+            - name: repository-config
+              mountPath: /.trivy/vex/repository.yaml
+              subPath: repository.yaml
+            - name: ignore-file
+              mountPath: /etc/trivy/.trivyignore.yaml
+              subPath: .trivyignore.yaml
+            - name: ignore-policy
+              mountPath: /etc/trivy/ignore-policy.rego
+              subPath: ignorePolicy
           volumes:
             - name: configfile
               configMap:
                 name: trivy-operator-trivy-config
+            - name: repository-config
+              configMap:
+                name: vex-repository-config
+            - name: ignore-file
+              configMap:
+                name: trivy-ignorefile
+            - name: ignore-policy
+              configMap:
+                name: trivy-ignorepolicy
+            - name: zot-ca
+              secret:
+                secretName: trivy-registry-ca
       resources:
         requests:
           cpu: 100m
@@ -127,7 +164,7 @@ spec:
       logDevMode: false
       #httpProxy: ""
       #httpsProxy: "${HTTPS_PROXY}"
-      #noProxy: "${NO_PROXY},trivy-service.trivy-operator-system"
+      #noProxy: "${NO_PROXY},trivy-service.security-system"
       podLabels:
         kube-kraken.dk/mount-root-ca: "true" # todo
       # Setting this option to true will enable the Client Server mode, managed by the Trivy Operator.
@@ -159,7 +196,32 @@ spec:
       scanJobCustomVolumesMount:
         - name: trivy-cache
           mountPath: /tmp/trivy/.cache
+        - name: zot-ca # the scan jobs pull images through zot
+          mountPath: /etc/ssl/certs/zot-ca.crt
+          subPath: ca.crt
+          readOnly: true
+        - name: repository-config
+          mountPath: /.trivy/vex/repository.yaml
+          subPath: repository.yaml
+        - name: ignore-file
+          mountPath: /etc/trivy/.trivyignore.yaml
+          subPath: .trivyignore.yaml
+        - name: ignore-policy
+          mountPath: /etc/trivy/ignore-policy.rego
+          subPath: ignorePolicy
       scanJobCustomVolumes:
+        - name: zot-ca
+          secret:
+            secretName: trivy-registry-ca
+        - name: repository-config
+          configMap:
+            name: vex-repository-config
+        - name: ignore-file
+          configMap:
+            name: trivy-ignorefile
+        - name: ignore-policy
+          configMap:
+            name: trivy-ignorepolicy
         - name: trivy-cache
           ephemeral: # we are using ephemeral volumes to not fill out nodes through emptydir
             volumeClaimTemplate:
@@ -185,7 +247,20 @@ spec:
       runAsNonRoot: true
       seccompProfile:
         type: RuntimeDefault
+    # Overriding these lists replaces the chart's defaults, so the /tmp mount the policies bundle needs is repeated.
+    # The operator pulls the policies bundle from zot, so it trusts zot's CA as well.
+    volumeMounts:
+      - name: zot-ca
+        mountPath: /etc/ssl/certs/zot-ca.crt
+        subPath: ca.crt
+        readOnly: true
+      - name: cache-policies
+        mountPath: /tmp
+        readOnly: false
     volumes:
+      - name: zot-ca
+        secret:
+          secretName: trivy-registry-ca
       - name: cache-policies
         emptyDir:
           sizeLimit: 100Mi
@@ -196,6 +271,8 @@ spec:
         effect: "NoSchedule"
     nodeCollector:
       registry: ghcr.io
+      # renovate: datasource=docker depName=ghcr.io/aquasecurity/node-collector versioning=semver
+      tag: 0.3.1@sha256:f4702ce4667388f0219d6248d623a7e816231c2d4561d6af01c3ae053e524025
       tolerations:
         # Allow the node collector to run on control plane nodes
         - key: node-role.kubernetes.io/control-plane
