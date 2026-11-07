@@ -20,54 +20,12 @@ data:
       debug_endpoints: false
       enabled: true
       root_path: /redpanda-connect
-    buffer:
-      memory:
-        limit: 52428800
-    cache_resources:
-    - label: sbom_seen
-      memory:
-        default_ttl: 24h
     input:
-      http_server:
-        allowed_verbs:
-        - POST
-        path: /sbom
+      label: "no_config_in"
+      generate:
+        mapping: root = "This Redpanda Connect instance is unconfigured!"
+        interval: 1m
     output:
-      http_client:
-        drop_on:
-        - 400
-        - 404
-        - 409
-        - 422
-        headers:
-          Content-Type: application/json
-          X-Api-Key: ${DT_API_KEY}
-        max_in_flight: 4
-        retries: 3
-        timeout: 60s
-        url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
-        verb: PUT
-    pipeline:
-      processors:
-      - mapping: |
-          if this.kind != "SbomReport" {
-            root = deleted()
-          } else {
-            # one Dependency-Track project per image, as in sbom-uploader.yaml
-            let server = this.report.registry.server.or("")
-            let repo = this.report.artifact.repository
-            let name = if $server != "" { $server + "/" + $repo } else { $repo }
-            let version = this.report.artifact.tag.not_empty().or(this.report.artifact.digest)
-            let digest = this.report.artifact.digest.or("")
-            meta dedupe_key = $name + ":" + $version + ":" + $digest
-            root = {
-              "projectName": $name,
-              "projectVersion": $version,
-              "autoCreate": true,
-              "projectTags": [{"name": "kubernetes"}],
-              "bom": this.report.components.format_json().encode("base64")
-            }
-          }
-      - dedupe:
-          cache: sbom_seen
-          key: ${!metadata("dedupe_key")}
+      label: "no_config_out"
+      stdout:
+        codec: lines

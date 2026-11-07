@@ -20,7 +20,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 54411f8d90b68aae6f5ef2a9c45a0c549cf08041a5b5f173eca173bad766c3d4
+        checksum/config: c2ac0636fd9bfe83e66d48edf864e3f211783ef673cc1454d3f34d736e7727ab
+        reloader.stakater.com/auto: "true"
       labels:
         app.kubernetes.io/name: redpanda-connect
         app.kubernetes.io/instance: sbom-hook
@@ -35,8 +36,8 @@ spec:
           image: "mirror.gcr.io/redpandadata/connect:4.116.1@sha256:47ff773082146b6e538c527509af1a736b53063e68f0eb1266253a0832b39396"
           imagePullPolicy: IfNotPresent
           args:
-            - "-c"
-            - "/redpanda-connect.yaml"
+            - -c
+            - /etc/connect/redpanda-connect.yaml
             - --disable-telemetry
           ports:
             - name: http
@@ -75,7 +76,14 @@ spec:
               mountPath: "/redpanda-connect.yaml"
               subPath: "redpanda-connect.yaml"
               readOnly: true
+            - mountPath: /etc/connect/redpanda-connect.yaml
+              name: connect-config
+              readOnly: true
+              subPath: redpanda-connect.yaml
       volumes:
         - name: config
           configMap:
             name: sbom-hook-config
+        - configMap:
+            name: sbom-hook-connect-config
+          name: connect-config
