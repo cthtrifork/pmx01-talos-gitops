@@ -66,7 +66,7 @@ spec:
                 - -eu
                 - -c
                 - |
-                  if [ -z "${API_KEY:-}" ]; then
+                  if [ -z "$${API_KEY:-}" ]; then
                     echo "Secret dependency-track-api-key (key api-key) is missing or empty" >&2
                     exit 1
                   fi
