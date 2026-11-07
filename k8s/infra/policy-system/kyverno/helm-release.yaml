@@ -83,10 +83,27 @@ spec:
         - flux-system
         - local-path-storage
         - cilium-secrets
+    crds:
+      migration:
+        image:
+          # renovate: datasource=docker depName=ghcr.io/kyverno/kyverno-cli versioning=docker
+          tag: v1.19.2@sha256:322ec5044d600930cb3af0e56dc33154a2d1d1fba58f4cadad3f47be7e78b11c
+    webhooksCleanup:
+      image:
+        # renovate: datasource=docker depName=ghcr.io/kyverno/readiness-checker versioning=docker
+        tag: v1.19.2@sha256:02600428e7c956e222f4376413525866ed9fec28e6bcb1222774ce6bf5fc904a
+    test:
+      image:
+        # renovate: datasource=docker depName=ghcr.io/kyverno/readiness-checker versioning=docker
+        tag: v1.19.2@sha256:02600428e7c956e222f4376413525866ed9fec28e6bcb1222774ce6bf5fc904a
     global:
       image:
         registry: ghcr.io
     admissionController:
+      initContainer:
+        image:
+          # renovate: datasource=docker depName=ghcr.io/kyverno/kyvernopre versioning=docker
+          tag: v1.19.2@sha256:27f3cc52e628559b56d08363b85316819802086c9808606914f7805a244148f4
       replicas: 1
       antiAffinity:
         enabled: false
@@ -94,6 +111,9 @@ spec:
         enabled: true
         interval: 60s
       container:
+        image:
+          # renovate: datasource=docker depName=ghcr.io/kyverno/kyverno versioning=docker
+          tag: v1.19.2@sha256:c8c4dd09e720d2cd7fd24ca73ac28e46651001372f988e0cba3f2f612f04b955
         resources:
           limits:
             memory: 384Mi
@@ -129,6 +149,9 @@ spec:
               resources:
                 - nodes
     backgroundController:
+      image:
+        # renovate: datasource=docker depName=ghcr.io/kyverno/background-controller versioning=docker
+        tag: v1.19.2@sha256:c46e124f21ef8a6bb4b48de57106808b1007edcd5ddd4ff7df5d23b9efa60ce2
       replicas: 1
       antiAffinity:
         enabled: false
@@ -265,6 +288,9 @@ spec:
                 - delete
                 - deletecollection
     cleanupController:
+      image:
+        # renovate: datasource=docker depName=ghcr.io/kyverno/cleanup-controller versioning=docker
+        tag: v1.19.2@sha256:d7340aa7c9315080c3dafa7b765d090ced37353e89e5cd7a3f9ac69e8fb532b2
       replicas: 1
       antiAffinity:
         enabled: false
@@ -282,6 +308,9 @@ spec:
         maxUnavailable: 1
         minAvailable:
     reportsController:
+      image:
+        # renovate: datasource=docker depName=ghcr.io/kyverno/reports-controller versioning=docker
+        tag: v1.19.2@sha256:5fb6d3e738050dbce84f60ecabaede7665fbe0578d07c1e8c912443b035e79c3
       rbac:
         clusterRole:
           extraResources:

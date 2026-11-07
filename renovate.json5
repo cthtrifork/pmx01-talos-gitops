@@ -182,6 +182,17 @@
     },
     {
       "customType": "regex",
+      "description": "Catch imageName references (CloudNativePG cluster chart) with renovate comment",
+      "managerFilePatterns": [
+        "/.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)imageName:\\s+\"?(?<depName2>[^\\s:@\\\"]+)(?::(?<currentValue>[-a-zA-Z0-9.]+))?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?\"?"
+      ],
+      "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}}{{#if versioning}} versioning={{{versioning}}}{{/if}}{{{indentation}}}imageName: {{{depName}}}:{{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}"
+    },
+    {
+      "customType": "regex",
       "description": "Catch image tags with renovate comment",
       "managerFilePatterns": [
         "/.*\\.ya?ml$/"

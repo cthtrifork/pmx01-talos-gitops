@@ -14,6 +14,9 @@ spec:
     createNamespace: true
   # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set-controller/values.yaml
   values:
+    image:
+      # renovate: datasource=docker depName=ghcr.io/actions/gha-runner-scale-set-controller versioning=docker
+      tag: 0.15.1@sha256:4b51a20db717b194e2f3fa96cfe2ddcb21602811f79053c75fd1a383517b9f90
     serviceAccount:
       create: true
     watchSingleNamespace: arc-runners-system

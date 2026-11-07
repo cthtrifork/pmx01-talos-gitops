@@ -18,6 +18,9 @@ spec:
       name: RetryOnFailure
   values:
     reloader:
+      image:
+        # renovate: datasource=docker depName=ghcr.io/stakater/reloader versioning=docker
+        tag: v1.4.23@sha256:82c80a15fdba22f738642553159f9fb37baf9e4d1edfeb798e8c48d87767f410
       #matchLabels:
       #  kyverno.io/watch: "true"
       watchGlobally: true
