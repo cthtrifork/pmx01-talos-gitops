@@ -180,6 +180,8 @@ spec:
     operator:
       replicas: 2
       scanJobsInSameNamespace: true
+      # every report (SbomReport included) is POSTed here; sbom-hook uploads the SBOMs to Dependency-Track
+      webhookBroadcastURL: http://sbom-hook.security-system.svc.cluster.local/sbom
       logDevMode: false
       #httpProxy: ""
       #httpsProxy: "${HTTPS_PROXY}"

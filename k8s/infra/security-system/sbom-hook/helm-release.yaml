@@ -1,0 +1,99 @@
+---
+# Receives trivy-operator's webhook broadcast (operator.webhookBroadcastURL) and uploads each SbomReport to
+# Dependency-Track as it changes. The sbom-uploader CronJob stays as the slower safety net.
+# https://aquasecurity.github.io/trivy-operator/v0.30.1/tutorials/integrations/webhook/
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sbom-hook
+  namespace: security-system
+spec:
+  chart:
+    spec:
+      chart: connect
+      version: 3.2.36
+      sourceRef:
+        kind: HelmRepository
+        name: redpanda
+  driftDetection:
+    mode: enabled
+  interval: 30m
+  timeout: 10m
+  install:
+    strategy:
+      name: RetryOnFailure
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  # https://github.com/redpanda-data/helm-charts/blob/main/charts/connect/values.yaml
+  values:
+    fullnameOverride: sbom-hook
+    image:
+      repository: docker.redpanda.com/redpandadata/connect
+      # renovate: datasource=docker depName=docker.redpanda.com/redpandadata/connect versioning=semver
+      tag: 4.115.1
+    telemetry: false
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+    env:
+      - name: DT_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: dependency-track-api-key
+            key: api-key
+    config:
+      # trivy-operator POSTs the whole SbomReport (JSON) on every create/update and ignores the answer, so the buffer
+      # acknowledges at once and the upload happens in the background.
+      input:
+        http_server:
+          path: /sbom
+          allowed_verbs: [POST]
+      buffer:
+        memory:
+          limit: 52428800 # 50 MB, one report is under 1 MB
+      pipeline:
+        processors:
+          - mapping: |
+              if this.kind != "SbomReport" {
+                root = deleted()
+              } else {
+                # one Dependency-Track project per image, as in sbom-uploader.yaml
+                let server = this.report.registry.server.or("")
+                let repo = this.report.artifact.repository
+                let name = if $server != "" { $server + "/" + $repo } else { $repo }
+                let version = this.report.artifact.tag.not_empty().or(this.report.artifact.digest)
+                let digest = this.report.artifact.digest.or("")
+                meta dedupe_key = $name + ":" + $version + ":" + $digest
+                root = {
+                  "projectName": $name,
+                  "projectVersion": $version,
+                  "autoCreate": true,
+                  "projectTags": [{"name": "kubernetes"}],
+                  "bom": this.report.components.format_json().encode("base64")
+                }
+              }
+          # the operator also sends rescans of unchanged images, and many workloads share one image
+          - dedupe:
+              cache: sbom_seen
+              key: '$${!metadata("dedupe_key")}'
+      cache_resources:
+        - label: sbom_seen
+          memory:
+            default_ttl: 24h
+      output:
+        http_client:
+          url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
+          verb: PUT
+          headers:
+            Content-Type: application/json
+            X-Api-Key: $${DT_API_KEY}
+          timeout: 60s
+          max_in_flight: 4
+          retries: 3
+          drop_on: [400, 404, 409, 422]
