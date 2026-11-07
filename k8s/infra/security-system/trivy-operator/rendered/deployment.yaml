@@ -32,7 +32,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: "trivy-operator"
-          image: "mirror.gcr.io/aquasec/trivy-operator:0.30.1"
+          image: "mirror.gcr.io/aquasec/trivy-operator:0.30.1@sha256:448484ece65e26f1c7237c8d20dab997f5a8319968286a09e188140b863cf1f9"
           imagePullPolicy: IfNotPresent
           env:
             - name: OPERATOR_NAMESPACE
@@ -40,7 +40,7 @@ spec:
             - name: OPERATOR_TARGET_NAMESPACES
               value: ""
             - name: OPERATOR_EXCLUDE_NAMESPACES
-              value: "local-path-storage"
+              value: "local-path-storage,arc-runners-system,arc-controller-system"
             - name: OPERATOR_TARGET_WORKLOADS
               value: "pod,replicaset,replicationcontroller,statefulset,daemonset,cronjob,job"
             - name: OPERATOR_SERVICE_ACCOUNT
@@ -84,6 +84,10 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
           volumeMounts:
+            - mountPath: /etc/ssl/certs/zot-ca.crt
+              name: zot-ca
+              readOnly: true
+              subPath: ca.crt
             - mountPath: /tmp
               name: cache-policies
               readOnly: false
@@ -93,6 +97,9 @@ spec:
           type: RuntimeDefault
       # ── but only add runAsUser/fsGroup if alternateReportStorage is on ─────────
       volumes:
+        - name: zot-ca
+          secret:
+            secretName: trivy-registry-ca
         - emptyDir:
             sizeLimit: 100Mi
           name: cache-policies

@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/certificate_v1.json
+# Carries the cluster root CA into this namespace: the issuer is a CA issuer, so the Secret has the root in `ca.crt`.
+# The trivy server and scan jobs mount that file to trust zot's certificate (same issuer). The leaf itself is unused.
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: trivy-registry-ca
+  namespace: security-system
+spec:
+  secretName: trivy-registry-ca
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: certificate-cluster-issuer
+  commonName: trivy-registry-ca
+  dnsNames:
+    - trivy-registry-ca.security-system.svc
+  isCA: false

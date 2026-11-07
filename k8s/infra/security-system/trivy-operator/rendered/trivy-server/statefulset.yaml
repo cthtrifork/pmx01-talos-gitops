@@ -93,9 +93,22 @@ spec:
             - mountPath: /home/scanner/.cache
               name: data
               readOnly: false
+            - mountPath: /etc/ssl/certs/zot-ca.crt
+              name: zot-ca
+              readOnly: true
+              subPath: ca.crt
             - mountPath: /etc/trivy/trivy-config.yaml
               name: configfile
               subPath: trivy.configFile
+            - mountPath: /.trivy/vex/repository.yaml
+              name: repository-config
+              subPath: repository.yaml
+            - mountPath: /etc/trivy/.trivyignore.yaml
+              name: ignore-file
+              subPath: .trivyignore.yaml
+            - mountPath: /etc/trivy/ignore-policy.rego
+              name: ignore-policy
+              subPath: ignorePolicy
           resources:
             limits:
               cpu: 1
@@ -110,6 +123,18 @@ spec:
         - configMap:
             name: trivy-operator-trivy-config
           name: configfile
+        - configMap:
+            name: vex-repository-config
+          name: repository-config
+        - configMap:
+            name: trivy-ignorefile
+          name: ignore-file
+        - configMap:
+            name: trivy-ignorepolicy
+          name: ignore-policy
+        - name: zot-ca
+          secret:
+            secretName: trivy-registry-ca
       tolerations:
         - effect: NoSchedule
           key: kube-kraken/role

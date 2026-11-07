@@ -29,8 +29,8 @@ data:
   trivy.includeDevDeps: "false"
   trivy.imageScanCacheDir: "/tmp/trivy/.cache"
   trivy.filesystemScanCacheDir: "/var/trivyoperator/trivy-db"
-  trivy.dbRepository: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-db"
-  trivy.javaDbRepository: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-java-db"
+  trivy.dbRepository: "zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-db"
+  trivy.javaDbRepository: "zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-java-db"
   trivy.command: "image"
   trivy.sbomSources: ""
   trivy.dbRepositoryInsecure: "false"
@@ -39,6 +39,8 @@ data:
   trivy.supportedConfigAuditKinds: "Workload,Service,Role,ClusterRole,NetworkPolicy,Ingress,LimitRange,ResourceQuota"
   trivy.timeout: "5m0s"
   trivy.configFile: |
+    ignore-policy: /etc/trivy/ignore-policy.rego
+    ignorefile: /etc/trivy/.trivyignore.yaml
     scan:
       disable-telemetry: true
       offline: true
@@ -53,6 +55,8 @@ data:
       severity-source:
       - redhat
       - auto
+      vex:
+      - repo
   trivy.ignoreFileName: "/etc/trivy/.trivyignore.yaml"
   trivy.serverURL: "http://trivy-service.security-system:4954"
   trivy.mode: "ClientServer"
@@ -66,6 +70,6 @@ data:
   TRIVY_CACHE_DIR: "/home/scanner/.cache/trivy"
   TRIVY_DEBUG: "false"
   TRIVY_SKIP_DB_UPDATE: "false"
-  TRIVY_DB_REPOSITORY: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-db"
-  TRIVY_JAVA_DB_REPOSITORY: "zot.registry-system.svc.cluster.local:5000/docker-hub-cache/aquasec/trivy-java-db"
+  TRIVY_DB_REPOSITORY: "zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-db"
+  TRIVY_JAVA_DB_REPOSITORY: "zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-java-db"
   TRIVY_INSECURE: "false"
