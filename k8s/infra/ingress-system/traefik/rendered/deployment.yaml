@@ -67,7 +67,7 @@ spec:
               value: traefik
             - name: GOMEMLIMIT
               value: 172MiB
-          image: docker.io/traefik:v3.7.17@sha256:f4bb143d1135a579b630ed491e17ec50f6f7c9c6a30585ff3d385471d2a86f5a
+          image: mirror.gcr.io/library/traefik:v3.7.17@sha256:f4bb143d1135a579b630ed491e17ec50f6f7c9c6a30585ff3d385471d2a86f5a
           imagePullPolicy: IfNotPresent
           lifecycle: null
           livenessProbe:
@@ -133,7 +133,7 @@ spec:
                 secretKeyRef:
                   key: token
                   name: cloudflared-tunnel-token
-          image: docker.io/cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
+          image: mirror.gcr.io/cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
           name: cloudflared
           resources:
             limits:
