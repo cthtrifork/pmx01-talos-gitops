@@ -1,0 +1,66 @@
+---
+# Redpanda Connect config of sbom-hook, turned into a ConfigMap by the configMapGenerator in kustomization.yaml.
+# Flux post-build substitution runs over it, hence the $$ escapes.
+http:
+  enabled: true
+  address: 0.0.0.0:4195
+  debug_endpoints: false
+
+# trivy-operator POSTs the whole SbomReport (JSON) on every create/update and ignores the answer, so the buffer
+# acknowledges at once and the upload happens in the background.
+input:
+  http_server:
+    path: /sbom
+    allowed_verbs:
+      - POST
+
+buffer:
+  memory:
+    limit: 52428800 # 50 MB, one report is under 1 MB
+
+pipeline:
+  processors:
+    - mapping: |
+        if this.kind != "SbomReport" {
+          root = deleted()
+        } else {
+          # one Dependency-Track project per image, as in sbom-uploader.yaml
+          let server = this.report.registry.server.or("")
+          let repo = this.report.artifact.repository
+          let name = if $server != "" { $server + "/" + $repo } else { $repo }
+          let version = this.report.artifact.tag.not_empty().or(this.report.artifact.digest)
+          let digest = this.report.artifact.digest.or("")
+          meta dedupe_key = $name + ":" + $version + ":" + $digest
+          root = {
+            "projectName": $name,
+            "projectVersion": $version,
+            "autoCreate": true,
+            "projectTags": [{"name": "kubernetes"}],
+            "bom": this.report.components.format_json().encode("base64")
+          }
+        }
+    # the operator also sends rescans of unchanged images, and many workloads share one image
+    - dedupe:
+        cache: sbom_seen
+        key: '$${!metadata("dedupe_key")}'
+
+cache_resources:
+  - label: sbom_seen
+    memory:
+      default_ttl: 24h
+
+output:
+  http_client:
+    url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
+    verb: PUT
+    headers:
+      Content-Type: application/json
+      X-Api-Key: $${DT_API_KEY}
+    timeout: 60s
+    max_in_flight: 4
+    retries: 3
+    drop_on:
+      - 400
+      - 404
+      - 409
+      - 422
