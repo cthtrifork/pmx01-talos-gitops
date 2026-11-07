@@ -16,3 +16,20 @@ api-server pods stay in `CreateContainerConfigError`.
 
 Dependency-Track is not exposed outside the cluster. Port-forward the api-server and frontend services
 (`kubectl -n security-system get svc`); the frontend is configured with `apiBaseUrl: http://localhost:8080`.
+
+## KEV: turning bare CVEs into "is this exploited?"
+
+Trivy itself has no KEV data, and trivy-operator reports (and its metrics) only carry severity/CVSS. KEV enrichment
+comes from Dependency-Track 5, which has two relevant pieces, both configured at runtime in its database (Administration
+UI or REST API), not through Helm values, so they are not in Git:
+
+1. **KEV data sources** (Administration): CISA KEV is built in and enabled by default; ENISA KEV and VulnCheck KEV
+   (needs a free API token) can be enabled alongside it. Dependency-Track then flags findings whose CVE (or alias) is
+   known exploited, with the required action and a known-ransomware flag. It needs egress to
+   `www.cisa.gov` (feed `known_exploited_vulnerabilities.json`).
+2. **Trivy vulnerability analyzer** (Administration, vulnerability analysis): enable it with API URL
+   `http://trivy-service.security-system.svc.cluster.local:4954`. It reuses the trivy server that trivy-operator runs,
+   so the zot-mirrored database is used and the analyzer needs no internet access. The server has no token set.
+
+Findings come from the projects/SBOMs uploaded to Dependency-Track. Nothing uploads the cluster's SBOMs yet
+(trivy-operator `SbomReport` -> `/api/v1/bom`); that needs an API key and a small uploader and is a follow-up.
