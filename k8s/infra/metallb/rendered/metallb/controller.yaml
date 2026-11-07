@@ -36,7 +36,7 @@ spec:
         runAsUser: 65534
       containers:
         - name: controller
-          image: quay.io/metallb/controller:v0.16.2
+          image: quay.io/metallb/controller:v0.16.2@sha256:34a6f107f29c4fc6e9d084a7f3bdb781aae7b5ee2b534195a2775ab68c09c503
           args:
             - --port=9120
             - --health-probe-port=17472

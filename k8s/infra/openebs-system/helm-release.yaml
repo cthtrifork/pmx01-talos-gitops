@@ -28,6 +28,9 @@ spec:
     analytics:
       enabled: false
     localpv:
+      image:
+        # renovate: datasource=docker depName=ghcr.io/openebs/dev/provisioner-localpv versioning=docker
+        tag: 4.6.0@sha256:99f5116f5cb83fb9d046ef5ff5b8ea98da90e7da5250d7b101bd650662238a0a
       # On the same XFS volume as local-path (patches/03-local-path-provisioner.yaml), which has
       # project quotas enabled, so XFS quota can be set per PV directory
       basePath: /var/mnt/local-path-provisioner/openebs

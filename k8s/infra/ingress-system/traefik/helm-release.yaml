@@ -23,6 +23,11 @@ spec:
     strategy:
       name: RetryOnFailure
   values:
+    image:
+      registry: mirror.gcr.io
+      repository: library/traefik
+      # renovate: datasource=docker depName=mirror.gcr.io/library/traefik versioning=docker
+      tag: v3.7.17@sha256:f4bb143d1135a579b630ed491e17ec50f6f7c9c6a30585ff3d385471d2a86f5a
     deployment:
       replicas: 1
       annotations:
@@ -30,7 +35,7 @@ spec:
       additionalContainers:
         # A regular (not native) sidecar: if the token is missing only the tunnel restarts, Traefik stays up.
         - name: cloudflared
-          image: docker.io/cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
+          image: mirror.gcr.io/cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
           args:
             - "tunnel"
             - "--no-autoupdate"

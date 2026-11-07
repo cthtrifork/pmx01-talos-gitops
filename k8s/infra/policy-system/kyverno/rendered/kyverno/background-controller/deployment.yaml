@@ -44,7 +44,7 @@ spec:
       automountServiceAccountToken: true
       containers:
         - name: controller
-          image: "ghcr.io/kyverno/background-controller:v1.19.2"
+          image: "ghcr.io/kyverno/background-controller:v1.19.2@sha256:c46e124f21ef8a6bb4b48de57106808b1007edcd5ddd4ff7df5d23b9efa60ce2"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9443

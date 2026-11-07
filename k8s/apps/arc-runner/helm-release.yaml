@@ -43,7 +43,7 @@ spec:
       spec:
         initContainers:
           - name: data-retention
-            image: docker.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
+            image: mirror.gcr.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
             imagePullPolicy: IfNotPresent
             command:
               - sh
@@ -93,8 +93,8 @@ spec:
                 drop:
                   - ALL
           - name: dind
-            # renovate: datasource=docker depName=docker.io/library/docker versioning=docker
-            image: docker.io/library/docker:29.9.3-dind@sha256:08a98015fce594af7c382883bea080ea206de74402a95da9dc52b6428c8cd121
+            # renovate: datasource=docker depName=mirror.gcr.io/library/docker versioning=docker
+            image: mirror.gcr.io/library/docker:29.9.3-dind@sha256:08a98015fce594af7c382883bea080ea206de74402a95da9dc52b6428c8cd121
             imagePullPolicy: IfNotPresent
             args:
               - dockerd

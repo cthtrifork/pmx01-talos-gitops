@@ -44,7 +44,7 @@ spec:
       automountServiceAccountToken: true
       initContainers:
         - name: kyverno-pre
-          image: "ghcr.io/kyverno/kyvernopre:v1.19.2"
+          image: "ghcr.io/kyverno/kyvernopre:v1.19.2@sha256:27f3cc52e628559b56d08363b85316819802086c9808606914f7805a244148f4"
           imagePullPolicy: IfNotPresent
           args:
             - --loggingFormat=text
@@ -92,7 +92,7 @@ spec:
               value: kyverno-svc
       containers:
         - name: kyverno
-          image: "ghcr.io/kyverno/kyverno:v1.19.2"
+          image: "ghcr.io/kyverno/kyverno:v1.19.2@sha256:c8c4dd09e720d2cd7fd24ca73ac28e46651001372f988e0cba3f2f612f04b955"
           imagePullPolicy: IfNotPresent
           args:
             - --caSecretName=kyverno-svc.policy-system.svc.kyverno-tls-ca
