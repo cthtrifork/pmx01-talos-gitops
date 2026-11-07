@@ -67,8 +67,8 @@ spec:
             limits:
               memory: 128Mi
             requests:
-              cpu: 10m
-              memory: 64Mi
+              cpu: 5m
+              memory: 16Mi
           volumeMounts:
             - name: cert
               mountPath: /tmp/k8s-webhook-server/serving-certs
