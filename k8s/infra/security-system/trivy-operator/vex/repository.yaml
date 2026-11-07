@@ -6,6 +6,7 @@ repositories:
   - name: default
     url: http://vex-hub.security-system.svc.cluster.local
     enabled: true
+  # our own statements: vex/ in this repository (see vex/README.md), also through the mirror
   - name: kube-kraken-vexhub
-    url: https://github.com/cthtrifork/pmx01-talos-gitops
-    enabled: false
+    url: http://vex-hub.security-system.svc.cluster.local/kube-kraken
+    enabled: true
