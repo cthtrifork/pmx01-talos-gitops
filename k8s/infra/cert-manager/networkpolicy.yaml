@@ -1,0 +1,72 @@
+# Default deny both ways for the namespace, then DNS, the Kubernetes API and the webhook.
+# The controller also needs the internet for the letsencrypt-dns01 issuer (ACME and the Cloudflare API on 443,
+# and the DNS-01 self-check against public resolvers on 53).
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cert-manager-default-deny
+  namespace: cert-manager-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cert-manager-allow-dns-apiserver
+  namespace: cert-manager-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cert-manager-controller-egress-world
+  namespace: cert-manager-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: cert-manager
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }
+            - { port: "53", protocol: ANY }
+---
+# Admission webhook: called by the API server (host network) on the pod port 10250.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cert-manager-webhook-ingress
+  namespace: cert-manager-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: webhook
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "10250", protocol: TCP }
