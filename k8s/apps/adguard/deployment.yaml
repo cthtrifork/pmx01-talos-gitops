@@ -22,6 +22,18 @@ spec:
       labels:
         app: adguard-home
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        # DNS (53), HTTPS (443) and DoT/DoQ (853) are privileged ports. A non-root process gets no ambient
+        # capabilities, so NET_BIND_SERVICE would not help; lowering the start of the unprivileged range does.
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
       tolerations:
         # Tolerate the control plane taint
         - key: node-role.kubernetes.io/control-plane
@@ -90,6 +102,12 @@ spec:
               mountPath: /opt/adguardhome/conf/ # AdGuard configuration
             - name: adguard-tls-cert
               mountPath: /opt/adguardhome/conf/tls/ # TLS certs
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+            allowPrivilegeEscalation: false
+            privileged: false
           resources:
             requests:
               cpu: 100m
