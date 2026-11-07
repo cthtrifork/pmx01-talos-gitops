@@ -40,7 +40,7 @@ spec:
         - --namespace=kube-prometheus-stack-system
         - --secret-name=kube-prom-admission
         - --patch-failure-policy=
-        image: ghcr.io/jkroepke/kube-webhook-certgen:1.11.1
+        image: ghcr.io/jkroepke/kube-webhook-certgen:1.11.1@sha256:8009b04f9873f7279b5adee37fdd03b6a9aa7b6751d4f69fde2683010e41cd1f
         imagePullPolicy: IfNotPresent
         name: patch
         resources:

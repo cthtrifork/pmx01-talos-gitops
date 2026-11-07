@@ -42,6 +42,13 @@ spec:
     alertmanager:
       enabled: false
     prometheusOperator:
+      image:
+        # renovate: datasource=docker depName=quay.io/prometheus-operator/prometheus-operator versioning=docker
+        tag: v0.94.2@sha256:c7edf0379b7271ef1705dce258d2bb73820e299cc95559369e9f6fc3321639ec
+      prometheusConfigReloader:
+        image:
+          # renovate: datasource=docker depName=quay.io/prometheus-operator/prometheus-config-reloader versioning=docker
+          tag: v0.94.2@sha256:a1897c67478bc23434534e91ad3855280771196b1daf17144db9dbcb655bef71
       enabled: true
       networkPolicy:
         enabled: true
@@ -54,6 +61,9 @@ spec:
           memory: 128Mi
       admissionWebhooks:
         patch:
+          image:
+            # renovate: datasource=docker depName=ghcr.io/jkroepke/kube-webhook-certgen versioning=docker
+            tag: 1.11.1@sha256:8009b04f9873f7279b5adee37fdd03b6a9aa7b6751d4f69fde2683010e41cd1f
           resources:
             requests:
               cpu: 10m
@@ -61,6 +71,11 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
+    kube-state-metrics:
+      image:
+        # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
+        # renovate: datasource=docker depName=registry.k8s.io/kube-state-metrics/kube-state-metrics versioning=docker
+        tag: v2.20.0
     kubeStateMetrics:
       enabled: true
       resources:
@@ -81,6 +96,11 @@ spec:
         enabled: true
         kubelet: true
     prometheus-node-exporter:
+      image:
+        # The chart would append "-distroless" after the digest, so the variant is part of the tag instead.
+        distroless: false
+        # renovate: datasource=docker depName=quay.io/prometheus/node-exporter versioning=docker
+        tag: v1.12.1-distroless@sha256:8c9bac11973b94b59be88d6e11fee4429aa743c8846cdc75d65b18db33f6a106
       resources:
         requests:
           cpu: 50m
@@ -107,6 +127,9 @@ spec:
       serviceMonitor:
         selfMonitor: true
       prometheusSpec:
+        image:
+          # renovate: datasource=docker depName=quay.io/prometheus/prometheus versioning=docker
+          tag: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
         replicas: 1
         enableRemoteWriteReceiver: true
         enableFeatures:

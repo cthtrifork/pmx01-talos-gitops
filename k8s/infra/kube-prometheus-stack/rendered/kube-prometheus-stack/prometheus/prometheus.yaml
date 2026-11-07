@@ -37,7 +37,7 @@ spec:
   enableRemoteWriteReceiver: true
   externalUrl: http://kube-prom-prometheus.kube-prometheus-stack-system:9090
   hostNetwork: false
-  image: quay.io/prometheus/prometheus:v3.16.0-distroless
+  image: quay.io/prometheus/prometheus:v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
   imagePullPolicy: IfNotPresent
   listenLocal: false
   logFormat: logfmt
@@ -93,5 +93,5 @@ spec:
         storageClassName: local-path
   tsdb:
     outOfOrderTimeWindow: 0s
-  version: v3.16.0-distroless
+  version: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
   walCompression: true

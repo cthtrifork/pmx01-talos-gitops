@@ -121,7 +121,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kyverno-cli
-          image: "ghcr.io/kyverno/kyverno-cli:v1.19.2"
+          image: "ghcr.io/kyverno/kyverno-cli:v1.19.2@sha256:322ec5044d600930cb3af0e56dc33154a2d1d1fba58f4cadad3f47be7e78b11c"
           imagePullPolicy: IfNotPresent
           args:
             - migrate
