@@ -14,8 +14,9 @@ api-server pods stay in `CreateContainerConfigError`.
 
 ## Access
 
-Dependency-Track is not exposed outside the cluster. Port-forward the api-server and frontend services
-(`kubectl -n security-system get svc`); the frontend is configured with `apiBaseUrl: http://localhost:8080`.
+LAN only, through MetalLB (`dependency-track/service-lb.yaml`): the UI is at `http://192.168.1.241:8080` and the
+frontend calls the api-server at `http://192.168.1.242:8080`. Both are plain HTTP and not routed through Traefik or the
+Cloudflare tunnel. Check the two addresses are free in the pool (`192.168.1.221-254`) before merging.
 
 ## KEV: turning bare CVEs into "is this exploited?"
 
