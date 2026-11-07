@@ -13,8 +13,9 @@ Trivy filters its findings with three inputs, all generated into ConfigMaps by t
 trivy server and the scan jobs:
 
 - `trivy-operator/vex/repository.yaml` (`vex-repository-config`): the VEX repositories, by default the Trivy VEX hub
-  (`github.com/aquasecurity/vexhub`). The scan jobs refresh it into their cache at start, so they need egress to
-  `github.com`. VEX statements mark CVEs as not exploitable in a product.
+  (`github.com/aquasecurity/vexhub`), read through the in-cluster mirror `vex-hub/` (Redpanda Connect: fetches the
+  hub every 6 hours and serves the manifest and tarball from memory). The scan jobs refresh it into their cache at
+  start; they no longer need egress to `github.com`, but fail until the mirror's first refresh has succeeded. VEX statements mark CVEs as not exploitable in a product.
 - `trivy-operator/ignore/trivyignore.yaml` (`trivy-ignorefile`): accepted findings, with an expiry.
 - `trivy-operator/ignore/ignore-policy.rego` (`trivy-ignorepolicy`): a Rego policy, `ignore` is false by default.
 

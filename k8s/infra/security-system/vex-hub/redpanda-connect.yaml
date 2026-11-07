@@ -1,0 +1,89 @@
+---
+# Mirror of the Trivy VEX hub for the scan jobs, turned into a ConfigMap by the configMapGenerator in kustomization.yaml.
+# Every 6 hours (and at start) it fetches the vexhub tarball and manifest from GitHub into a memory cache and serves
+# both to the scan jobs, so they never reach github.com. For a non-GitHub URL Trivy requests
+# <url>/.well-known/vex-repository.json, whose location then points at the tarball served here.
+# Flux post-build substitution runs over this file, hence the $$ escapes.
+http:
+  enabled: true
+  address: 0.0.0.0:4195
+  debug_endpoints: false
+
+input:
+  broker:
+    inputs:
+      # refresh at start and then every 6 hours; these messages carry no http_server_request_path
+      - generate:
+          count: 1
+          interval: ""
+          mapping: root = ""
+      - generate:
+          interval: 6h
+          mapping: root = ""
+      # what the scan jobs request
+      - http_server:
+          path: /vexhub-main.tar.gz
+          allowed_verbs:
+            - GET
+      - http_server:
+          path: /.well-known/vex-repository.json
+          allowed_verbs:
+            - GET
+
+pipeline:
+  processors:
+    - switch:
+        - check: 'metadata("http_server_request_path").or("") == ""'
+          processors:
+            - branch:
+                request_map: root = ""
+                processors:
+                  - http:
+                      url: https://codeload.github.com/aquasecurity/vexhub/tar.gz/refs/heads/main
+                      verb: GET
+                      timeout: 60s
+                      retries: 3
+                  - cache:
+                      resource: vex
+                      operator: set
+                      key: archive
+                      value: '$${! content() }'
+            - branch:
+                request_map: root = ""
+                processors:
+                  - http:
+                      url: https://raw.githubusercontent.com/aquasecurity/vexhub/main/vex-repository.json
+                      verb: GET
+                      timeout: 30s
+                      retries: 3
+                  # point the location at this mirror instead of GitHub
+                  - mapping: |
+                      let loc = "http://vex-hub.security-system.svc.cluster.local/vexhub-main.tar.gz//vexhub-main"
+                      root = this
+                      root.versions = this.versions.map_each(v -> v.without("locations").merge({"locations": [{"url": $loc}]}))
+                  - cache:
+                      resource: vex
+                      operator: set
+                      key: manifest
+                      value: '$${! content() }'
+        - processors:
+            - mapping: |
+                meta key = if metadata("http_server_request_path") == "/vexhub-main.tar.gz" { "archive" } else { "manifest" }
+            - cache:
+                resource: vex
+                operator: get
+                key: '$${! @key }'
+
+cache_resources:
+  - label: vex
+    memory:
+      default_ttl: 48h
+
+output:
+  switch:
+    cases:
+      - check: 'metadata("http_server_request_path").or("") == ""'
+        output:
+          drop: {}
+      - output:
+          sync_response: {}

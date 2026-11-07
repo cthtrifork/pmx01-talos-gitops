@@ -1,0 +1,12 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - helm-release.yaml
+configMapGenerator:
+  - name: vex-hub-connect-config
+    namespace: security-system
+    files:
+      - redpanda-connect.yaml
+generatorOptions:
+  disableNameSuffixHash: true # the helm values refer to the ConfigMap by name; Reloader restarts the pod on a change
