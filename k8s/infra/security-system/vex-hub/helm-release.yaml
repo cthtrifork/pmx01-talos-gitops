@@ -38,6 +38,18 @@ spec:
         memory: 64Mi
       limits:
         memory: 256Mi
+    # the image already runs as the non-root user "connect" (uid 10001); make that explicit so it is enforced
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 10001
+      runAsGroup: 10001
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     deployment:
       podAnnotations:
         reloader.stakater.com/auto: "true" # restart on a change of the config ConfigMap

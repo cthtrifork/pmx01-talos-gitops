@@ -1,0 +1,325 @@
+# Default deny both ways for the namespace, then per workload what Hubble showed it needs. Reverse-direction flows in
+# Hubble are replies on allowed connections and need no rule of their own.
+# Fixed names used below: Prometheus and the Omni service exposer (host network: arrives as host or remote-node).
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: security-system-default-deny
+  namespace: security-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: security-system-allow-dns-apiserver
+  namespace: security-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+# Dependency-Track API: the UI in the browser and the LAN clients (dependency-track-api-server-lb, 192.168.1.242 is
+# world), the Omni exposer, the SBOM uploaders, Prometheus (management port 9000). Needs the database, Trivy and the
+# internet (vulnerability feeds).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dependency-track-api-server
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: dependency-track-api-server
+  ingress:
+    - fromEntities:
+        - world
+        - host
+        - remote-node
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: sbom-hook
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-sbom-uploader
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "9000", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: dependency-track-db
+      toPorts:
+        - ports:
+            - { port: "5432", protocol: TCP }
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: trivy-server
+      toPorts:
+        - ports:
+            - { port: "4954", protocol: TCP }
+    - toEntities:
+        - world
+---
+# Dependency-Track frontend: browser and LAN (dependency-track-frontend-lb, 192.168.1.241) and the Omni exposer.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dependency-track-frontend
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: dependency-track-frontend
+  ingress:
+    - fromEntities:
+        - world
+        - host
+        - remote-node
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+---
+# Dependency-Track database (CloudNativePG): the API server, the operator in storage-system (status 8000 and SQL),
+# Prometheus (PodMonitor, 9187) and the instances of the same cluster.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dependency-track-db
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: dependency-track-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
+      toPorts:
+        - ports:
+            - { port: "5432", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: storage-system
+            k8s:app.kubernetes.io/name: cloudnative-pg
+      toPorts:
+        - ports:
+            - { port: "8000", protocol: TCP }
+            - { port: "5432", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "9187", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: dependency-track-db
+      toPorts:
+        - ports:
+            - { port: "8000", protocol: TCP }
+            - { port: "5432", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: dependency-track-db
+      toPorts:
+        - ports:
+            - { port: "8000", protocol: TCP }
+            - { port: "5432", protocol: TCP }
+---
+# sbom-hook: receives the trivy-operator webhook (service port 80 to 4195) and uploads to Dependency-Track.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: sbom-hook
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: sbom-hook
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: trivy-operator
+      toPorts:
+        - ports:
+            - { port: "4195", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+---
+# vex-hub: serves the VEX repository (service port 80 to 4195) to the scan jobs; fetches it from GitHub.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: vex-hub
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: vex-hub
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/managed-by: trivy-operator
+        - matchLabels:
+            app.kubernetes.io/name: trivy-operator
+      toPorts:
+        - ports:
+            - { port: "4195", protocol: TCP }
+  egress:
+    - toEntities:
+        - world
+---
+# trivy-operator: metrics for Prometheus; calls the sbom-hook webhook and the Trivy server.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-operator
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: trivy-operator
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: sbom-hook
+      toPorts:
+        - ports:
+            - { port: "4195", protocol: TCP }
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: trivy-server
+      toPorts:
+        - ports:
+            - { port: "4954", protocol: TCP }
+---
+# Trivy server: used by the scan jobs, Dependency-Track and the trivy-operator; zot (registry-system) calls it too.
+# Downloads its vulnerability and Java DBs from the internet and pulls images from zot.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-server
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: trivy-server
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/managed-by: trivy-operator
+        - matchLabels:
+            app.kubernetes.io/name: trivy-operator
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: registry-system
+            k8s:app.kubernetes.io/name: zot
+      toPorts:
+        - ports:
+            - { port: "4954", protocol: TCP }
+  egress:
+    - toEntities:
+        - world
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: registry-system
+            k8s:app.kubernetes.io/name: zot
+      toPorts:
+        - ports:
+            - { port: "5000", protocol: TCP }
+---
+# Scan jobs started by trivy-operator: the Trivy server, the VEX hub, zot (pull-through of the images) and the
+# registries on the internet.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-scan-jobs
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/managed-by: trivy-operator
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: trivy-server
+      toPorts:
+        - ports:
+            - { port: "4954", protocol: TCP }
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: vex-hub
+      toPorts:
+        - ports:
+            - { port: "4195", protocol: TCP }
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: registry-system
+            k8s:app.kubernetes.io/name: zot
+      toPorts:
+        - ports:
+            - { port: "5000", protocol: TCP }
+    - toEntities:
+        - world
+---
+# Daily SBOM catch-up CronJob: uploads to Dependency-Track (the API server comes from the default allow).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dependency-track-sbom-uploader
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: dependency-track-sbom-uploader
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
