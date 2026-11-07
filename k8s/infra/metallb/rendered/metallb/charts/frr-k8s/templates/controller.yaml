@@ -174,20 +174,20 @@ spec:
               mountPath: /etc/frr
         # Copies the reloader to the shared volume between the speaker and reloader.
         - name: cp-reloader
-          image: quay.io/metallb/frr-k8s:v0.0.27
+          image: quay.io/metallb/frr-k8s:v0.0.27@sha256:de862b74a3a314eb76c8fb4cabc9d2c55cca51002cd022704c32df717f9366b7
           command: ["/bin/sh", "-c", "cp -f /frr-reloader.sh /etc/frr_reloader/"]
           volumeMounts:
             - name: reloader
               mountPath: /etc/frr_reloader
         # Copies the metrics exporter
         - name: cp-metrics
-          image: quay.io/metallb/frr-k8s:v0.0.27
+          image: quay.io/metallb/frr-k8s:v0.0.27@sha256:de862b74a3a314eb76c8fb4cabc9d2c55cca51002cd022704c32df717f9366b7
           command: ["/bin/sh", "-c", "cp -f /frr-metrics /etc/frr_metrics/"]
           volumeMounts:
             - name: metrics
               mountPath: /etc/frr_metrics
         - name: cp-frr-status
-          image: quay.io/metallb/frr-k8s:v0.0.27
+          image: quay.io/metallb/frr-k8s:v0.0.27@sha256:de862b74a3a314eb76c8fb4cabc9d2c55cca51002cd022704c32df717f9366b7
           command: ["/bin/sh", "-c", "cp -f /frr-status /etc/frr_status/"]
           volumeMounts:
             - name: frr-status
@@ -195,7 +195,7 @@ spec:
       shareProcessNamespace: true
       containers:
         - name: controller
-          image: quay.io/metallb/frr-k8s:v0.0.27
+          image: quay.io/metallb/frr-k8s:v0.0.27@sha256:de862b74a3a314eb76c8fb4cabc9d2c55cca51002cd022704c32df717f9366b7
           command:
             - /frr-k8s
           args:
