@@ -42,7 +42,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          image: "mirror.gcr.io/redpandadata/connect:4.116.1@sha256:47ff773082146b6e538c527509af1a736b53063e68f0eb1266253a0832b39396"
+          image: "mirror.gcr.io/redpandadata/connect:4.117.0@sha256:b6df7ca0c506578c8cc8b0cd223c117366bbeac84365f95944d339f0165b551c"
           imagePullPolicy: IfNotPresent
           args:
             - -c
