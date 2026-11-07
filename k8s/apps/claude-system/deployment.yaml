@@ -37,11 +37,11 @@ spec:
         fsGroup: 65532
         seccompProfile:
           type: RuntimeDefault
-      # Claude refuses to bind its cross-session messaging socket under a shared directory, and every writable
-      # volume here is world- or group-writable without the sticky bit (fsGroup makes an emptyDir 2777). /tmp is
-      # therefore a private (0700, claude-owned) subdirectory of the workspace PVC. The restricted PSA rules out a
-      # root init container, but the PVC root is writable by the fsGroup, so a claude-owned directory can be made
-      # here. fsGroup re-applies g+rw to the PVC on each pod start, so it is wiped and re-chmodded every time.
+      # Claude refuses to bind its cross-session messaging socket under a shared directory (every parent must be
+      # private or sticky). An emptyDir is 0777 and fsGroup makes it 2777; emptyDir.mode (sticky bit) is alpha
+      # from Kubernetes 1.37. The local-path PVCs are hostPath volumes, which fsGroup does not touch (root 0777),
+      # so /tmp is a claude-owned 0700 subdirectory of the workspace PVC, made by the init container below
+      # (the restricted PSA rules out a root one). Wiped on every pod start, like the emptyDir it replaces.
       initContainers:
         - name: private-tmp
           image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
