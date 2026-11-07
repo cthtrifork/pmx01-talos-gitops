@@ -44,6 +44,15 @@ spec:
       toPorts:
         - ports:
             - { port: "9090", protocol: TCP }
+    # Polaris dashboard (read-only fetch of /results.json); the service's port 80 maps to 8080 on the pod
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: policy-system
+            k8s:app: polaris
+            k8s:component: dashboard
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
     # Kubernetes API (read-only through the ServiceAccount's RBAC)
     - toEntities:
         - kube-apiserver
