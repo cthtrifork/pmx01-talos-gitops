@@ -1,5 +1,6 @@
 # Uploads the SBOMs that trivy-operator generates (SbomReport, a CycloneDX BOM) to Dependency-Track, one project per
 # image (<registry>/<repository>, version = tag or digest), so Dependency-Track can analyse them and flag KEV.
+# sbom-hook (Redpanda Connect, fed by the trivy-operator webhook) does the real-time uploads; this CronJob is the daily catch-up.
 # Needs the Secret dependency-track-api-key (key `api-key`), created by hand: an API key of a team with the permissions
 # BOM_UPLOAD and PROJECT_CREATION_UPLOAD (Administration > Access Management > Teams in the UI).
 ---
@@ -41,7 +42,7 @@ metadata:
   name: dependency-track-sbom-uploader
   namespace: security-system
 spec:
-  schedule: "17 */6 * * *"
+  schedule: "17 4 * * *" # daily catch-up; sbom-hook uploads each SbomReport as the operator produces it
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
