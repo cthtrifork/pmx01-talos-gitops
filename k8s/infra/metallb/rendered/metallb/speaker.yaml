@@ -46,7 +46,7 @@ spec:
             optional: true
       containers:
         - name: speaker
-          image: quay.io/metallb/speaker:v0.16.2
+          image: quay.io/metallb/speaker:v0.16.2@sha256:01666518b091a6651d68891c802db84b2219495d7e0e41c2e61c46f9976be231
           args:
             - --port=9120
             - --health-probe-port=17472

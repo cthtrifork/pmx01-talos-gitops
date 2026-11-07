@@ -58,7 +58,7 @@ spec:
         env:
         - name: HOST_IP
           value: 0.0.0.0
-        image: quay.io/prometheus/node-exporter:v1.12.1-distroless
+        image: quay.io/prometheus/node-exporter:v1.12.1-distroless@sha256:8c9bac11973b94b59be88d6e11fee4429aa743c8846cdc75d65b18db33f6a106-distroless
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
