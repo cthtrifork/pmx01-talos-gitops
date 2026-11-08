@@ -68,7 +68,7 @@ spec:
                 mountPath: /tmp/arc-cache
 
           - name: init-dind-externals
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.9.0@sha256:3b51b2cd016c5e8849d083cd1da9f4bb31e2b950ae9f5378a55098e7a9f25385
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.10.0@sha256:e5dd2a8ac20d967e36dff0f7b278c0beb6fc71d13b2275df5a8c6475d40aff81
             imagePullPolicy: IfNotPresent
             command:
               - "cp"
@@ -135,7 +135,7 @@ spec:
                 mountPath: /var/lib/docker
         containers:
           - name: runner
-            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.9.0@sha256:3b51b2cd016c5e8849d083cd1da9f4bb31e2b950ae9f5378a55098e7a9f25385
+            image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.10.0@sha256:e5dd2a8ac20d967e36dff0f7b278c0beb6fc71d13b2275df5a8c6475d40aff81
             imagePullPolicy: IfNotPresent
             command:
               - "/home/runner/run.sh"
