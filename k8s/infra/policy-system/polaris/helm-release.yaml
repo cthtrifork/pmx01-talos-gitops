@@ -73,10 +73,10 @@ spec:
             - hubble-ui
             - hubble-relay
           rules: []
-        # ignore checks for etcd, kube-apiserver, kube-controller-manager, kube-scheduler in kube-system namespace
+        # ignore checks for kube-apiserver, kube-controller-manager, kube-scheduler in kube-system namespace (Talos static
+        # pods; etcd runs outside Kubernetes on Talos)
         - namespace: kube-system
           containerNames:
-            - etcd
             - kube-apiserver
             - kube-controller-manager
             - kube-scheduler
@@ -101,17 +101,14 @@ spec:
             - clusterrolebindingClusterAdmin
             - clusterrolebindingPodExecAttach
             - clusterrolePodExecAttach
-        # Host-level components: they need the host network, host paths and extra capabilities to do their job
+        # Host-level components: they need the host network and host paths (certificates, config, audit log) to do their job
         - controllerNames:
             - kube-apiserver
             - kube-controller-manager
             - kube-scheduler
           rules:
             - hostNetworkSet
-            - hostPIDSet
             - hostPathSet
-            - dangerousCapabilities
-            - insecureCapabilities
         # node-exporter reads the host's /proc, /sys and / over the host network and PID namespace; no capabilities
         - controllerNames:
             - kube-prometheus-stack-prometheus-node-exporter
