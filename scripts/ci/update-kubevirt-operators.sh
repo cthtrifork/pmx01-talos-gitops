@@ -32,7 +32,7 @@ for target in "${TARGETS[@]}"; do
   digest=$(docker buildx imagetools inspect "${image}:${version}" --format '{{.Manifest.Digest}}')
   [[ "$digest" == sha256:* ]] || { echo "no digest for ${image}:${version}" >&2; exit 1; }
 
-  curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o "$tmp" "https://github.com/${repo}/releases/download/${version}/${asset}"
+  curl -fsSL -o "$tmp" "https://github.com/${repo}/releases/download/${version}/${asset}"
   # Same formatting as the files in the repo (indented sequences, document start), pinned by digest like Renovate does
   {
     echo '---'
