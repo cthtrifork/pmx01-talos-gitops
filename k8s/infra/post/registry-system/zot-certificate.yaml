@@ -3,8 +3,6 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled
   name: zot-tls
   namespace: registry-system
 spec:

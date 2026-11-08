@@ -4,5 +4,4 @@ kind: Kustomization
 resources:
   - service.yaml
   - receiver.yaml
-  - ingressroute.yaml
   - ciliumnetworkpolicy.yaml
