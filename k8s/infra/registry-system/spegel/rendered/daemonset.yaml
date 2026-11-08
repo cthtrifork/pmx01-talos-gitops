@@ -127,6 +127,10 @@ spec:
             httpGet:
               path: /readyz
               port: registry
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: registry
           volumeMounts:
             - name: spegel-data
               mountPath: /var/lib/spegel

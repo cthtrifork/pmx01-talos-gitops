@@ -67,7 +67,7 @@ spec:
             capabilities:
               drop:
                 - "ALL"
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             privileged: false
             runAsUser: 65534

@@ -64,9 +64,6 @@ spec:
       clientServerSkipUpdate: true
       skipJavaDBUpdate: false
       #offlineScan: false
-      podLabels:
-        kube-kraken.dk/with-https-proxy: "true"
-        kube-kraken.dk/mount-root-ca: "true"
       image:
         registry: ghcr.io
         repository: aquasecurity/trivy
@@ -136,7 +133,7 @@ spec:
             # zot's certificate is from the cluster issuer; Go also reads extra files in /etc/ssl/certs
             - name: zot-ca
               mountPath: /etc/ssl/certs/zot-ca.crt
-              subPath: ca.crt
+              subPath: ca-bundle.crt
               readOnly: true
             # trivy image docker.io/library/hello-world --vex repo --show-suppressed --format table --cache-dir=/home/scanner/.cache
             - name: configfile
@@ -165,8 +162,8 @@ spec:
               configMap:
                 name: trivy-ignorepolicy
             - name: zot-ca
-              secret:
-                secretName: trivy-registry-ca
+              configMap:
+                name: portableinfo-ca-bundle
       resources:
         requests:
           cpu: 100m
@@ -178,6 +175,8 @@ spec:
     serviceMonitor:
       enabled: true
     operator:
+      podLabels:
+        prometheus-scrape: "true"
       replicas: 2
       scanJobsInSameNamespace: true
       # every report (SbomReport included) is POSTed here; sbom-hook uploads the SBOMs to Dependency-Track
@@ -186,8 +185,6 @@ spec:
       #httpProxy: ""
       #httpsProxy: "${HTTPS_PROXY}"
       #noProxy: "${NO_PROXY},trivy-service.security-system"
-      podLabels:
-        kube-kraken.dk/mount-root-ca: "true" # todo
       # Setting this option to true will enable the Client Server mode, managed by the Trivy Operator.
       builtInTrivyServer: true
       exposedSecretScannerEnabled: false # we do not use this feature
@@ -210,17 +207,12 @@ spec:
         memory: 512Mi
     trivyOperator:
       #scanJobPodTemplateLabels: "my-label/mount-root-ca=true"
-      scanJobTolerations:
-        - key: "kube-kraken/role"
-          operator: "Equal"
-          value: "tool"
-          effect: "NoSchedule"
       scanJobCustomVolumesMount:
         - name: trivy-cache
           mountPath: /tmp/trivy/.cache
         - name: zot-ca # the scan jobs pull images through zot
           mountPath: /etc/ssl/certs/zot-ca.crt
-          subPath: ca.crt
+          subPath: ca-bundle.crt
           readOnly: true
         - name: repository-config
           mountPath: /.trivy/vex/repository.yaml
@@ -233,8 +225,8 @@ spec:
           subPath: ignorePolicy
       scanJobCustomVolumes:
         - name: zot-ca
-          secret:
-            secretName: trivy-registry-ca
+          configMap:
+            name: portableinfo-ca-bundle
         - name: repository-config
           configMap:
             name: vex-repository-config
@@ -274,23 +266,18 @@ spec:
     volumeMounts:
       - name: zot-ca
         mountPath: /etc/ssl/certs/zot-ca.crt
-        subPath: ca.crt
+        subPath: ca-bundle.crt
         readOnly: true
       - name: cache-policies
         mountPath: /tmp
         readOnly: false
     volumes:
       - name: zot-ca
-        secret:
-          secretName: trivy-registry-ca
+        configMap:
+          name: portableinfo-ca-bundle
       - name: cache-policies
         emptyDir:
           sizeLimit: 100Mi
-    tolerations:
-      - key: "kube-kraken/role"
-        operator: "Equal"
-        value: "tool"
-        effect: "NoSchedule"
     nodeCollector:
       registry: ghcr.io
       # renovate: datasource=docker depName=ghcr.io/aquasecurity/node-collector versioning=semver

@@ -1,0 +1,56 @@
+# Default deny both ways for the namespace, then DNS, the Kubernetes API and the webhook. Only the controller uses the
+# pod network (Hubble: kube-apiserver in and out, nothing else); the speaker and frr-k8s pods run on the host network,
+# which these policies do not cover. The Prometheus ServiceMonitor is disabled, so metrics need no rule.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: metallb-system-default-deny
+  namespace: metallb-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: metallb-system-allow-dns-apiserver
+  namespace: metallb-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+# Admission webhook (service port 443 to 9443), called by the API server on the host network.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: metallb-controller-webhook-ingress
+  namespace: metallb-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/name: metallb
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "9443", protocol: TCP }

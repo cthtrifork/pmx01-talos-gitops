@@ -35,7 +35,6 @@ data:
         namespace: kube-system
         rules: []
       - containerNames:
-        - etcd
         - kube-apiserver
         - kube-controller-manager
         - kube-scheduler
@@ -52,28 +51,52 @@ data:
         - cluster-reconciler-flux-system
         - flux-operator
         - flux-operator-cluster-admin
-        - flux-web-admin
-        - flux-web-user
-        - cloudnative-pg
         rules:
         - clusterrolebindingClusterAdmin
+        - clusterrolebindingPodExecAttach
+      - controllerNames:
+        - flux-web-admin
+        - flux-web-user
+        rules:
+        - clusterrolePodExecAttach
+      - controllerNames:
+        - cloudnative-pg
+        rules:
         - clusterrolebindingPodExecAttach
         - clusterrolePodExecAttach
       - controllerNames:
         - kube-apiserver
         - kube-controller-manager
         - kube-scheduler
+        rules:
+        - hostNetworkSet
+        - hostPathSet
+      - controllerNames:
         - kube-prometheus-stack-prometheus-node-exporter
-        - metallb-speaker
-        - metallb-frr-k8s
-        - omni-kube-service-exposer
-        - spegel
         rules:
         - hostNetworkSet
         - hostPIDSet
         - hostPathSet
+      - controllerNames:
+        - metallb-speaker
+        rules:
+        - hostNetworkSet
+        - insecureCapabilities
+      - controllerNames:
+        - metallb-frr-k8s
+        rules:
+        - hostNetworkSet
         - dangerousCapabilities
         - insecureCapabilities
+      - controllerNames:
+        - omni-kube-service-exposer
+        rules:
+        - hostNetworkSet
+        - insecureCapabilities
+      - controllerNames:
+        - spegel
+        rules:
+        - hostPathSet
       - controllerNames:
         - arc-ubuntu-runner
         namespace: arc-runners-system
@@ -104,6 +127,10 @@ data:
       - controllerNames:
         - cert-manager
         - cert-manager-cainjector
+        rules:
+        - readinessProbeMissing
+        - livenessProbeMissing
+      - controllerNames:
         - arc-ubuntu
         rules:
         - readinessProbeMissing
@@ -111,8 +138,15 @@ data:
         - notReadOnlyRootFilesystem
       - controllerNames:
         - coredns
-        - spegel
         - metallb-speaker
+        rules:
+        - runAsRootAllowed
+        - linuxHardening
+      - controllerNames:
+        - spegel
+        rules:
+        - runAsRootAllowed
+      - controllerNames:
         - metallb-frr-k8s
         - omni-kube-service-exposer
         rules:
@@ -130,14 +164,13 @@ data:
         - memoryLimitsMissing
       - controllerNames:
         - claude-rc
-        - harper-pad-admin
         rules:
         - livenessProbeMissing
         - readinessProbeMissing
       - containerNames:
-        - cloudflared
+        - admin
         controllerNames:
-        - traefik
+        - harper-pad-admin
         rules:
         - livenessProbeMissing
         - readinessProbeMissing
@@ -154,8 +187,3 @@ data:
         - adguard-deployment
         rules:
         - privilegeEscalationAllowed
-        - insecureCapabilities
-      - controllerNames:
-        - dependency-track-frontend
-        rules:
-        - notReadOnlyRootFilesystem

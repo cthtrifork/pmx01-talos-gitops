@@ -23,5 +23,8 @@ spec:
       database: dtrack
       owner: dtrack
       encoding: UTF8
+  inheritedMetadata:
+    labels:
+      prometheus-scrape: "true"
   monitoring:
     enablePodMonitor: true

@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: harper-pad-sync
+        prometheus-scrape: "true"
     spec:
       serviceAccountName: harper-pad-sync
       automountServiceAccountToken: false

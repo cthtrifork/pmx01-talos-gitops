@@ -50,9 +50,10 @@ spec:
           # renovate: datasource=docker depName=quay.io/prometheus-operator/prometheus-config-reloader versioning=docker
           tag: v0.95.1@sha256:39bdbade0c64f7c38bb6d18d6f602b14ad489bc189b709dc9266b49e6647aac1
       enabled: true
+      # The chart's CiliumNetworkPolicy selects on the version and chart labels, which the pod template does not carry,
+      # so it matched no pod. The operator is covered by prom-operator in networkpolicy.yaml.
       networkPolicy:
-        enabled: true
-        flavor: cilium
+        enabled: false
       resources:
         requests:
           cpu: 20m
@@ -76,6 +77,8 @@ spec:
         # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
         # renovate: datasource=docker depName=registry.k8s.io/kube-state-metrics/kube-state-metrics versioning=docker
         tag: v2.20.0
+      podLabels:
+        prometheus-scrape: "true"
       resources:
         requests:
           cpu: 10m
@@ -130,6 +133,14 @@ spec:
         image:
           # renovate: datasource=docker depName=quay.io/prometheus/prometheus versioning=docker
           tag: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
+        # The operator parses the version from the image tag and rejects the digest and the -distroless suffix
+        # ("failed to parse Prometheus version"), which stops every change to the Prometheus resource (rule files,
+        # ServiceMonitors). Renovate bumps it together with the tag above.
+        # renovate: datasource=docker depName=quay.io/prometheus/prometheus versioning=docker
+        version: v3.16.0
+        podMetadata:
+          labels:
+            prometheus-scrape: "true"
         replicas: 1
         enableRemoteWriteReceiver: true
         enableFeatures:

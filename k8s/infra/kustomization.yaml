@@ -6,6 +6,7 @@ resources:
   - local-path-provisioner/
   - openebs-system/
   - cert-manager/
+  - trust-manager/
   - flux-system/
   #- kubevirt/
   - metrics-server/

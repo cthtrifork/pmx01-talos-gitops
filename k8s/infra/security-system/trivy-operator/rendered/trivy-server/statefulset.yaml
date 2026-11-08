@@ -21,8 +21,6 @@ spec:
       labels:
         app.kubernetes.io/instance: trivy-server
         app.kubernetes.io/name: trivy-server
-        kube-kraken.dk/mount-root-ca: "true"
-        kube-kraken.dk/with-https-proxy: "true"
     spec:
       automountServiceAccountToken: false
       containers:
@@ -89,7 +87,7 @@ spec:
         - mountPath: /etc/ssl/certs/zot-ca.crt
           name: zot-ca
           readOnly: true
-          subPath: ca.crt
+          subPath: ca-bundle.crt
         - mountPath: /etc/trivy/trivy-config.yaml
           name: configfile
           subPath: trivy.configFile
@@ -110,11 +108,6 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: trivy-operator
-      tolerations:
-      - effect: NoSchedule
-        key: kube-kraken/role
-        operator: Equal
-        value: tool
       volumes:
       - emptyDir: {}
         name: tmp-data
@@ -130,9 +123,9 @@ spec:
       - configMap:
           name: trivy-ignorepolicy
         name: ignore-policy
-      - name: zot-ca
-        secret:
-          secretName: trivy-registry-ca
+      - configMap:
+          name: portableinfo-ca-bundle
+        name: zot-ca
   volumeClaimTemplates:
   - apiVersion: v1
     kind: PersistentVolumeClaim

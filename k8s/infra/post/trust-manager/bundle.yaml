@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/trust.cert-manager.io/bundle_v1alpha1.json
+# The cluster root CA (the `ca.crt` of the certificate-cluster-issuer Secret) plus the public CAs, as ConfigMap
+# `portableinfo-ca-bundle` (key `ca-bundle.crt`) in every namespace. Mount it instead of minting a Certificate per
+# namespace just to get the CA (see security-system/trivy-operator/ca-certificate.yaml).
+---
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: portableinfo-ca-bundle
+spec:
+  sources:
+    - useDefaultCAs: true
+    - secret:
+        name: portableinfo-root-ca
+        key: ca.crt
+  target:
+    configMap:
+      key: ca-bundle.crt

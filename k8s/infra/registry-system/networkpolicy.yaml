@@ -56,9 +56,6 @@ spec:
             - { port: "5000", protocol: TCP }
     - fromEndpoints:
         - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
-            k8s:app.kubernetes.io/name: prometheus
-        - matchLabels:
             k8s:io.kubernetes.pod.namespace: arc-runners-system
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: security-system

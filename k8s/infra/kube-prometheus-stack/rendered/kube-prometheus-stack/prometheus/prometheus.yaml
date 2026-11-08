@@ -6,8 +6,8 @@ metadata:
     app.kubernetes.io/instance: kube-prometheus-stack
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/part-of: prom
-    app.kubernetes.io/version: 93.0.0
-    chart: kube-prometheus-stack-93.0.0
+    app.kubernetes.io/version: 93.1.0
+    chart: kube-prometheus-stack-93.1.0
     heritage: Helm
     release: kube-prometheus-stack
   name: kube-prom-prometheus
@@ -45,6 +45,9 @@ spec:
   nodeSelector:
     kubernetes.io/os: linux
   paused: false
+  podMetadata:
+    labels:
+      prometheus-scrape: "true"
   podMonitorNamespaceSelector: {}
   podMonitorSelector: {}
   portName: http-web
@@ -93,5 +96,5 @@ spec:
         storageClassName: local-path
   tsdb:
     outOfOrderTimeWindow: 0s
-  version: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
+  version: v3.16.0
   walCompression: true

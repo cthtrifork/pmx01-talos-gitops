@@ -42,7 +42,7 @@ jobs:
         uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           config: scripts/kind.yaml
-          cluster_name: pmx-talos
+          cluster_name: homelab
       - name: Install cilium CLI
         run: |
           CLI_ARCH=amd64
@@ -91,7 +91,7 @@ jobs:
 
       - name: Deploy flux instance
         run: |
-          kubectl apply -f k8s/clusters/pmx01-talos-gitops/flux-instance.yaml
+          kubectl apply -f k8s/clusters/homelab/flux-instance.yaml
       - name: Verify flux instance is ready
         run: |
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
@@ -99,6 +99,7 @@ jobs:
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@3fa784edd773d56630bb9f62645e08f70c2cff0a # v2.10.0
         with:
+          token: ${{ github.token }}
           version: 'latest'
 
       - name: Wait for successful reconciliation

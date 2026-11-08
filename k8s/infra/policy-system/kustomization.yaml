@@ -7,5 +7,4 @@ resources:
   #- kyverno/
   - networkpolicy.yaml
   - polaris/
-  - reloader/
   # - reports-server-postgres/

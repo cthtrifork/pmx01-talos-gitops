@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/notification.toolkit.fluxcd.io/receiver_v1.json
 # GitHub push webhook: reconcile the cluster's source right after a push instead of waiting for the poll.
 # The GitRepository that drives every Kustomization is `flux-system`, created by the FluxInstance
-# (clusters/pmx01-talos-gitops/flux-instance.yaml). The Kustomizations reconcile as soon as it has a new revision.
+# (clusters/homelab/flux-instance.yaml). The Kustomizations reconcile as soon as it has a new revision.
 #
 # Needs the Secret flux-webhook-token (key `token`), SOPS-encrypted (see "Secrets (SOPS)" in the root readme.md).
 # The same value goes into the GitHub webhook's "Secret" field.
