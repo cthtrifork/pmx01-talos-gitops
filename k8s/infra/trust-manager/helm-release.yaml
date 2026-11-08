@@ -9,6 +9,10 @@ metadata:
 spec:
   interval: 30m
   timeout: 10m
+  # the chart creates a cert-manager Issuer, so cert-manager has to be installed first
+  dependsOn:
+    - name: cert-manager
+      namespace: cert-manager-system
   chartRef:
     kind: OCIRepository
     name: trust-manager
