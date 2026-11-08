@@ -54,6 +54,8 @@ jobs:
 
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@22c6ee1a6099ce252b729199c105a38319b587d4 # main
+        with:
+          token: ${{ github.token }}
 
       - name: Render manifests
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4
