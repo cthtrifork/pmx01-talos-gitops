@@ -1,6 +1,7 @@
 # Default deny both ways for the namespace, then per workload what Hubble showed it needs. Reverse-direction flows in
 # Hubble are replies on allowed connections and need no rule of their own.
-# Fixed names used below: Prometheus and the Omni service exposer (host network: arrives as host or remote-node).
+# Fixed names used below: the Omni service exposer (host network: arrives as host or remote-node). Prometheus reaches the
+# pods that carry the label prometheus-scrape through the cluster-wide policy in kube-prometheus-stack, not here.
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
 apiVersion: cilium.io/v2
@@ -36,7 +37,7 @@ spec:
         - kube-apiserver
 ---
 # Dependency-Track API: the UI in the browser and the LAN clients (dependency-track-api-server-lb, 192.168.1.242 is
-# world), the Omni exposer, sbom-hook, Prometheus (management port 9000). Needs the database, Trivy and the
+# world), the Omni exposer, sbom-hook. Needs the database, Trivy and the
 # internet (vulnerability feeds).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -66,13 +67,6 @@ spec:
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
-            k8s:app.kubernetes.io/name: prometheus
-      toPorts:
-        - ports:
-            - { port: "9000", protocol: TCP }
   egress:
     - toEndpoints:
         - matchLabels:
@@ -110,7 +104,7 @@ spec:
             - { port: "8080", protocol: TCP }
 ---
 # Dependency-Track database (CloudNativePG): the API server, the operator in storage-system (status 8000 and SQL),
-# Prometheus (PodMonitor, 9187) and the instances of the same cluster.
+# and the instances of the same cluster.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -135,13 +129,6 @@ spec:
         - ports:
             - { port: "8000", protocol: TCP }
             - { port: "5432", protocol: TCP }
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
-            k8s:app.kubernetes.io/name: prometheus
-      toPorts:
-        - ports:
-            - { port: "9187", protocol: TCP }
     - fromEndpoints:
         - matchLabels:
             cnpg.io/cluster: dependency-track-db
@@ -206,7 +193,7 @@ spec:
     - toEntities:
         - world
 ---
-# trivy-operator: metrics for Prometheus; calls the sbom-hook webhook and the Trivy server.
+# trivy-operator: calls the sbom-hook webhook and the Trivy server.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -216,14 +203,6 @@ spec:
   endpointSelector:
     matchLabels:
       app.kubernetes.io/name: trivy-operator
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
-            k8s:app.kubernetes.io/name: prometheus
-      toPorts:
-        - ports:
-            - { port: "8080", protocol: TCP }
   egress:
     - toEndpoints:
         - matchLabels:

@@ -73,10 +73,10 @@ spec:
             - hubble-ui
             - hubble-relay
           rules: []
-        # ignore checks for etcd, kube-apiserver, kube-controller-manager, kube-scheduler in kube-system namespace
+        # ignore checks for kube-apiserver, kube-controller-manager, kube-scheduler in kube-system namespace (Talos static
+        # pods; etcd runs outside Kubernetes on Talos)
         - namespace: kube-system
           containerNames:
-            - etcd
             - kube-apiserver
             - kube-controller-manager
             - kube-scheduler
@@ -89,29 +89,34 @@ spec:
             - notification-controller
             - source-controller
           rules: []
-        # Cluster-admin and pods/exec by design: Flux reconciles everything, the CNPG operator execs into its database pods
+        # Cluster-admin by design: Flux reconciles everything, and the flux-operator manages the Flux controllers
         - controllerNames:
             - cluster-reconciler-flux-system
             - flux-operator
             - flux-operator-cluster-admin
-            - flux-web-admin
-            - flux-web-user
-            - cloudnative-pg
           rules:
             - clusterrolebindingClusterAdmin
             - clusterrolebindingPodExecAttach
+        # The Flux web UI roles read every resource, which includes pods/exec and pods/attach by wildcard (get, list, watch only)
+        - controllerNames:
+            - flux-web-admin
+            - flux-web-user
+          rules:
             - clusterrolePodExecAttach
-        # Host-level components: they need the host network, host paths and extra capabilities to do their job
+        # The CNPG operator execs into its database pods; its role is not cluster-admin
+        - controllerNames:
+            - cloudnative-pg
+          rules:
+            - clusterrolebindingPodExecAttach
+            - clusterrolePodExecAttach
+        # Host-level components: they need the host network and host paths (certificates, config, audit log) to do their job
         - controllerNames:
             - kube-apiserver
             - kube-controller-manager
             - kube-scheduler
           rules:
             - hostNetworkSet
-            - hostPIDSet
             - hostPathSet
-            - dangerousCapabilities
-            - insecureCapabilities
         # node-exporter reads the host's /proc, /sys and / over the host network and PID namespace; no capabilities
         - controllerNames:
             - kube-prometheus-stack-prometheus-node-exporter

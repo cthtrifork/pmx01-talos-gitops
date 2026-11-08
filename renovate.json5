@@ -236,6 +236,17 @@
     },
     {
       "customType": "regex",
+      "description": "Catch version values with renovate comment (Prometheus spec.version, which must not carry a digest)",
+      "managerFilePatterns": [
+        "/.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)version:\\s+\"?(?<currentValue>v?[0-9][-a-zA-Z0-9.]*)\"?"
+      ],
+      "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}}{{#if versioning}} versioning={{{versioning}}}{{/if}}{{{indentation}}}version: {{{newValue}}}"
+    },
+    {
+      "customType": "regex",
       "description": "Pinned upstream release versions in versions.env files",
       "managerFilePatterns": [
         "/(^|/)versions\\.env$/"

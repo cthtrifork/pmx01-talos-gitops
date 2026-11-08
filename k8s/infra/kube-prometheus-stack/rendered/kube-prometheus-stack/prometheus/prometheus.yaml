@@ -45,6 +45,9 @@ spec:
   nodeSelector:
     kubernetes.io/os: linux
   paused: false
+  podMetadata:
+    labels:
+      prometheus-scrape: "true"
   podMonitorNamespaceSelector: {}
   podMonitorSelector: {}
   portName: http-web
@@ -93,5 +96,5 @@ spec:
         storageClassName: local-path
   tsdb:
     outOfOrderTimeWindow: 0s
-  version: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
+  version: v3.16.0
   walCompression: true

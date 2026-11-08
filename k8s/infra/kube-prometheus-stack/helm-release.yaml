@@ -76,6 +76,8 @@ spec:
         # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
         # renovate: datasource=docker depName=registry.k8s.io/kube-state-metrics/kube-state-metrics versioning=docker
         tag: v2.20.0
+      podLabels:
+        prometheus-scrape: "true"
       resources:
         requests:
           cpu: 10m
@@ -130,6 +132,14 @@ spec:
         image:
           # renovate: datasource=docker depName=quay.io/prometheus/prometheus versioning=docker
           tag: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
+        # The operator parses the version from the image tag and rejects the digest and the -distroless suffix
+        # ("failed to parse Prometheus version"), which stops every change to the Prometheus resource (rule files,
+        # ServiceMonitors). Renovate bumps it together with the tag above.
+        # renovate: datasource=docker depName=quay.io/prometheus/prometheus versioning=docker
+        version: v3.16.0
+        podMetadata:
+          labels:
+            prometheus-scrape: "true"
         replicas: 1
         enableRemoteWriteReceiver: true
         enableFeatures:
