@@ -81,9 +81,12 @@ and only deletes documents whose author is `Dependency-Track`. Findings on compo
 It needs the Secret `dependency-track-vex-github` (key `token`), created by hand: a fine-grained personal access token (or
 GitHub App installation token) for this repository only, with Contents and Pull requests read/write.
 `kubectl -n security-system create secret generic dependency-track-vex-github --from-literal=token=<token>`.
-The API key comes from `config-job.yaml` (team `vex-exporter`). Trivy only matches a statement when the product PURL
-(`pkg:oci/<name>@<version>?repository_url=...`) equals the scanned image's; the version is the project version, which
-`sbom-uploader.yaml` sets to the tag, falling back to the digest.
+The API key comes from `config-job.yaml` (team `vex-exporter`). Trivy identifies a scanned image by the PURL
+`pkg:oci/<name>@<digest>?repository_url=<registry>/<repository>` and matches a statement only if the version is the same, so
+the SBOM uploads (`sbom-hook/`, `dependency-track/sbom-uploader.yaml`) version each Dependency-Track project by the image
+digest, not the tag. The export skips projects whose version is not a digest. Decisions made on projects created before
+that change (versioned by tag) stay in Dependency-Track but are not exported; repeat them on the digest project, or
+delete the old projects. A moved tag creates a new project per digest, so old ones pile up until retention removes them.
 
 Findings come from the projects/SBOMs uploaded to Dependency-Track. `dependency-track/sbom-uploader.yaml` is a CronJob
 (daily) that uploads trivy-operator's `SbomReport`s, one project per image, with that API key. Until the Secret exists the

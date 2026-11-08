@@ -80,12 +80,13 @@ spec:
                     jq -r '.items[] | [.metadata.namespace, .metadata.name, (.report.registry.server // "-"),
                       .report.artifact.repository, (.report.artifact.tag // "-"), (.report.artifact.digest // "-")] | @tsv' \
                     > list.tsv
-                  # the same image runs in many workloads: upload each repository:tag once
-                  sort -u -t "$(printf '\t')" -k3,3 -k4,4 -k5,5 list.tsv > unique.tsv
+                  # the same image runs in many workloads: upload each repository@digest once
+                  sort -u -t "$(printf '\t')" -k3,3 -k4,4 -k6,6 list.tsv > unique.tsv
                   ok=0; failed=0
                   while IFS="$(printf '\t')" read -r ns name server repo tag digest; do
                     project="$repo"; [ "$server" != "-" ] && project="$server/$repo"
-                    version="$tag"; [ "$tag" = "-" ] && version="$digest"
+                    # the digest is what Trivy (and so the VEX export) identifies an image by; the tag is only a fallback
+                    version="$digest"; [ "$digest" = "-" ] && version="$tag"
                     kubectl get sbomreport -n "$ns" "$name" -o json | jq '.report.components' > bom.json
                     if curl -sS -f -o /dev/null -X POST "$DT_URL/api/v1/bom" \
                         -H "X-Api-Key: $API_KEY" \

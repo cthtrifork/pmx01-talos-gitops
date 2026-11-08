@@ -2,7 +2,8 @@
 # the vex/ directory of this repository, so Trivy (through vex-hub, see ../vex-hub/) hides those findings in every scan.
 # Daily: for each project it fetches the CycloneDX VEX, keeps the decided vulnerabilities, converts them to OpenVEX and
 # writes one document per image, vex/pkg/oci/<project name>/oci.openvex.json (the project name is <registry>/<repository>,
-# see sbom-uploader.yaml; its version becomes the version of the product PURL). Then it regenerates vex/index.json
+# see sbom-uploader.yaml; its version, the image digest, becomes the version of the product PURL; projects whose version is
+# not a digest, e.g. created before the digest became the version, are skipped). Then it regenerates vex/index.json
 # (scripts/vex-index.sh) and, if anything changed, pushes the branch dependency-track/vex-export and opens a pull request.
 # It touches nothing outside vex/, never pushes to main, and only deletes documents whose author is Dependency-Track.
 # Statements are only exported for components that have a PURL (a statement without a subcomponent would cover the whole image).
@@ -73,7 +74,7 @@ spec:
                   };
                   . as $vex
                   | (($vex.components // []) | map({key: (."bom-ref" // ""), value: (.purl // "")}) | from_entries) as $purl
-                  | ("pkg:oci/" + ($name | split("/") | last) + "@" + $version + "?repository_url=" + ($name | @uri)) as $product
+                  | ("pkg:oci/" + ($name | split("/") | last | ascii_downcase) + "@" + $version + "?repository_url=" + ($name | @uri)) as $product
                   | [ ($vex.vulnerabilities // [])[]
                       | select(.analysis.state == "not_affected" or .analysis.state == "false_positive" or .analysis.state == "resolved")
                       | (.analysis.state) as $state
@@ -93,7 +94,8 @@ spec:
                   curl -fsS -H "X-Api-Key: $API_KEY" "$DT_URL/api/v1/project?pageSize=1000" |
                     jq -r '.[] | [.uuid, .name, (.version // "-")] | @tsv' > /work/projects.tsv
                   while IFS="$(printf '\t')" read -r uuid name version; do
-                    [ "$version" = "-" ] && continue
+                    # only projects versioned by digest (sbom-hook, sbom-uploader): Trivy matches an image by its digest
+                    case "$version" in sha256:*) ;; *) continue ;; esac
                     curl -fsS -H "X-Api-Key: $API_KEY" "$DT_URL/api/v1/vex/cyclonedx/project/$uuid" |
                       jq -c -f /work/vex.jq --arg name "$name" --arg version "$version" > /work/stmts.json
                     [ "$(jq length /work/stmts.json)" -gt 0 ] || continue
