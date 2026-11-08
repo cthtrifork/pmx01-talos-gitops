@@ -24,7 +24,7 @@ pipeline:
         if this.kind != "SbomReport" {
           root = deleted()
         } else {
-          # one Dependency-Track project per image, as in sbom-uploader.yaml
+          # one Dependency-Track project per image: <registry>/<repository>, version = tag or digest
           let server = this.report.registry.server.or("")
           let repo = this.report.artifact.repository
           let name = if $server != "" { $server + "/" + $repo } else { $repo }

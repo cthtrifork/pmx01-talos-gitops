@@ -1,6 +1,6 @@
 ---
 # Receives trivy-operator's webhook broadcast (operator.webhookBroadcastURL) and uploads each SbomReport to
-# Dependency-Track as it changes. The sbom-uploader CronJob stays as the slower safety net.
+# Dependency-Track as it changes.
 # https://aquasecurity.github.io/trivy-operator/v0.30.1/tutorials/integrations/webhook/
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
