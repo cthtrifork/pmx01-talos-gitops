@@ -1,80 +1,63 @@
 name: Update KubeVirt operators
 
-# Renovate is disabled for the vendored KubeVirt and CDI operator manifests (see renovate.json5), so this
-# refreshes the whole release manifest and opens a PR when upstream has a new stable release.
+# The vendored operator manifests in k8s/infra/kubevirt/ are generated from the release pinned in
+# versions.env (bumped by Renovate). This regenerates them on the PR branch and commits the result back.
 on:
-  schedule:
-    - cron: "43 5 * * *"
   workflow_dispatch:
   pull_request:
     paths:
-      - .github/workflows/update-kubevirt-operators.yaml
+      - k8s/infra/kubevirt/**
       - scripts/ci/update-kubevirt-operators.sh
+      - .github/workflows/update-kubevirt-operators.yaml
 
 permissions: {}
 
+# One run per ref; a newer push supersedes the running one
 concurrency:
-  group: update-kubevirt-operators-${{ github.ref }}
-  cancel-in-progress: false
-
-env:
-  BRANCH: deps/kubevirt-operators
+  group: update-kubevirt-operators-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   update:
+    # Fork PRs get a read-only token and cannot be pushed to
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read # the App token below does the writing
     steps:
-      # As the Renovate App, so the PR triggers CI (GITHUB_TOKEN pushes do not)
+      # Push as the Renovate GitHub App instead of GITHUB_TOKEN, so the commit triggers the other workflows
       - name: Get a GitHub App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
-          permission-contents: write # push the update branch
-          permission-pull-requests: write # open the PR
+          permission-contents: write # push the regenerated manifests
 
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # On pull_request the default ref is the merge commit; check out the branch to push to it
+          ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Update the operator manifests
-        id: update
-        env:
-          GH_TOKEN: ${{ github.token }} # public repositories, read only
-        run: |
-          {
-            echo 'summary<<EOF'
-            scripts/ci/update-kubevirt-operators.sh
-            echo EOF
-          } >>"$GITHUB_OUTPUT"
+      - name: Regenerate the operator manifests
+        run: scripts/ci/update-kubevirt-operators.sh
 
-      # On a PR that changes this workflow only show what would change
-      - name: Open or update the PR
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          SUMMARY: ${{ steps.update.outputs.summary }}
-        run: |
-          if git diff --quiet; then
-            echo "Already up to date"
-            exit 0
-          fi
-          title="chore(kubevirt): update operator manifests"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$BRANCH"
-          git commit -am "$title"$'\n\n'"$SUMMARY"
-          git push --force origin "$BRANCH"
-          if [[ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]]; then
-            gh pr create --base main --head "$BRANCH" --title "$title" \
-              --body "Refreshed from the upstream release manifests by \`scripts/ci/update-kubevirt-operators.sh\`:"$'\n\n'"$SUMMARY"
-          fi
+      - name: Stage changes
+        run: git add -A
 
-      - name: Show the change
-        if: ${{ github.event_name == 'pull_request' }}
-        run: git diff --stat
+      # Creates the commit through the GitHub API with the app token, so it is signed (Verified)
+      - uses: qoomon/actions--create-commit@7102b1a8b3cb8716dc70dbeb6d774c375d779d2f # v1.2.5
+        id: commit
+        with:
+          message: "chore(kubevirt): regenerate operator manifests"
+          skip-empty: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Push changes
+        if: ${{ steps.commit.outputs.commit }}
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: git push origin "HEAD:$BRANCH"
