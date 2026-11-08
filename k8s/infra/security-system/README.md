@@ -51,26 +51,28 @@ Cloudflare tunnel. Check the two addresses are free in the pool (`192.168.1.221-
 ## KEV: turning bare CVEs into "is this exploited?"
 
 Trivy itself has no KEV data, and trivy-operator reports (and its metrics) only carry severity/CVSS. KEV enrichment
-comes from Dependency-Track 5, which has two relevant pieces, both configured at runtime in its database (Administration
-UI or REST API), not through Helm values, so they are not in Git:
+comes from Dependency-Track 5, which has two relevant pieces. Both are stored in its database, so Helm values cannot set
+them; `dependency-track/config-job.yaml` (a CronJob every 20 minutes) applies them through the REST API:
 
-1. **KEV data sources** (Administration): CISA KEV is built in and enabled by default; ENISA KEV and VulnCheck KEV
-   (needs a free API token) can be enabled alongside it. Dependency-Track then flags findings whose CVE (or alias) is
-   known exploited, with the required action and a known-ransomware flag. It needs egress to
-   `www.cisa.gov` (feed `known_exploited_vulnerabilities.json`).
-2. **Trivy vulnerability analyzer** (Administration, vulnerability analysis): enable it with API URL
-   `http://trivy-service.security-system.svc.cluster.local:4954`. It reuses the trivy server that trivy-operator runs,
-   so the zot-mirrored database is used and the analyzer needs no internet access. The server has no token set.
+1. **KEV data sources**: CISA KEV and ENISA KEV are enabled. Dependency-Track then flags findings whose CVE (or alias) is
+   known exploited, with the required action and a known-ransomware flag. It needs egress to `www.cisa.gov` and
+   `raw.githubusercontent.com`. VulnCheck KEV needs a token and is not configured.
+2. **Trivy vulnerability analyzer**: enabled with API URL `http://trivy-service.security-system.svc.cluster.local:4954`.
+   It reuses the trivy server that trivy-operator runs, so the zot-mirrored database is used and the analyzer needs no
+   internet access. The server has no token set.
+
+The settings live in the ConfigMap `dependency-track-config` (`extensions.json`: extension point, extension name, config)
+and are merged over the current settings; add entries there for other analyzers or data sources. Notifications, policies and
+the NVD/GitHub/OSV sources are not managed (UI only, defaults kept).
+
+The same Job bootstraps access: it changes the default `admin` password (generated, stored in the Secret
+`dependency-track-admin`, never overwritten), creates the team `sbom-uploader` with `BOM_UPLOAD` and
+`PROJECT_CREATION_UPLOAD`, and, if the Secret `dependency-track-api-key` does not exist, an API key for that team stored
+there. Existing Secrets are left alone, so a key created by hand keeps working. Permissions on the team are only added.
 
 Findings come from the projects/SBOMs uploaded to Dependency-Track. `dependency-track/sbom-uploader.yaml` is a CronJob
-(every 6 hours) that uploads trivy-operator's `SbomReport`s, one project per image. It needs an API key, created by hand:
-
-1. In the UI, Administration > Access Management > Teams: create a team (or use Automation) with the permissions
-   `BOM_UPLOAD` and `PROJECT_CREATION_UPLOAD`, and create an API key for it.
-2. `kubectl -n security-system create secret generic dependency-track-api-key --from-literal=api-key=<key>`
-   (kept out of Git; or add it SOPS-encrypted).
-
-Until the Secret exists the CronJob fails with a message saying so.
+(daily) that uploads trivy-operator's `SbomReport`s, one project per image, with that API key. Until the Secret exists the
+CronJob fails with a message saying so.
 
 Network policies: if a default-deny is added to `security-system`, also allow Dependency-Track to Postgres (5432),
 trivy-service (4954) and `www.cisa.gov` (443), and the uploader to dependency-track-api-server (8080) and the Kubernetes API.

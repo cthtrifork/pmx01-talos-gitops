@@ -1,0 +1,213 @@
+# Configuration as code for Dependency-Track: what Helm values and env vars cannot set because it lives in the database.
+# A CronJob that is safe to run repeatedly (every 20 minutes, which also bootstraps a fresh install and repairs drift):
+#  1. Admin: the built-in admin/admin must change its password on first login. The Job generates a password, stores it in
+#     the Secret dependency-track-admin (created once, never overwritten) and sets it. Read it with
+#     `kubectl -n security-system get secret dependency-track-admin` (needs Secret read access) to log in to the UI.
+#  2. Team `sbom-uploader` with BOM_UPLOAD and PROJECT_CREATION_UPLOAD, and, if the Secret dependency-track-api-key does
+#     not exist yet, an API key for it stored there (used by sbom-uploader.yaml and sbom-hook). Permissions are only added,
+#     never removed, and an existing Secret is never touched.
+#  3. Extension settings (Trivy analyzer, KEV data sources) from extensions.json below, merged over the current settings
+#     through the v2 API. Add entries there for other vulnerability sources or analyzers (point/name/config; the config
+#     schema is GET /api/v2/extension-points/<point>/extensions/<name>/config-schema).
+# Not covered: notifications, policies, and the NVD/GitHub/OSV vulnerability data sources (they keep their defaults).
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dependency-track-config
+  namespace: security-system
+data:
+  extensions.json: |
+    [
+      {
+        "point": "vuln-analyzer",
+        "name": "trivy",
+        "config": {
+          "enabled": true,
+          "apiUrl": "http://trivy-service.security-system.svc.cluster.local:4954",
+          "ignoreUnfixed": false,
+          "scanLibrary": true,
+          "scanOs": false
+        }
+      },
+      {
+        "point": "kev-data-source",
+        "name": "cisa",
+        "config": {
+          "enabled": true,
+          "feedUrl": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+        }
+      },
+      {
+        "point": "kev-data-source",
+        "name": "enisa",
+        "config": {
+          "enabled": true,
+          "feedUrl": "https://raw.githubusercontent.com/enisaeu/CNW/main/advisories/eukev/eukev.json"
+        }
+      }
+    ]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dependency-track-config
+  namespace: security-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dependency-track-config
+  namespace: security-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    verbs:
+      - "create"
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    resourceNames:
+      - "dependency-track-admin"
+      - "dependency-track-api-key"
+    verbs:
+      - "get"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dependency-track-config
+  namespace: security-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dependency-track-config
+subjects:
+  - kind: ServiceAccount
+    name: dependency-track-config
+    namespace: security-system
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dependency-track-config
+  namespace: security-system
+spec:
+  schedule: "*/20 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: dependency-track-config # selected by the network policy
+        spec:
+          restartPolicy: Never
+          serviceAccountName: dependency-track-config
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: configure
+              image: mirror.gcr.io/alpine/k8s:1.37.2@sha256:dcb7185e112a453aa72f426754849a97357727ef8f40168fb208c8cf59952042
+              command:
+                - sh
+                - -eu
+                - -c
+                - |
+                  cd /work
+                  json='Content-Type: application/json'
+                  # Authenticated call: api METHOD PATH [curl args]
+                  api() { m=$1; p=$2; shift 2; curl -sS -X "$m" "$DT_URL$p" -H "Authorization: Bearer $token" "$@"; }
+                  login() {
+                    curl -sS -o token.txt -w '%{http_code}' -X POST "$DT_URL/api/v1/user/login" \
+                      --data-urlencode username=admin --data-urlencode "password=$1"
+                  }
+
+                  curl -sf -o /dev/null "$DT_URL/api/version" || { echo "api-server not reachable yet" >&2; exit 1; }
+
+                  # 1. admin password
+                  if kubectl get secret dependency-track-admin >/dev/null 2>&1; then
+                    pw=$(kubectl get secret dependency-track-admin -o jsonpath='{.data.password}' | base64 -d)
+                  else
+                    pw=$(head -c 32 /dev/urandom | base64 | tr -d '/+=\n')
+                    kubectl create secret generic dependency-track-admin --from-literal=username=admin --from-literal=password="$pw"
+                  fi
+                  if [ "$(login "$pw")" != 200 ]; then
+                    # first start (or a run that stored the Secret but failed before the change): admin/admin must be changed
+                    code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$DT_URL/api/v1/user/forceChangePassword" \
+                      --data-urlencode username=admin --data-urlencode password=admin \
+                      --data-urlencode "newPassword=$pw" --data-urlencode "confirmPassword=$pw")
+                    [ "$code" = 200 ] || { echo "cannot log in as admin and the default password is not accepted ($code): fix Secret dependency-track-admin" >&2; exit 1; }
+                    [ "$(login "$pw")" = 200 ] || { echo "login as admin failed after the password change" >&2; exit 1; }
+                  fi
+                  token=$(cat token.txt)
+
+                  # 2. team, permissions, API key
+                  team=sbom-uploader
+                  uuid=$(api GET /api/v1/team | jq -r --arg n "$team" '.[] | select(.name == $n) | .uuid')
+                  if [ -z "$uuid" ]; then
+                    uuid=$(api PUT /api/v1/team -H "$json" -d "$(jq -nc --arg n "$team" '{name: $n}')" | jq -r .uuid)
+                  fi
+                  [ -n "$uuid" ] && [ "$uuid" != null ] || { echo "cannot find or create team $team" >&2; exit 1; }
+                  for perm in BOM_UPLOAD PROJECT_CREATION_UPLOAD; do
+                    code=$(api POST "/api/v1/permission/$perm/team/$uuid" -o /dev/null -w '%{http_code}')
+                    case "$code" in 200|304) ;; *) echo "adding $perm to $team failed ($code)" >&2; exit 1;; esac
+                  done
+                  if ! kubectl get secret dependency-track-api-key >/dev/null 2>&1; then
+                    key=$(api PUT "/api/v1/team/$uuid/key" | jq -r .key)
+                    [ -n "$key" ] && [ "$key" != null ] || { echo "cannot create an API key for $team" >&2; exit 1; }
+                    kubectl create secret generic dependency-track-api-key --from-literal=api-key="$key"
+                  fi
+
+                  # 3. extension settings, merged over the current ones
+                  jq -c '.[]' /config/extensions.json > extensions.jsonl
+                  failed=0
+                  while read -r e; do
+                    point=$(echo "$e" | jq -r .point); name=$(echo "$e" | jq -r .name)
+                    url="/api/v2/extension-points/$point/extensions/$name/config"
+                    have='{}'
+                    [ "$(api GET "$url" -o have.json -w '%{http_code}')" = 200 ] && have=$(jq -c '.config // {}' have.json)
+                    body=$(jq -nc --argjson h "$have" --argjson w "$(echo "$e" | jq -c .config)" '{config: ($h * $w)}')
+                    code=$(api PUT "$url" -H "$json" -d "$body" -o /dev/null -w '%{http_code}')
+                    case "$code" in
+                      204) echo "updated $point/$name" ;;
+                      304) echo "unchanged $point/$name" ;;
+                      *) echo "failed $point/$name ($code)" >&2; failed=$((failed+1)) ;;
+                    esac
+                  done < extensions.jsonl
+                  [ "$failed" -eq 0 ]
+              env:
+                - name: HOME
+                  value: /work
+                - name: DT_URL
+                  value: http://dependency-track-api-server.security-system.svc.cluster.local:8080
+              volumeMounts:
+                - { name: work, mountPath: /work }
+                - { name: config, mountPath: /config, readOnly: true }
+              resources:
+                requests: { cpu: 20m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+          volumes:
+            - name: work
+              emptyDir:
+                sizeLimit: 64Mi
+            - name: config
+              configMap:
+                name: dependency-track-config
