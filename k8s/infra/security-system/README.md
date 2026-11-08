@@ -70,6 +70,21 @@ The same Job bootstraps access: it changes the default `admin` password (generat
 `PROJECT_CREATION_UPLOAD`, and, if the Secret `dependency-track-api-key` does not exist, an API key for that team stored
 there. Existing Secrets are left alone, so a key created by hand keeps working. Permissions on the team are only added.
 
+## Exporting Dependency-Track decisions to the VEX repository
+
+`dependency-track/vex-export.yaml` is a daily CronJob that turns the analysis decisions made in Dependency-Track (state
+*not affected*, *false positive* or *resolved* on a finding) into OpenVEX documents in `vex/pkg/oci/<registry>/<repository>/`
+of this repository, regenerates `vex/index.json` and opens a pull request from the branch `dependency-track/vex-export`.
+Merge it and Trivy hides those findings (through `vex-hub/`). It only changes files under `vex/`, never pushes to `main`,
+and only deletes documents whose author is `Dependency-Track`. Findings on components without a PURL are skipped.
+
+It needs the Secret `dependency-track-vex-github` (key `token`), created by hand: a fine-grained personal access token (or
+GitHub App installation token) for this repository only, with Contents and Pull requests read/write.
+`kubectl -n security-system create secret generic dependency-track-vex-github --from-literal=token=<token>`.
+The API key comes from `config-job.yaml` (team `vex-exporter`). Trivy only matches a statement when the product PURL
+(`pkg:oci/<name>@<version>?repository_url=...`) equals the scanned image's; the version is the project version, which
+`sbom-uploader.yaml` sets to the tag, falling back to the digest.
+
 Findings come from the projects/SBOMs uploaded to Dependency-Track. `dependency-track/sbom-uploader.yaml` is a CronJob
 (daily) that uploads trivy-operator's `SbomReport`s, one project per image, with that API key. Until the Secret exists the
 CronJob fails with a message saying so.

@@ -3,9 +3,10 @@
 #  1. Admin: the built-in admin/admin must change its password on first login. The Job generates a password, stores it in
 #     the Secret dependency-track-admin (created once, never overwritten) and sets it. Read it with
 #     `kubectl -n security-system get secret dependency-track-admin` (needs Secret read access) to log in to the UI.
-#  2. Team `sbom-uploader` with BOM_UPLOAD and PROJECT_CREATION_UPLOAD, and, if the Secret dependency-track-api-key does
-#     not exist yet, an API key for it stored there (used by sbom-uploader.yaml and sbom-hook). Permissions are only added,
-#     never removed, and an existing Secret is never touched.
+#  2. Teams `sbom-uploader` (BOM_UPLOAD, PROJECT_CREATION_UPLOAD; key in the Secret dependency-track-api-key, used by
+#     sbom-uploader.yaml and sbom-hook) and `vex-exporter` (VIEW_PORTFOLIO, VULNERABILITY_ANALYSIS_READ; key in
+#     dependency-track-vex-api-key, used by vex-export.yaml). A key is only created if its Secret does not exist yet.
+#     Permissions are only added, never removed, and an existing Secret is never touched.
 #  3. Extension settings (Trivy analyzer, KEV data sources) from extensions.json below, merged over the current settings
 #     through the v2 API. Add entries there for other vulnerability sources or analyzers (point/name/config; the config
 #     schema is GET /api/v2/extension-points/<point>/extensions/<name>/config-schema).
@@ -73,6 +74,7 @@ rules:
     resourceNames:
       - "dependency-track-admin"
       - "dependency-track-api-key"
+      - "dependency-track-vex-api-key"
     verbs:
       - "get"
 ---
@@ -153,22 +155,26 @@ spec:
                   fi
                   token=$(cat token.txt)
 
-                  # 2. team, permissions, API key
-                  team=sbom-uploader
-                  uuid=$(api GET /api/v1/team | jq -r --arg n "$team" '.[] | select(.name == $n) | .uuid')
-                  if [ -z "$uuid" ]; then
-                    uuid=$(api PUT /api/v1/team -H "$json" -d "$(jq -nc --arg n "$team" '{name: $n}')" | jq -r .uuid)
-                  fi
-                  [ -n "$uuid" ] && [ "$uuid" != null ] || { echo "cannot find or create team $team" >&2; exit 1; }
-                  for perm in BOM_UPLOAD PROJECT_CREATION_UPLOAD; do
-                    code=$(api POST "/api/v1/permission/$perm/team/$uuid" -o /dev/null -w '%{http_code}')
-                    case "$code" in 200|304) ;; *) echo "adding $perm to $team failed ($code)" >&2; exit 1;; esac
-                  done
-                  if ! kubectl get secret dependency-track-api-key >/dev/null 2>&1; then
-                    key=$(api PUT "/api/v1/team/$uuid/key" | jq -r .key)
-                    [ -n "$key" ] && [ "$key" != null ] || { echo "cannot create an API key for $team" >&2; exit 1; }
-                    kubectl create secret generic dependency-track-api-key --from-literal=api-key="$key"
-                  fi
+                  # 2. teams, permissions, API keys: ensure_team TEAM SECRET PERMISSION...
+                  ensure_team() {
+                    team=$1; secret=$2; shift 2
+                    uuid=$(api GET /api/v1/team | jq -r --arg n "$team" '.[] | select(.name == $n) | .uuid')
+                    if [ -z "$uuid" ]; then
+                      uuid=$(api PUT /api/v1/team -H "$json" -d "$(jq -nc --arg n "$team" '{name: $n}')" | jq -r .uuid)
+                    fi
+                    [ -n "$uuid" ] && [ "$uuid" != null ] || { echo "cannot find or create team $team" >&2; exit 1; }
+                    for perm in "$@"; do
+                      code=$(api POST "/api/v1/permission/$perm/team/$uuid" -o /dev/null -w '%{http_code}')
+                      case "$code" in 200|304) ;; *) echo "adding $perm to $team failed ($code)" >&2; exit 1;; esac
+                    done
+                    if ! kubectl get secret "$secret" >/dev/null 2>&1; then
+                      key=$(api PUT "/api/v1/team/$uuid/key" | jq -r .key)
+                      [ -n "$key" ] && [ "$key" != null ] || { echo "cannot create an API key for $team" >&2; exit 1; }
+                      kubectl create secret generic "$secret" --from-literal=api-key="$key"
+                    fi
+                  }
+                  ensure_team sbom-uploader dependency-track-api-key BOM_UPLOAD PROJECT_CREATION_UPLOAD
+                  ensure_team vex-exporter dependency-track-vex-api-key VIEW_PORTFOLIO VULNERABILITY_ANALYSIS_READ
 
                   # 3. extension settings, merged over the current ones
                   jq -c '.[]' /config/extensions.json > extensions.jsonl

@@ -36,7 +36,7 @@ spec:
         - kube-apiserver
 ---
 # Dependency-Track API: the UI in the browser and the LAN clients (dependency-track-api-server-lb, 192.168.1.242 is
-# world), the Omni exposer, the SBOM uploaders, the config CronJob, Prometheus (management port 9000). Needs the database, Trivy and the
+# world), the Omni exposer, the SBOM uploaders, the config and VEX export CronJobs, Prometheus (management port 9000). Needs the database, Trivy and the
 # internet (vulnerability feeds).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -63,6 +63,8 @@ spec:
             app.kubernetes.io/name: dependency-track-sbom-uploader
         - matchLabels:
             app.kubernetes.io/name: dependency-track-config
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-vex-export
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
@@ -344,3 +346,27 @@ spec:
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
+---
+# VEX export CronJob (dependency-track/vex-export.yaml): reads the VEX documents from the Dependency-Track API, pushes
+# a branch and opens a pull request on github.com / api.github.com (the Kubernetes API comes from the default allow).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dependency-track-vex-export
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: dependency-track-vex-export
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }

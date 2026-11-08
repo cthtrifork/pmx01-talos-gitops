@@ -1,0 +1,184 @@
+# Exports the analysis decisions made in Dependency-Track (not affected, false positive, resolved) as OpenVEX documents into
+# the vex/ directory of this repository, so Trivy (through vex-hub, see ../vex-hub/) hides those findings in every scan.
+# Daily: for each project it fetches the CycloneDX VEX, keeps the decided vulnerabilities, converts them to OpenVEX and
+# writes one document per image, vex/pkg/oci/<project name>/oci.openvex.json (the project name is <registry>/<repository>,
+# see sbom-uploader.yaml; its version becomes the version of the product PURL). Then it regenerates vex/index.json
+# (scripts/vex-index.sh) and, if anything changed, pushes the branch dependency-track/vex-export and opens a pull request.
+# It touches nothing outside vex/, never pushes to main, and only deletes documents whose author is Dependency-Track.
+# Statements are only exported for components that have a PURL (a statement without a subcomponent would cover the whole image).
+#
+# Needs two Secrets: dependency-track-vex-api-key (key api-key, created by config-job.yaml) and dependency-track-vex-github
+# (key token), created by hand: a fine-grained personal access token or GitHub App installation token for this repository
+# only, with Contents and Pull requests read/write. It is not in Git.
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dependency-track-vex-export
+  namespace: security-system
+spec:
+  schedule: "43 5 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: dependency-track-vex-export # selected by the network policy
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: export
+              image: mirror.gcr.io/alpine/k8s:1.37.2@sha256:dcb7185e112a453aa72f426754849a97357727ef8f40168fb208c8cf59952042
+              command:
+                - bash
+                - -eu
+                - -c
+                - |
+                  [ -n "$API_KEY" ] || { echo "Secret dependency-track-vex-api-key (key api-key) is missing or empty: run config-job first" >&2; exit 1; }
+                  [ -n "$GITHUB_TOKEN" ] || { echo "Secret dependency-track-vex-github (key token) is missing or empty" >&2; exit 1; }
+                  cd /work
+                  # the token goes to git through the environment, not the command line
+                  export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+                    GIT_CONFIG_VALUE_0="Authorization: Basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+                  git clone -q --depth 1 --branch main --sparse "$GIT_URL" repo
+                  cd repo
+                  git sparse-checkout set vex scripts
+                  git config user.name "dependency-track-vex-export"
+                  git config user.email "noreply@users.noreply.github.com"
+
+                  # OpenVEX statements of one project: jq -f vex.jq --arg name <project> --arg version <version> <CycloneDX VEX>
+                  cat > /work/vex.jq <<'JQ'
+                  def justification: {
+                    code_not_present: "vulnerable_code_not_present",
+                    code_not_reachable: "vulnerable_code_not_in_execute_path",
+                    requires_configuration: "vulnerable_code_cannot_be_controlled_by_adversary",
+                    requires_dependency: "vulnerable_code_cannot_be_controlled_by_adversary",
+                    requires_environment: "vulnerable_code_cannot_be_controlled_by_adversary",
+                    protected_by_compiler: "inline_mitigations_already_exist",
+                    protected_at_runtime: "inline_mitigations_already_exist",
+                    protected_at_perimeter: "inline_mitigations_already_exist",
+                    protected_by_mitigating_control: "inline_mitigations_already_exist"
+                  };
+                  . as $vex
+                  | (($vex.components // []) | map({key: (."bom-ref" // ""), value: (.purl // "")}) | from_entries) as $purl
+                  | ("pkg:oci/" + ($name | split("/") | last) + "@" + $version + "?repository_url=" + ($name | @uri)) as $product
+                  | [ ($vex.vulnerabilities // [])[]
+                      | select(.analysis.state == "not_affected" or .analysis.state == "false_positive" or .analysis.state == "resolved")
+                      | (.analysis.state) as $state
+                      | [ (.affects // [])[].ref | $purl[.] | select(. != null and . != "") | {"@id": .} ] as $subs
+                      | select($subs | length > 0)
+                      | {vulnerability: {name: .id},
+                         products: [{"@id": $product, subcomponents: $subs}],
+                         status: (if $state == "resolved" then "fixed" else "not_affected" end)}
+                        + (if $state == "resolved" then {} else
+                            (justification[.analysis.justification // ""] as $j
+                             | (if $j then {justification: $j} else {} end)
+                             + {impact_statement: (.analysis.detail // ("Marked " + $state + " in Dependency-Track"))}) end) ]
+                  JQ
+
+                  # 1. export every project
+                  mkdir -p /work/out
+                  curl -fsS -H "X-Api-Key: $API_KEY" "$DT_URL/api/v1/project?pageSize=1000" |
+                    jq -r '.[] | [.uuid, .name, (.version // "-")] | @tsv' > /work/projects.tsv
+                  while IFS="$(printf '\t')" read -r uuid name version; do
+                    [ "$version" = "-" ] && continue
+                    curl -fsS -H "X-Api-Key: $API_KEY" "$DT_URL/api/v1/vex/cyclonedx/project/$uuid" |
+                      jq -c -f /work/vex.jq --arg name "$name" --arg version "$version" > /work/stmts.json
+                    [ "$(jq length /work/stmts.json)" -gt 0 ] || continue
+                    mkdir -p "/work/out/$name"
+                    cat /work/stmts.json >> "/work/out/$name/stmts.jsonl"
+                  done < /work/projects.tsv
+
+                  # 2. one document per image: new/changed ones are written, ones without decisions any more are removed
+                  now=$(date -u +%FT%TZ)
+                  generated=/work/generated.txt; : > $generated
+                  for f in $(cd /work/out && find . -name stmts.jsonl | sort); do
+                    name=$(dirname "$f" | sed 's#^\./##')
+                    doc="vex/pkg/oci/$name/oci.openvex.json"
+                    echo "$doc" >> $generated
+                    new=$(jq -s --arg name "$name" --arg now "$now" '
+                      {"@context": "https://openvex.dev/ns/v0.2.0",
+                       "@id": ("https://github.com/cthtrifork/pmx01-talos-gitops/" + "vex/pkg/oci/" + $name),
+                       author: "Dependency-Track", role: "Automated export from Dependency-Track",
+                       timestamp: $now, version: 1,
+                       statements: (add | unique_by([.vulnerability.name, .products[0]."@id"]) | sort_by([.vulnerability.name, .products[0]."@id"]))}' "/work/out/$f")
+                    if [ -f "$doc" ]; then
+                      # unchanged apart from timestamp and version: keep the file
+                      if [ "$(jq -S 'del(.timestamp, .version)' "$doc")" = "$(echo "$new" | jq -S 'del(.timestamp, .version)')" ]; then continue; fi
+                      new=$(echo "$new" | jq --argjson v "$(jq .version "$doc")" '.version = $v + 1')
+                    fi
+                    mkdir -p "$(dirname "$doc")"
+                    echo "$new" | jq . > "$doc"
+                  done
+                  for doc in $(find vex/pkg/oci -name oci.openvex.json 2>/dev/null | sort); do
+                    if [ "$(jq -r .author "$doc")" = "Dependency-Track" ] && ! grep -qx "$doc" $generated; then rm "$doc"; fi
+                  done
+
+                  # 3. index, commit only vex/, push, pull request
+                  if [ -z "$(git status --porcelain vex)" ]; then echo "VEX documents are up to date"; exit 0; fi
+                  ./scripts/vex-index.sh
+                  git checkout -q -b "$BRANCH"
+                  git add vex
+                  if [ -n "$(git diff --cached --name-only | grep -v '^vex/' || true)" ]; then echo "refusing to commit files outside vex/" >&2; exit 1; fi
+                  git commit -q -m "feat(vex): export Dependency-Track analysis decisions"
+                  git push -q --force origin "$BRANCH"
+                  open=$(curl -fsS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+                    "$GITHUB_API/repos/$REPO/pulls?head=$(dirname "$REPO"):$BRANCH&state=open" | jq length)
+                  if [ "$open" -eq 0 ]; then
+                    jq -n --arg b "$BRANCH" '{title: "feat(vex): export Dependency-Track analysis decisions", head: $b, base: "main",
+                      body: "OpenVEX documents generated from the analysis decisions (not affected, false positive, resolved) in Dependency-Track by the CronJob `dependency-track-vex-export`. Only files under `vex/` change. Merge to let Trivy hide these findings (via vex-hub); close to discard until the next run."}' |
+                      curl -fsS -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+                        -d @- "$GITHUB_API/repos/$REPO/pulls" | jq -r .html_url
+                  fi
+              env:
+                - name: HOME
+                  value: /work
+                - name: DT_URL
+                  value: http://dependency-track-api-server.security-system.svc.cluster.local:8080
+                - name: REPO
+                  value: cthtrifork/pmx01-talos-gitops
+                - name: GIT_URL
+                  value: https://github.com/cthtrifork/pmx01-talos-gitops.git
+                - name: GITHUB_API
+                  value: https://api.github.com
+                - name: BRANCH
+                  value: dependency-track/vex-export
+                - name: API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: dependency-track-vex-api-key
+                      key: api-key
+                      optional: true
+                - name: GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: dependency-track-vex-github
+                      key: token
+                      optional: true
+              volumeMounts:
+                - { name: work, mountPath: /work }
+              resources:
+                requests: { cpu: 20m, memory: 128Mi }
+                limits: { memory: 512Mi }
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+          volumes:
+            - name: work
+              emptyDir:
+                sizeLimit: 256Mi
