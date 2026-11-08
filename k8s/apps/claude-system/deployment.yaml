@@ -83,7 +83,7 @@ spec:
               # every start (remove first, `mcp add` fails if the name exists).
               claude mcp remove --scope user flux >/dev/null 2>&1 || true
               claude mcp add --scope user flux -- flux-operator-mcp serve --read-only
-              exec claude remote-control --name pmx01-talos
+              exec claude remote-control --name homelab
           env:
             - name: DISABLE_AUTOUPDATER
               value: "1" # the binary is baked into the image
