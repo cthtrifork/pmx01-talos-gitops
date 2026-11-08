@@ -76,3 +76,53 @@ spec:
           annotations:
             summary: Scrape target {{ $labels.job }} {{ $labels.instance }} is down
             description: Namespace {{ $labels.namespace }}. If it started after a policy change, check the CiliumPolicyDenied alert.
+    - name: node-disk
+      rules:
+        # PVC sizes are not enforced (local-path hostPath), so the node filesystem is the real limit.
+        # rootfs (/etc/extensions.yaml, read-only) is left out.
+        - alert: NodeFilesystemAlmostFull
+          expr: >-
+            100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}) > 85
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | humanize }}% full
+            description: Node filesystem, not a PVC (sizes are not enforced). Find the node with kubectl get nodes -o wide.
+        - alert: NodeFilesystemCriticallyFull
+          expr: >-
+            100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}) > 95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | humanize }}% full
+        - alert: NodeFilesystemFillingUp
+          # Fills within 24h at the rate of the last 6h; only below 30% free so a big, quiet disk stays silent.
+          expr: >-
+            (predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}[6h], 24 * 3600) < 0)
+            and (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"} < 0.30)
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} fills up within 24h
+        - alert: NodeFilesystemInodesAlmostFull
+          expr: >-
+            100 * (1 - node_filesystem_files_free{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_files{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}) > 90
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} has {{ $value | humanize }}% of its inodes used
+        - alert: NodeFilesystemReadOnly
+          expr: node_filesystem_readonly{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"} == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is read-only
