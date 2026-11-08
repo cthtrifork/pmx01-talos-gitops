@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   - postgres-cluster.yaml
   - kek-job.yaml
+  - config-job.yaml
+  - vex-export.yaml
   - service-lb.yaml
   - helm-release.yaml
   - helm-repository.yaml

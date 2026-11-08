@@ -59,6 +59,10 @@ spec:
     - fromEndpoints:
         - matchLabels:
             app.kubernetes.io/instance: sbom-hook
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-config
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-vex-export
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
@@ -303,3 +307,46 @@ spec:
             - { port: "5000", protocol: TCP }
     - toEntities:
         - world
+---
+# Config-as-code CronJob (dependency-track/config-job.yaml): talks to the Dependency-Track API (the Kubernetes API comes
+# from the default allow).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dependency-track-config
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: dependency-track-config
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+---
+# VEX export CronJob (dependency-track/vex-export.yaml): reads the VEX documents from the Dependency-Track API, pushes
+# a branch and opens a pull request on github.com / api.github.com (the Kubernetes API comes from the default allow).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: dependency-track-vex-export
+  namespace: security-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: dependency-track-vex-export
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }
