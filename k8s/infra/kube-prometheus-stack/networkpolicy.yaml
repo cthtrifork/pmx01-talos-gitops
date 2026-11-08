@@ -1,7 +1,6 @@
 # Default deny both ways for the namespace, then what each workload needs (Hubble: the Prometheus pod talks to the
 # API server and the scrape targets, kube-state-metrics to the API server, the operator to the API server).
-# Node exporter, kubelet, Cilium and Hubble run on the host network, which these policies do not cover. The chart's own
-# operator policy (networkPolicy.flavor: cilium) does not select the running pod, see prom-operator below.
+# Node exporter, kubelet, Cilium and Hubble run on the host network, which these policies do not cover.
 #
 # Scraping is opt-in by label. A pod that Prometheus scrapes carries `prometheus-scrape: "true"` and is then reachable
 # from Prometheus on the ports below (cluster-wide policy), so a namespace does not need its own copy of that rule.
@@ -114,8 +113,8 @@ spec:
             - { port: "10250", protocol: TCP }
 ---
 # Operator: the admission webhook (service port 443 to 10250) is called by the API server, and Prometheus scrapes its
-# metrics on the same port. The chart's own kube-prom-operator policy selects on the version and chart labels
-# (93.1.0_<hash>), which the running pod does not carry, so it applies to nothing here: select on the stable labels.
+# metrics on the same port. The chart's own operator policy is disabled (prometheusOperator.networkPolicy in the
+# HelmRelease): it selected on the version and chart labels, which the pod does not carry, so it matched nothing.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
