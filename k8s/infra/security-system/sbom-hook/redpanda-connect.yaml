@@ -24,11 +24,13 @@ pipeline:
         if this.kind != "SbomReport" {
           root = deleted()
         } else {
-          # one Dependency-Track project per image, as in sbom-uploader.yaml
+          # one Dependency-Track project per image, as in sbom-uploader.yaml: <registry>/<repository>, version = digest
+          # (the tag only if there is none). Trivy identifies an image by its digest, so the VEX statements exported by
+          # vex-export.yaml only match with it.
           let server = this.report.registry.server.or("")
           let repo = this.report.artifact.repository
           let name = if $server != "" { $server + "/" + $repo } else { $repo }
-          let version = this.report.artifact.tag.not_empty().or(this.report.artifact.digest)
+          let version = this.report.artifact.digest.not_empty().or(this.report.artifact.tag)
           let digest = this.report.artifact.digest.or("")
           meta dedupe_key = $name + ":" + $version + ":" + $digest
           root = {
@@ -50,17 +52,26 @@ cache_resources:
       default_ttl: 24h
 
 output:
-  http_client:
-    url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
-    verb: PUT
-    headers:
-      Content-Type: application/json
-      X-Api-Key: $${DT_API_KEY}
-    timeout: 60s
-    max_in_flight: 4
-    retries: 3
-    drop_on:
-      - 400
-      - 404
-      - 409
-      - 422
+  switch:
+    cases:
+      # dry run until the API key Secret exists (config-job creates it): log what would be uploaded
+      - check: env("DT_API_KEY").or("") == ""
+        output:
+          processors:
+            - mapping: 'root = "DRY RUN: would upload " + this.projectName + ":" + this.projectVersion'
+          stdout: {}
+      - output:
+          http_client:
+            url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
+            verb: PUT
+            headers:
+              Content-Type: application/json
+              X-Api-Key: $${DT_API_KEY}
+            timeout: 60s
+            max_in_flight: 4
+            retries: 3
+            drop_on:
+              - 400
+              - 404
+              - 409
+              - 422

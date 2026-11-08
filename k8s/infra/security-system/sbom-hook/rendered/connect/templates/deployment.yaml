@@ -74,6 +74,7 @@ spec:
                 secretKeyRef:
                   key: api-key
                   name: dependency-track-api-key
+                  optional: true
           resources:
             limits:
               memory: 256Mi

@@ -1,11 +1,14 @@
 # Configuration as code for Dependency-Track: what Helm values and env vars cannot set because it lives in the database.
 # A CronJob that is safe to run repeatedly (every 20 minutes, which also bootstraps a fresh install and repairs drift):
-#  1. Admin: the built-in admin/admin must change its password on first login. The Job generates a password, stores it in
-#     the Secret dependency-track-admin (created once, never overwritten) and sets it. Read it with
-#     `kubectl -n security-system get secret dependency-track-admin` (needs Secret read access) to log in to the UI.
-#  2. Team `sbom-uploader` with BOM_UPLOAD and PROJECT_CREATION_UPLOAD, and, if the Secret dependency-track-api-key does
-#     not exist yet, an API key for it stored there (used by sbom-uploader.yaml and sbom-hook). Permissions are only added,
-#     never removed, and an existing Secret is never touched.
+#  0. Dry run: until you have seeded the Secret dependency-track-admin the Job only prints what it would do and changes
+#     nothing (exit 0). Seed it with the admin password you want:
+#     kubectl -n security-system create secret generic dependency-track-admin --from-literal=username=admin --from-literal=password=<password>
+#  1. Admin: the built-in admin/admin must change its password on first login. With the Secret seeded the Job sets that
+#     password on a fresh install, or just logs in when it is already set.
+#  2. Teams `sbom-uploader` (BOM_UPLOAD, PROJECT_CREATION_UPLOAD; key in the Secret dependency-track-api-key, used by
+#     sbom-uploader.yaml and sbom-hook) and `vex-exporter` (VIEW_PORTFOLIO, VULNERABILITY_ANALYSIS_READ; key in
+#     dependency-track-vex-api-key, used by vex-export.yaml). A key is only created if its Secret does not exist yet.
+#     Permissions are only added, never removed, and an existing Secret is never touched.
 #  3. Extension settings (Trivy analyzer, KEV data sources) from extensions.json below, merged over the current settings
 #     through the v2 API. Add entries there for other vulnerability sources or analyzers (point/name/config; the config
 #     schema is GET /api/v2/extension-points/<point>/extensions/<name>/config-schema).
@@ -73,6 +76,7 @@ rules:
     resourceNames:
       - "dependency-track-admin"
       - "dependency-track-api-key"
+      - "dependency-track-vex-api-key"
     verbs:
       - "get"
 ---
@@ -136,39 +140,49 @@ spec:
 
                   curl -sf -o /dev/null "$DT_URL/api/version" || { echo "api-server not reachable yet" >&2; exit 1; }
 
-                  # 1. admin password
-                  if kubectl get secret dependency-track-admin >/dev/null 2>&1; then
-                    pw=$(kubectl get secret dependency-track-admin -o jsonpath='{.data.password}' | base64 -d)
-                  else
-                    pw=$(head -c 32 /dev/urandom | base64 | tr -d '/+=\n')
-                    kubectl create secret generic dependency-track-admin --from-literal=username=admin --from-literal=password="$pw"
+                  # 0. dry run until the admin Secret is seeded
+                  if ! kubectl get secret dependency-track-admin >/dev/null 2>&1; then
+                    echo "DRY RUN: Secret dependency-track-admin is not seeded, nothing is changed. Would:"
+                    echo "  - set the admin password from the Secret if admin/admin is still active, then log in as admin"
+                    echo "  - ensure team sbom-uploader (BOM_UPLOAD, PROJECT_CREATION_UPLOAD) and its key Secret dependency-track-api-key"
+                    echo "  - ensure team vex-exporter (VIEW_PORTFOLIO, VULNERABILITY_ANALYSIS_READ) and its key Secret dependency-track-vex-api-key"
+                    jq -r '.[] | "  - apply extension settings " + .point + "/" + .name + ": " + (.config | tostring)' /config/extensions.json
+                    echo "Seed it with: kubectl -n security-system create secret generic dependency-track-admin --from-literal=username=admin --from-literal=password=<password>"
+                    exit 0
                   fi
+
+                  # 1. admin password
+                  pw=$(kubectl get secret dependency-track-admin -o jsonpath='{.data.password}' | base64 -d)
                   if [ "$(login "$pw")" != 200 ]; then
-                    # first start (or a run that stored the Secret but failed before the change): admin/admin must be changed
+                    # first start: the built-in admin/admin must be changed to the seeded password
                     code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$DT_URL/api/v1/user/forceChangePassword" \
                       --data-urlencode username=admin --data-urlencode password=admin \
                       --data-urlencode "newPassword=$pw" --data-urlencode "confirmPassword=$pw")
-                    [ "$code" = 200 ] || { echo "cannot log in as admin and the default password is not accepted ($code): fix Secret dependency-track-admin" >&2; exit 1; }
+                    [ "$code" = 200 ] || { echo "cannot log in as admin and the default password is not accepted ($code): the Secret dependency-track-admin does not hold the current admin password" >&2; exit 1; }
                     [ "$(login "$pw")" = 200 ] || { echo "login as admin failed after the password change" >&2; exit 1; }
                   fi
                   token=$(cat token.txt)
 
-                  # 2. team, permissions, API key
-                  team=sbom-uploader
-                  uuid=$(api GET /api/v1/team | jq -r --arg n "$team" '.[] | select(.name == $n) | .uuid')
-                  if [ -z "$uuid" ]; then
-                    uuid=$(api PUT /api/v1/team -H "$json" -d "$(jq -nc --arg n "$team" '{name: $n}')" | jq -r .uuid)
-                  fi
-                  [ -n "$uuid" ] && [ "$uuid" != null ] || { echo "cannot find or create team $team" >&2; exit 1; }
-                  for perm in BOM_UPLOAD PROJECT_CREATION_UPLOAD; do
-                    code=$(api POST "/api/v1/permission/$perm/team/$uuid" -o /dev/null -w '%{http_code}')
-                    case "$code" in 200|304) ;; *) echo "adding $perm to $team failed ($code)" >&2; exit 1;; esac
-                  done
-                  if ! kubectl get secret dependency-track-api-key >/dev/null 2>&1; then
-                    key=$(api PUT "/api/v1/team/$uuid/key" | jq -r .key)
-                    [ -n "$key" ] && [ "$key" != null ] || { echo "cannot create an API key for $team" >&2; exit 1; }
-                    kubectl create secret generic dependency-track-api-key --from-literal=api-key="$key"
-                  fi
+                  # 2. teams, permissions, API keys: ensure_team TEAM SECRET PERMISSION...
+                  ensure_team() {
+                    team=$1; secret=$2; shift 2
+                    uuid=$(api GET /api/v1/team | jq -r --arg n "$team" '.[] | select(.name == $n) | .uuid')
+                    if [ -z "$uuid" ]; then
+                      uuid=$(api PUT /api/v1/team -H "$json" -d "$(jq -nc --arg n "$team" '{name: $n}')" | jq -r .uuid)
+                    fi
+                    [ -n "$uuid" ] && [ "$uuid" != null ] || { echo "cannot find or create team $team" >&2; exit 1; }
+                    for perm in "$@"; do
+                      code=$(api POST "/api/v1/permission/$perm/team/$uuid" -o /dev/null -w '%{http_code}')
+                      case "$code" in 200|304) ;; *) echo "adding $perm to $team failed ($code)" >&2; exit 1;; esac
+                    done
+                    if ! kubectl get secret "$secret" >/dev/null 2>&1; then
+                      key=$(api PUT "/api/v1/team/$uuid/key" | jq -r .key)
+                      [ -n "$key" ] && [ "$key" != null ] || { echo "cannot create an API key for $team" >&2; exit 1; }
+                      kubectl create secret generic "$secret" --from-literal=api-key="$key"
+                    fi
+                  }
+                  ensure_team sbom-uploader dependency-track-api-key BOM_UPLOAD PROJECT_CREATION_UPLOAD
+                  ensure_team vex-exporter dependency-track-vex-api-key VIEW_PORTFOLIO VULNERABILITY_ANALYSIS_READ
 
                   # 3. extension settings, merged over the current ones
                   jq -c '.[]' /config/extensions.json > extensions.jsonl

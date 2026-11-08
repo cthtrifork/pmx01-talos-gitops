@@ -6,6 +6,7 @@ resources:
   - kek-job.yaml
   - sbom-uploader.yaml
   - config-job.yaml
+  - vex-export.yaml
   - service-lb.yaml
   - helm-release.yaml
   - helm-repository.yaml
