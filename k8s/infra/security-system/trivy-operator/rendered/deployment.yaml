@@ -24,6 +24,7 @@ spec:
       labels:
         app.kubernetes.io/instance: trivy-operator
         app.kubernetes.io/name: trivy-operator
+        prometheus-scrape: "true"
     spec:
       automountServiceAccountToken: true
       containers:

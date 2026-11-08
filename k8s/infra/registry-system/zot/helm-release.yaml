@@ -29,6 +29,8 @@ spec:
   values:
     podAnnotations:
       reloader.stakater.com/auto: "true"
+    podLabels:
+      prometheus-scrape: "true"
     mountConfig: true
     service:
       type: ClusterIP

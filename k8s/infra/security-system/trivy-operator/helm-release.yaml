@@ -175,6 +175,8 @@ spec:
     serviceMonitor:
       enabled: true
     operator:
+      podLabels:
+        prometheus-scrape: "true"
       replicas: 2
       scanJobsInSameNamespace: true
       # every report (SbomReport included) is POSTed here; sbom-hook uploads the SBOMs to Dependency-Track
