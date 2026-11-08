@@ -4,7 +4,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
   name: reloader
-  namespace: policy-system
+  namespace: security-system
 spec:
   interval: 12h
   url: oci://ghcr.io/stakater/charts/reloader

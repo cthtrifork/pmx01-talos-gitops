@@ -84,7 +84,7 @@ spec:
         - mountPath: /etc/ssl/certs/zot-ca.crt
           name: zot-ca
           readOnly: true
-          subPath: ca.crt
+          subPath: ca-bundle.crt
         - mountPath: /tmp
           name: cache-policies
           readOnly: false
@@ -94,9 +94,9 @@ spec:
           type: RuntimeDefault
       serviceAccountName: trivy-operator
       volumes:
-      - name: zot-ca
-        secret:
-          secretName: trivy-registry-ca
+      - configMap:
+          name: portableinfo-ca-bundle
+        name: zot-ca
       - emptyDir:
           sizeLimit: 100Mi
         name: cache-policies

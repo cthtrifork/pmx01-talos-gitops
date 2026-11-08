@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    meta.helm.sh/release-namespace: "policy-system"
+    meta.helm.sh/release-namespace: "security-system"
     meta.helm.sh/release-name: "reloader"
   labels:
     app: reloader-reloader
@@ -20,7 +20,7 @@ metadata:
     provider: stakater
     version: v1.4.23
   name: reloader-reloader
-  namespace: policy-system
+  namespace: security-system
 spec:
   replicas: 1
   revisionHistoryLimit: 2

@@ -1,10 +1,10 @@
 ---
-# Source: reloader/templates/clusterrolebinding.yaml
+# Source: reloader/templates/rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   annotations:
-    meta.helm.sh/release-namespace: "policy-system"
+    meta.helm.sh/release-namespace: "security-system"
     meta.helm.sh/release-name: "reloader"
   labels:
     app: reloader-reloader
@@ -16,13 +16,13 @@ metadata:
     heritage: "Helm"
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/version: "v1.4.23"
-  name: reloader-reloader-role-binding
-  namespace: policy-system
+  name: reloader-reloader-metadata-role-binding
+  namespace: security-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: reloader-reloader-role
+  kind: Role
+  name: reloader-reloader-metadata-role
 subjects:
   - kind: ServiceAccount
     name: reloader-reloader
-    namespace: policy-system
+    namespace: security-system

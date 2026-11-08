@@ -1,0 +1,21 @@
+# The namespace default-deny and the DNS/API server egress come from k8s/infra/cert-manager/networkpolicy.yaml.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+# Admission webhook for Bundles: called by the API server (host network) on the pod port 6443.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trust-manager-webhook-ingress
+  namespace: cert-manager-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: trust-manager
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "6443", protocol: TCP }

@@ -8,3 +8,4 @@ resources:
   - dependency-track/
   - sbom-hook/
   - vex-hub/
+  - reloader/

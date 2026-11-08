@@ -133,7 +133,7 @@ spec:
             # zot's certificate is from the cluster issuer; Go also reads extra files in /etc/ssl/certs
             - name: zot-ca
               mountPath: /etc/ssl/certs/zot-ca.crt
-              subPath: ca.crt
+              subPath: ca-bundle.crt
               readOnly: true
             # trivy image docker.io/library/hello-world --vex repo --show-suppressed --format table --cache-dir=/home/scanner/.cache
             - name: configfile
@@ -162,8 +162,8 @@ spec:
               configMap:
                 name: trivy-ignorepolicy
             - name: zot-ca
-              secret:
-                secretName: trivy-registry-ca
+              configMap:
+                name: portableinfo-ca-bundle
       resources:
         requests:
           cpu: 100m
@@ -212,7 +212,7 @@ spec:
           mountPath: /tmp/trivy/.cache
         - name: zot-ca # the scan jobs pull images through zot
           mountPath: /etc/ssl/certs/zot-ca.crt
-          subPath: ca.crt
+          subPath: ca-bundle.crt
           readOnly: true
         - name: repository-config
           mountPath: /.trivy/vex/repository.yaml
@@ -225,8 +225,8 @@ spec:
           subPath: ignorePolicy
       scanJobCustomVolumes:
         - name: zot-ca
-          secret:
-            secretName: trivy-registry-ca
+          configMap:
+            name: portableinfo-ca-bundle
         - name: repository-config
           configMap:
             name: vex-repository-config
@@ -266,15 +266,15 @@ spec:
     volumeMounts:
       - name: zot-ca
         mountPath: /etc/ssl/certs/zot-ca.crt
-        subPath: ca.crt
+        subPath: ca-bundle.crt
         readOnly: true
       - name: cache-policies
         mountPath: /tmp
         readOnly: false
     volumes:
       - name: zot-ca
-        secret:
-          secretName: trivy-registry-ca
+        configMap:
+          name: portableinfo-ca-bundle
       - name: cache-policies
         emptyDir:
           sizeLimit: 100Mi

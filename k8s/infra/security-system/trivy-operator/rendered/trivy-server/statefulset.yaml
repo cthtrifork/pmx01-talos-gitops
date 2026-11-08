@@ -87,7 +87,7 @@ spec:
         - mountPath: /etc/ssl/certs/zot-ca.crt
           name: zot-ca
           readOnly: true
-          subPath: ca.crt
+          subPath: ca-bundle.crt
         - mountPath: /etc/trivy/trivy-config.yaml
           name: configfile
           subPath: trivy.configFile
@@ -123,9 +123,9 @@ spec:
       - configMap:
           name: trivy-ignorepolicy
         name: ignore-policy
-      - name: zot-ca
-        secret:
-          secretName: trivy-registry-ca
+      - configMap:
+          name: portableinfo-ca-bundle
+        name: zot-ca
   volumeClaimTemplates:
   - apiVersion: v1
     kind: PersistentVolumeClaim
