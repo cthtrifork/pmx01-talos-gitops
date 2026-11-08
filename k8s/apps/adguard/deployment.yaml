@@ -22,9 +22,6 @@ spec:
       labels:
         app: adguard-home
     spec:
-      securityContext:
-        seccompProfile:
-          type: RuntimeDefault
       tolerations:
         # Tolerate the control plane taint
         - key: node-role.kubernetes.io/control-plane
@@ -66,10 +63,8 @@ spec:
             readOnlyRootFilesystem: false
             allowPrivilegeEscalation: false
             privileged: false
-            # root, so the file it writes is owned by the user adguard-home runs as: adguard-home no longer has
-            # DAC_OVERRIDE and could not rewrite a file owned by another user
-            runAsUser: 0
-            runAsGroup: 0
+            runAsUser: 65534
+            runAsGroup: 65534
       containers:
         - name: adguard-home
           image: adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c
@@ -95,19 +90,6 @@ spec:
               mountPath: /opt/adguardhome/conf/ # AdGuard configuration
             - name: adguard-tls-cert
               mountPath: /opt/adguardhome/conf/tls/ # TLS certs
-          # The image's AdGuardHome binary has the file capability cap_net_bind_service=+eip (setcap in the Dockerfile)
-          # and the image sets no USER, so it runs as root. With every capability dropped the kernel refuses to exec it
-          # ("operation not permitted", see the revert in #590): the capability must stay in the bounding set. Hence drop
-          # ALL and add NET_BIND_SERVICE back (needed for ports 53, 443 and 853), rather than running as non-root,
-          # where no_new_privs would again stop the file capability from taking effect.
-          securityContext:
-            allowPrivilegeEscalation: false
-            privileged: false
-            capabilities:
-              drop:
-                - "ALL"
-              add:
-                - NET_BIND_SERVICE
           resources:
             requests:
               cpu: 100m
