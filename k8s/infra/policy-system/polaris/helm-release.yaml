@@ -207,3 +207,10 @@ spec:
             - linuxHardening
             - insecureCapabilities
             - notReadOnlyRootFilesystem
+        # adguard-home: the image runs as root and its binary has the file capability cap_net_bind_service, which cannot take
+        # effect for a non-root process under no_new_privs. It runs with only NET_BIND_SERVICE (ports 53, 443, 853).
+        - controllerNames:
+            - adguard-deployment
+          rules:
+            - runAsRootAllowed
+            - insecureCapabilities
