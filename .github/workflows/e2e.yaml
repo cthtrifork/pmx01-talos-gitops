@@ -141,37 +141,18 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      # Exemptions to keep the job short: the workloads (apps, app-controllers, virtualmachines) are
-      # not reconciled here. Their manifests are still built and schema-checked by the first steps.
+      # Only the Flux sync and bootstrap are reconciled. gitops-infra cannot be reconciled on a fresh
+      # cluster: its HelmReleases install the cert-manager, CloudNativePG and Traefik CRDs that other
+      # resources in the same Kustomization use, so the server-side dry-run fails (and SOPS secrets cannot
+      # be decrypted). The rest is built and schema-checked by the first steps.
       - name: Suspend Kustomizations that are not tested here
         run: |
-          for ks in app app-controllers gitops-virtualmachines; do
+          for ks in gitops-infra gitops-infra-post app-controllers app gitops-virtualmachines; do
             flux suspend kustomization "${ks}"
           done
       - name: Wait for the bootstrap Kustomization
         run: |
           flux reconcile kustomization gitops-infra-bootstrap --timeout=5m
-
-      # The real SOPS key is not available in kind. On the live Kustomizations only (never in git) drop
-      # decryption and delete the encrypted Secrets, so infra and infra-post can reconcile.
-      # Not blocking yet: the first runs show how long this takes and which HelmReleases need tuning.
-      - name: Reconcile infra without the encrypted Secrets
-        run: |
-          cat > "${RUNNER_TEMP}/no-sops.json" <<'EOF'
-          {"spec":{"decryption":null,"patches":[
-            {"target":{"kind":"Secret","name":"github-auth"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: github-auth\n"},
-            {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"}]}}
-          EOF
-          for ks in gitops-infra gitops-infra-post; do
-            kubectl patch kustomization "${ks}" -n flux-system --type merge --patch-file "${RUNNER_TEMP}/no-sops.json"
-          done
-          for ks in gitops-infra gitops-infra-post; do
-            kubectl wait --for=condition=Ready kustomization "${ks}" -n flux-system --timeout=5m || {
-              kubectl get kustomization "${ks}" -n flux-system -o jsonpath='{range .status.conditions[*]}{.type}={.status}: {.message}{"\n"}{end}'
-              exit 1
-            }
-          done
-        continue-on-error: true
 
       - name: List deployed resources
         if: always()
