@@ -65,10 +65,17 @@ The settings live in the ConfigMap `dependency-track-config` (`extensions.json`:
 and are merged over the current settings; add entries there for other analyzers or data sources. Notifications, policies and
 the NVD/GitHub/OSV sources are not managed (UI only, defaults kept).
 
-The same Job bootstraps access: it changes the default `admin` password (generated, stored in the Secret
-`dependency-track-admin`, never overwritten), creates the team `sbom-uploader` with `BOM_UPLOAD` and
-`PROJECT_CREATION_UPLOAD`, and, if the Secret `dependency-track-api-key` does not exist, an API key for that team stored
-there. Existing Secrets are left alone, so a key created by hand keeps working. Permissions on the team are only added.
+The same Job bootstraps access. Everything here is a **dry run until you seed the Secrets**: the jobs log what they would do
+and exit 0, `sbom-hook` logs `DRY RUN: would upload ...` instead of calling Dependency-Track, and nothing is changed.
+
+1. Seed the admin password you want: `kubectl -n security-system create secret generic dependency-track-admin
+   --from-literal=username=admin --from-literal=password=<password>`. On its next run (every 20 minutes) `config-job.yaml`
+   sets it on the built-in `admin`, creates the team `sbom-uploader` with `BOM_UPLOAD` and `PROJECT_CREATION_UPLOAD` and the team
+   `vex-exporter`, stores their API keys in `dependency-track-api-key` and `dependency-track-vex-api-key` (existing Secrets,
+   such as a key created by hand, are left alone) and applies the settings above. Permissions are only added.
+2. Restart `sbom-hook` once the key Secret exists (it reads the key at start; `kubectl -n security-system rollout restart
+   deploy/sbom-hook`); the uploader CronJob picks the key up on its next run.
+3. For the VEX export, seed the GitHub token (below). Without it the export only prints the documents it would write.
 
 ## Exporting Dependency-Track decisions to the VEX repository
 
@@ -78,7 +85,7 @@ of this repository, regenerates `vex/index.json` and opens a pull request from t
 Merge it and Trivy hides those findings (through `vex-hub/`). It only changes files under `vex/`, never pushes to `main`,
 and only deletes documents whose author is `Dependency-Track`. Findings on components without a PURL are skipped.
 
-It needs the Secret `dependency-track-vex-github` (key `token`), created by hand: a fine-grained personal access token (or
+It needs the Secret `dependency-track-vex-github` (key `token`), seeded by hand: a fine-grained personal access token (or
 GitHub App installation token) for this repository only, with Contents and Pull requests read/write.
 `kubectl -n security-system create secret generic dependency-track-vex-github --from-literal=token=<token>`.
 The API key comes from `config-job.yaml` (team `vex-exporter`). Trivy identifies a scanned image by the PURL
@@ -89,8 +96,8 @@ that change (versioned by tag) stay in Dependency-Track but are not exported; re
 delete the old projects. A moved tag creates a new project per digest, so old ones pile up until retention removes them.
 
 Findings come from the projects/SBOMs uploaded to Dependency-Track. `dependency-track/sbom-uploader.yaml` is a CronJob
-(daily) that uploads trivy-operator's `SbomReport`s, one project per image, with that API key. Until the Secret exists the
-CronJob fails with a message saying so.
+(daily) that uploads trivy-operator's `SbomReport`s, one project per image, with that API key; until the Secret exists it
+lists what it would upload.
 
 Network policies: if a default-deny is added to `security-system`, also allow Dependency-Track to Postgres (5432),
 trivy-service (4954) and `www.cisa.gov` (443), and the uploader to dependency-track-api-server (8080) and the Kubernetes API.

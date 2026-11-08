@@ -70,9 +70,11 @@ spec:
                 - -eu
                 - -c
                 - |
+                  # dry run until config-job has created the API key Secret: list what would be uploaded, upload nothing
+                  dry=0
                   if [ -z "$${API_KEY:-}" ]; then
-                    echo "Secret dependency-track-api-key (key api-key) is missing or empty" >&2
-                    exit 1
+                    echo "DRY RUN: Secret dependency-track-api-key is missing (config-job creates it once dependency-track-admin is seeded)"
+                    dry=1
                   fi
                   cd /work
                   # one line per SbomReport: namespace name server repository tag digest
@@ -87,6 +89,7 @@ spec:
                     project="$repo"; [ "$server" != "-" ] && project="$server/$repo"
                     # the digest is what Trivy (and so the VEX export) identifies an image by; the tag is only a fallback
                     version="$digest"; [ "$digest" = "-" ] && version="$tag"
+                    if [ "$dry" = 1 ]; then echo "would upload $project:$version ($ns/$name)"; ok=$((ok+1)); continue; fi
                     kubectl get sbomreport -n "$ns" "$name" -o json | jq '.report.components' > bom.json
                     if curl -sS -f -o /dev/null -X POST "$DT_URL/api/v1/bom" \
                         -H "X-Api-Key: $API_KEY" \
@@ -98,6 +101,7 @@ spec:
                       failed=$((failed+1))
                     fi
                   done < unique.tsv
+                  if [ "$dry" = 1 ]; then echo "dry run: would upload $ok, uploaded nothing"; exit 0; fi
                   echo "uploaded $ok, failed $failed"
                   [ "$failed" -eq 0 ]
               env:

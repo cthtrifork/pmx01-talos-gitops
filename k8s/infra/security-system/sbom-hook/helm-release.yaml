@@ -58,6 +58,7 @@ spec:
           secretKeyRef:
             name: dependency-track-api-key
             key: api-key
+            optional: true # dry run until config-job has created it, see redpanda-connect.yaml
     deployment:
       podAnnotations:
         reloader.stakater.com/auto: "true" # restart on a change of the config ConfigMap

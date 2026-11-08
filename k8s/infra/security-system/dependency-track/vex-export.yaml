@@ -9,8 +9,10 @@
 # Statements are only exported for components that have a PURL (a statement without a subcomponent would cover the whole image).
 #
 # Needs two Secrets: dependency-track-vex-api-key (key api-key, created by config-job.yaml) and dependency-track-vex-github
-# (key token), created by hand: a fine-grained personal access token or GitHub App installation token for this repository
+# (key token), seeded by hand: a fine-grained personal access token or GitHub App installation token for this repository
 # only, with Contents and Pull requests read/write. It is not in Git.
+# Dry run (exit 0, nothing pushed): without the GitHub token the Job still exports and converts, and prints the documents it
+# would write; without the API key it only says so.
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -47,17 +49,25 @@ spec:
                 - -eu
                 - -c
                 - |
-                  [ -n "$API_KEY" ] || { echo "Secret dependency-track-vex-api-key (key api-key) is missing or empty: run config-job first" >&2; exit 1; }
-                  [ -n "$GITHUB_TOKEN" ] || { echo "Secret dependency-track-vex-github (key token) is missing or empty" >&2; exit 1; }
+                  if [ -z "$API_KEY" ]; then
+                    echo "DRY RUN: Secret dependency-track-vex-api-key is missing (config-job creates it once dependency-track-admin is seeded); nothing to export"
+                    exit 0
+                  fi
                   cd /work
-                  # the token goes to git through the environment, not the command line
-                  export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
-                    GIT_CONFIG_VALUE_0="Authorization: Basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-                  git clone -q --depth 1 --branch main --sparse "$GIT_URL" repo
-                  cd repo
-                  git sparse-checkout set vex scripts
-                  git config user.name "dependency-track-vex-export"
-                  git config user.email "noreply@users.noreply.github.com"
+                  if [ -n "$GITHUB_TOKEN" ]; then
+                    # the token goes to git through the environment, not the command line
+                    export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
+                      GIT_CONFIG_VALUE_0="Authorization: Basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+                    git clone -q --depth 1 --branch main --sparse "$GIT_URL" repo
+                    cd repo
+                    git sparse-checkout set vex scripts
+                    git config user.name "dependency-track-vex-export"
+                    git config user.email "noreply@users.noreply.github.com"
+                  else
+                    # dry run: no clone, so every document counts as new
+                    mkdir -p repo/vex/pkg/oci
+                    cd repo
+                  fi
 
                   # OpenVEX statements of one project: jq -f vex.jq --arg name <project> --arg version <version> <CycloneDX VEX>
                   cat > /work/vex.jq <<'JQ'
@@ -129,6 +139,14 @@ spec:
                   done
 
                   # 3. index, commit only vex/, push, pull request
+                  if [ -z "$GITHUB_TOKEN" ]; then
+                    echo "DRY RUN: Secret dependency-track-vex-github (key token) is not seeded, nothing is pushed. Would write:"
+                    for doc in $(find vex/pkg/oci -name oci.openvex.json 2>/dev/null | sort); do
+                      echo "  $doc ($(jq '.statements | length' "$doc") statements)"
+                    done
+                    echo "Seed it with: kubectl -n security-system create secret generic dependency-track-vex-github --from-literal=token=<token>"
+                    exit 0
+                  fi
                   if [ -z "$(git status --porcelain vex)" ]; then echo "VEX documents are up to date"; exit 0; fi
                   ./scripts/vex-index.sh
                   git checkout -q -b "$BRANCH"

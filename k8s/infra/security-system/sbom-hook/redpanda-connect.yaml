@@ -52,17 +52,26 @@ cache_resources:
       default_ttl: 24h
 
 output:
-  http_client:
-    url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
-    verb: PUT
-    headers:
-      Content-Type: application/json
-      X-Api-Key: $${DT_API_KEY}
-    timeout: 60s
-    max_in_flight: 4
-    retries: 3
-    drop_on:
-      - 400
-      - 404
-      - 409
-      - 422
+  switch:
+    cases:
+      # dry run until the API key Secret exists (config-job creates it): log what would be uploaded
+      - check: env("DT_API_KEY").or("") == ""
+        output:
+          processors:
+            - mapping: 'root = "DRY RUN: would upload " + this.projectName + ":" + this.projectVersion'
+          stdout: {}
+      - output:
+          http_client:
+            url: http://dependency-track-api-server.security-system.svc.cluster.local:8080/api/v1/bom
+            verb: PUT
+            headers:
+              Content-Type: application/json
+              X-Api-Key: $${DT_API_KEY}
+            timeout: 60s
+            max_in_flight: 4
+            retries: 3
+            drop_on:
+              - 400
+              - 404
+              - 409
+              - 422
