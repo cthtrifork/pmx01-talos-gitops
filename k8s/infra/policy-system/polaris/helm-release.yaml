@@ -214,3 +214,10 @@ spec:
           rules:
             - privilegeEscalationAllowed
             - insecureCapabilities
+        # dependency-track-frontend needs a writable root filesystem: its entrypoint renders the nginx site config into
+        # /etc/nginx/conf.d and writes API_BASE_URL into static/config.json at start, and skips the env configuration when it
+        # cannot (the chart ships readOnlyRootFilesystem: false for this reason)
+        - controllerNames:
+            - dependency-track-frontend
+          rules:
+            - notReadOnlyRootFilesystem

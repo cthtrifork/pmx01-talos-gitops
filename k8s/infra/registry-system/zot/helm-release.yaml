@@ -76,10 +76,14 @@ spec:
     strategy:
       type: Recreate
     extraVolumes:
+      - name: tmp
+        emptyDir: {}
       - name: zot-certs
         secret:
           secretName: zot-tls-cert
     extraVolumeMounts:
+      - name: tmp
+        mountPath: /tmp
       - name: zot-certs
         mountPath: /etc/zot/certs
         readOnly: true
@@ -123,6 +127,8 @@ spec:
                 path: /spec/template/spec/containers/0/securityContext
                 value:
                   allowPrivilegeEscalation: false
+                  # logs to stdout; all state is on the PVC at /var/lib/registry
+                  readOnlyRootFilesystem: true
                   capabilities:
                     drop:
                       - ALL
