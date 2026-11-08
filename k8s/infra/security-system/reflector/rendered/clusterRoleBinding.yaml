@@ -4,7 +4,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: reflector
-  namespace: cert-manager-system
+  namespace: security-system
   labels:
     helm.sh/chart: reflector-10.0.74
     app.kubernetes.io/name: reflector
@@ -18,4 +18,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: reflector
-    namespace: cert-manager-system
+    namespace: security-system

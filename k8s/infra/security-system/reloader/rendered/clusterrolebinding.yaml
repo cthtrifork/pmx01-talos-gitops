@@ -4,7 +4,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   annotations:
-    meta.helm.sh/release-namespace: "policy-system"
+    meta.helm.sh/release-namespace: "security-system"
     meta.helm.sh/release-name: "reloader"
   labels:
     app: reloader-reloader
@@ -17,7 +17,7 @@ metadata:
     app.kubernetes.io/managed-by: "Helm"
     app.kubernetes.io/version: "v1.4.23"
   name: reloader-reloader-role-binding
-  namespace: policy-system
+  namespace: security-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -25,4 +25,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: reloader-reloader
-    namespace: policy-system
+    namespace: security-system
