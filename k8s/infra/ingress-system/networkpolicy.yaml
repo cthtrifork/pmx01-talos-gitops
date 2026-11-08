@@ -1,0 +1,60 @@
+# Default deny both ways for the namespace. Traefik takes no inbound connections: public traffic arrives through the
+# Cloudflare tunnel (cloudflared sidecar in the same pod, which dials out), so there are no ingress rules.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: traefik-system-default-deny
+  namespace: traefik-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: traefik
+  namespace: traefik-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API (the kubernetescrd provider)
+    - toEntities:
+        - kube-apiserver
+    # cloudflared: the tunnel (7844 QUIC and TCP), the Cloudflare API (443) and its direct DNS lookups (53)
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - { port: "7844", protocol: ANY }
+            - { port: "443", protocol: TCP }
+            - { port: "53", protocol: ANY }
+    # Backends of the IngressRoutes: harper-pad-sync (http, 9000) and the Flux webhook receiver (notification-controller, 9292)
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: harper-pad
+            k8s:app: harper-pad-sync
+      toPorts:
+        - ports:
+            - { port: "9000", protocol: TCP }
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: flux-system
+            k8s:app: notification-controller
+      toPorts:
+        - ports:
+            - { port: "9292", protocol: TCP }
