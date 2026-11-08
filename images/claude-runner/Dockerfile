@@ -11,7 +11,8 @@ ARG CLAUDE_CODE_VERSION=2.1.311 # renovate: datasource=npm depName=@anthropic-ai
 ARG KUBECTL_VERSION=v1.34.1
 ARG GH_VERSION=2.103.3 # renovate: datasource=github-releases depName=cli/cli
 ARG CRANE_VERSION=0.22.1 # renovate: datasource=github-releases depName=google/go-containerregistry
-ARG FLUX_OPERATOR_VERSION=0.62.1 # renovate: datasource=github-releases depName=controlplaneio-fluxcd/flux-operator
+# renovate: datasource=github-releases depName=controlplaneio-fluxcd/flux-operator
+ARG FLUX_OPERATOR_VERSION=0.62.1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git curl ca-certificates openssh-client jq python3 \
