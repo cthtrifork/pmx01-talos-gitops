@@ -1,0 +1,129 @@
+# Alerts for the Cilium network policies, the scrape targets and the node disks. There is no Alertmanager: nothing is sent, the alerts are read from
+# Prometheus (/api/v1/alerts, or ALERTS{alertstate="firing"}), see the "Alerts" section in claude-md/CLAUDE.md.
+# The Prometheus ruleSelector requires the release label.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cilium-alerts
+  namespace: kube-prometheus-stack-system
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: cilium-network-policy
+      rules:
+        - alert: CiliumPolicyDenied
+          # The ~25 per 10m of claude-rc to unlisted hosts is below the threshold; a missing allow rule is not.
+          expr: >-
+            sum by (source_namespace, source_workload, source_ip, destination_namespace, destination_workload,
+            destination_ip, traffic_direction)
+            (increase(hubble_drop_total{reason="POLICY_DENIED"}[15m])) > 20
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Traffic denied by a network policy ({{ $labels.source_workload }} to {{ $labels.destination_workload }})
+            description: >-
+              {{ $value | humanize }} packets in 15m from {{ $labels.source_namespace }}/{{ $labels.source_workload }}
+              ({{ $labels.source_ip }}) to {{ $labels.destination_namespace }}/{{ $labels.destination_workload }}
+              ({{ $labels.destination_ip }}), {{ $labels.traffic_direction }}. A rule is probably missing.
+        - alert: CiliumPolicyChangeFailures
+          expr: increase(cilium_policy_change_total{outcome="fail"}[5m]) > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: Cilium failed to {{ $labels.operation }} a policy on {{ $labels.node }}
+            description: Source {{ $labels.source }}. Check the policy with kubectl get cnp,ccnp -A (VALID column).
+    - name: cilium-health
+      rules:
+        - alert: CiliumDropsHigh
+          # Baseline is 1 to 3 packets/s per node, mostly VLAN filter and unsupported L3 protocol.
+          expr: sum by (instance, reason) (rate(cilium_drop_count_total[5m])) > 25
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Cilium drops {{ $labels.reason }} at {{ $value | humanize }} packets/s on {{ $labels.instance }}
+        - alert: CiliumEndpointNotReady
+          expr: cilium_endpoint_state{endpoint_state!="ready"} > 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: Cilium endpoints in state {{ $labels.endpoint_state }} on {{ $labels.node }}
+        - alert: CiliumControllersFailing
+          expr: cilium_controllers_failing > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Cilium controllers failing on {{ $labels.node }}
+        - alert: CiliumUnreachable
+          expr: cilium_unreachable_nodes > 0 or cilium_unreachable_health_endpoints > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Cilium on {{ $labels.node }} cannot reach all nodes or health endpoints
+    - name: scrape-targets
+      rules:
+        - alert: ScrapeTargetDown
+          # Also the first sign that a default-deny policy blocked Prometheus.
+          expr: up == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Scrape target {{ $labels.job }} {{ $labels.instance }} is down
+            description: Namespace {{ $labels.namespace }}. If it started after a policy change, check the CiliumPolicyDenied alert.
+    - name: node-disk
+      rules:
+        # PVC sizes are not enforced (local-path hostPath), so the node filesystem is the real limit.
+        # rootfs (/etc/extensions.yaml, read-only) is left out.
+        - alert: NodeFilesystemAlmostFull
+          expr: >-
+            100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}) > 85
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | humanize }}% full
+            description: Node filesystem, not a PVC (sizes are not enforced). Find the node with kubectl get nodes -o wide.
+        - alert: NodeFilesystemCriticallyFull
+          expr: >-
+            100 * (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}) > 95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is {{ $value | humanize }}% full
+        - alert: NodeFilesystemFillingUp
+          # Fills within 24h at the rate of the last 6h; only below 30% free so a big, quiet disk stays silent.
+          expr: >-
+            (predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}[6h], 24 * 3600) < 0)
+            and (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"} < 0.30)
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} fills up within 24h
+        - alert: NodeFilesystemInodesAlmostFull
+          expr: >-
+            100 * (1 - node_filesystem_files_free{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}
+            / node_filesystem_files{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"}) > 90
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} has {{ $value | humanize }}% of its inodes used
+        - alert: NodeFilesystemReadOnly
+          expr: node_filesystem_readonly{fstype!~"tmpfs|overlay|squashfs|devtmpfs|ramfs|rootfs"} == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Filesystem {{ $labels.mountpoint }} on {{ $labels.instance }} is read-only
