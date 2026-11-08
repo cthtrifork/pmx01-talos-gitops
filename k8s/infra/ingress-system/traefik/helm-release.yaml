@@ -50,13 +50,23 @@ spec:
           # kubelet cannot reach the loopback metrics port, so ask cloudflared itself (exec)
           livenessProbe:
             exec:
-              command: ["cloudflared", "tunnel", "--metrics", "127.0.0.1:2000", "ready"]
+              command:
+                - "cloudflared"
+                - "tunnel"
+                - "--metrics"
+                - "127.0.0.1:2000"
+                - "ready"
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             exec:
-              command: ["cloudflared", "tunnel", "--metrics", "127.0.0.1:2000", "ready"]
+              command:
+                - "cloudflared"
+                - "tunnel"
+                - "--metrics"
+                - "127.0.0.1:2000"
+                - "ready"
             periodSeconds: 10
             timeoutSeconds: 5
           resources:
