@@ -162,14 +162,13 @@ data:
         - memoryLimitsMissing
       - controllerNames:
         - claude-rc
-        - harper-pad-admin
         rules:
         - livenessProbeMissing
         - readinessProbeMissing
       - containerNames:
-        - cloudflared
+        - admin
         controllerNames:
-        - traefik
+        - harper-pad-admin
         rules:
         - livenessProbeMissing
         - readinessProbeMissing
