@@ -35,7 +35,6 @@ data:
         namespace: kube-system
         rules: []
       - containerNames:
-        - etcd
         - kube-apiserver
         - kube-controller-manager
         - kube-scheduler
@@ -65,10 +64,7 @@ data:
         - kube-scheduler
         rules:
         - hostNetworkSet
-        - hostPIDSet
         - hostPathSet
-        - dangerousCapabilities
-        - insecureCapabilities
       - controllerNames:
         - kube-prometheus-stack-prometheus-node-exporter
         rules:
