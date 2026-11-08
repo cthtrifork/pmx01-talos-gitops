@@ -52,14 +52,6 @@ spec:
       toPorts:
         - ports:
             - { port: "9443", protocol: TCP }
-    # Metrics
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
-            k8s:app.kubernetes.io/name: prometheus
-      toPorts:
-        - ports:
-            - { port: "8080", protocol: TCP }
   egress:
     # Instance managers of the clusters in any namespace: status on 8000, SQL on 5432
     - toEndpoints:
