@@ -1,0 +1,80 @@
+name: Update KubeVirt operators
+
+# Renovate is disabled for the vendored KubeVirt and CDI operator manifests (see renovate.json5), so this
+# refreshes the whole release manifest and opens a PR when upstream has a new stable release.
+on:
+  schedule:
+    - cron: "43 5 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/update-kubevirt-operators.yaml
+      - scripts/ci/update-kubevirt-operators.sh
+
+permissions: {}
+
+concurrency:
+  group: update-kubevirt-operators-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BRANCH: deps/kubevirt-operators
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # the App token below does the writing
+    steps:
+      # As the Renovate App, so the PR triggers CI (GITHUB_TOKEN pushes do not)
+      - name: Get a GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          permission-contents: write # push the update branch
+          permission-pull-requests: write # open the PR
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Update the operator manifests
+        id: update
+        env:
+          GH_TOKEN: ${{ github.token }} # public repositories, read only
+        run: |
+          {
+            echo 'summary<<EOF'
+            scripts/ci/update-kubevirt-operators.sh
+            echo EOF
+          } >>"$GITHUB_OUTPUT"
+
+      # On a PR that changes this workflow only show what would change
+      - name: Open or update the PR
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SUMMARY: ${{ steps.update.outputs.summary }}
+        run: |
+          if git diff --quiet; then
+            echo "Already up to date"
+            exit 0
+          fi
+          title="chore(kubevirt): update operator manifests"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git commit -am "$title"$'\n\n'"$SUMMARY"
+          git push --force origin "$BRANCH"
+          if [[ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]]; then
+            gh pr create --base main --head "$BRANCH" --title "$title" \
+              --body "Refreshed from the upstream release manifests by \`scripts/ci/update-kubevirt-operators.sh\`:"$'\n\n'"$SUMMARY"
+          fi
+
+      - name: Show the change
+        if: ${{ github.event_name == 'pull_request' }}
+        run: git diff --stat
