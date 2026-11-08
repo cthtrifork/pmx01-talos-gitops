@@ -22,6 +22,18 @@ spec:
       labels:
         app: adguard-home
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        # 53, 443 and 853 are privileged ports. The binary's file capability cannot be used (see the copy-binary init
+        # container), so lower the start of the unprivileged range instead (a safe sysctl).
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
       tolerations:
         # Tolerate the control plane taint
         - key: node-role.kubernetes.io/control-plane
@@ -65,9 +77,40 @@ spec:
             privileged: false
             runAsUser: 65534
             runAsGroup: 65534
+        # The AdGuardHome binary in the image has the file capability cap_net_bind_service=+eip (setcap in its Dockerfile).
+        # Under no_new_privs / dropped capabilities the kernel refuses to exec it ("operation not permitted", see #590).
+        # cp does not copy that extended attribute, so the copy runs as a plain non-root binary.
+        - name: copy-binary
+          image: adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              cp -v /opt/adguardhome/AdGuardHome /adguard-bin/AdGuardHome
+          volumeMounts:
+            - name: adguard-bin
+              mountPath: /adguard-bin
+          securityContext:
+            capabilities:
+              drop:
+                - "ALL"
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            privileged: false
       containers:
         - name: adguard-home
           image: adguard/adguardhome:v0.107.80@sha256:e2e1b48c832f7705be915873f95de0d5114de573736441d7f2923a8a6293027c
+          # the image's entrypoint and arguments, with the binary swapped for the copy
+          command:
+            - /adguard-bin/AdGuardHome
+          args:
+            - --no-check-update
+            - -c
+            - /opt/adguardhome/conf/AdGuardHome.yaml
+            - -w
+            - /opt/adguardhome/work
           ports:
             - containerPort: 53
               name: dns-tcp
@@ -83,7 +126,16 @@ spec:
               protocol: TCP
             - containerPort: 853
               name: dns-tls
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            capabilities:
+              drop:
+                - "ALL"
           volumeMounts:
+            - name: adguard-bin
+              mountPath: /adguard-bin
+              readOnly: true
             - name: adguard-data
               mountPath: /opt/adguardhome/work/ # AdGuard Runtime data
             - name: adguard-config
@@ -109,6 +161,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
+        - name: adguard-bin
+          emptyDir: {}
         - name: initial-config
           configMap:
             name: adguard-initial-config
