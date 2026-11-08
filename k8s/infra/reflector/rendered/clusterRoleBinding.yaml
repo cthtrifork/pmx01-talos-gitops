@@ -1,0 +1,21 @@
+---
+# Source: reflector/templates/clusterRoleBinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: reflector
+  namespace: cert-manager-system
+  labels:
+    helm.sh/chart: reflector-10.0.74
+    app.kubernetes.io/name: reflector
+    app.kubernetes.io/instance: reflector
+    app.kubernetes.io/version: "10.0.74"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  kind: ClusterRole
+  name: reflector
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: reflector
+    namespace: cert-manager-system
