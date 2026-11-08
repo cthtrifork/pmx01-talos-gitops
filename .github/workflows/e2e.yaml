@@ -147,11 +147,13 @@ jobs:
       # Not blocking yet: the first runs show how long this takes and which HelmReleases need tuning.
       - name: Reconcile infra without the encrypted Secrets
         run: |
-          patch='{"spec":{"decryption":null,"patches":[
+          cat > "${RUNNER_TEMP}/no-sops.json" <<'EOF'
+          {"spec":{"decryption":null,"patches":[
             {"target":{"kind":"Secret","name":"github-auth"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: github-auth\n"},
-            {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"}]}}'
+            {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"}]}}
+          EOF
           for ks in gitops-infra gitops-infra-post; do
-            kubectl patch kustomization "${ks}" -n flux-system --type merge -p "${patch}"
+            kubectl patch kustomization "${ks}" -n flux-system --type merge --patch-file "${RUNNER_TEMP}/no-sops.json"
           done
           kubectl wait --for=condition=Ready kustomization gitops-infra -n flux-system --timeout=10m
           kubectl wait --for=condition=Ready kustomization gitops-infra-post -n flux-system --timeout=5m
