@@ -35,7 +35,7 @@ kubelet reaches the port directly). Both tunnel tokens exist.
 **The two images are versioned together.** The admin applies the schema and a new sync image is not ready until the matching admin has
 applied it, so bump both in one pull request.
 
-**Image pull secret.** Both ServiceAccounts use the `github-auth` pull secret in the `harper-pad` namespace.
+**Image pull secret.** Both ServiceAccounts use the `github-auth` pull secret in the `harper-pad` namespace (SOPS-encrypted, see "Secrets (SOPS)" in the root `readme.md`).
 
 ## Tunnel tokens
 
@@ -47,10 +47,7 @@ Create them in Cloudflare Zero Trust (Networks > Tunnels) and copy each tunnel's
 In the tunnel's **Public hostname** tab add `harper-sync.portableinfo.cloud` with service
 `HTTP` `localhost:8000`. Cloudflare creates the DNS record.
 
-```sh
-kubectl -n traefik-system create secret generic cloudflared-tunnel-token \
-  --from-literal=token='<SYNC_TUNNEL_TOKEN>'
-```
+Create the Secret `cloudflared-tunnel-token` as a SOPS-encrypted file (command: "Secrets (SOPS)" in the root `readme.md`).
 
 No restart is needed: the pod picks the Secret up when it appears, and Reloader restarts the
 Deployment when the token changes later.
@@ -60,10 +57,7 @@ Deployment when the token changes later.
 Add the admin hostname with service `HTTP` `localhost:9001`, then put a Cloudflare Access
 application with your OIDC login in front of that hostname (the app has no login of its own).
 
-```sh
-kubectl -n harper-pad create secret generic harper-pad-admin-tunnel \
-  --from-literal=token='<ADMIN_TUNNEL_TOKEN>'
-```
+Create the Secret `harper-pad-admin-tunnel` as a SOPS-encrypted file (command: "Secrets (SOPS)" in the root `readme.md`).
 
 The admin Deployment runs with `replicas: 1` and starts once this Secret exists.
 

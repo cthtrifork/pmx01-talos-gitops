@@ -65,12 +65,11 @@ UI or REST API), not through Helm values, so they are not in Git:
 Findings come from the projects/SBOMs uploaded to Dependency-Track. `sbom-hook/` (Redpanda Connect) receives every
 `SbomReport` that trivy-operator produces or regenerates through its webhook (`operator.webhookBroadcastURL`) and uploads
 it, one project per image; reports are regenerated after `scannerReportTTL`, so nothing needs a second upload path. It
-needs an API key, created by hand:
+needs an API key:
 
 1. In the UI, Administration > Access Management > Teams: create a team (or use Automation) with the permissions
    `BOM_UPLOAD` and `PROJECT_CREATION_UPLOAD`, and create an API key for it.
-2. `kubectl -n security-system create secret generic dependency-track-api-key --from-literal=api-key=<key>`
-   (kept out of Git; or add it SOPS-encrypted).
+2. Create the Secret `dependency-track-api-key` as a SOPS-encrypted file (command and rotation: "Secrets (SOPS)" in the root `readme.md`).
 
 Until the Secret exists the hook's uploads fail with a 401.
 

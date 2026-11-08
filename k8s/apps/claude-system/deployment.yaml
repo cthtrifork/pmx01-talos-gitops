@@ -133,7 +133,7 @@ spec:
             defaultMode: 0400
         - name: registry-auth
           secret:
-            secretName: ghcr-pull # created by hand (not in Git), type kubernetes.io/dockerconfigjson, a token with only read:packages
+            secretName: ghcr-pull # SOPS-encrypted (root readme.md), type kubernetes.io/dockerconfigjson, a token with only read:packages
             optional: true
             defaultMode: 0400
             items:
