@@ -12,6 +12,8 @@ vex/
 └── pkg/<type>/<namespace>/<name>/<anything>.openvex.json
 ```
 
+Statements marked in Dependency-Track are exported here by `k8s/infra/security-system/dependency-track/vex-export.yaml` (documents with author `Dependency-Track`; do not edit those by hand).
+
 ## Adding a statement
 
 1. Write an [OpenVEX](https://github.com/openvex/spec) document under `pkg/`, for an image at
