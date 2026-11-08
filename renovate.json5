@@ -172,6 +172,17 @@
       "enabled": false
     },
     {
+      "description": "k8s/infra/kubevirt/{kubevirt,cdi}-operator.yaml are vendored upstream release manifests (CRDs, RBAC, KUBEVIRT_VERSION). A bump of the image line alone runs a new operator on old CRDs, so upgrade them by hand from the release files.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "quay.io/kubevirt/virt-operator",
+        "quay.io/kubevirt/cdi-operator"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Renovate itself (the renovate_version pin and the renovatebot/github-action) automerges for every update type. Last, so it wins over the rules above.",
       "matchPackageNames": ["renovate", "renovatebot/github-action"],
       "automerge": true,
