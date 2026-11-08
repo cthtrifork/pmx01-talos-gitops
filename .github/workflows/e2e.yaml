@@ -190,12 +190,11 @@ jobs:
           }
           kubectl wait --for=condition=Ready kustomization gitops-infra -n flux-system --timeout=4m || diagnose gitops-infra
           # Ready does not wait for the releases, so wait for the CRDs before applying infra-post
-          crds="certificates.cert-manager.io clusters.postgresql.cnpg.io middlewares.traefik.io ingressroutes.traefik.io"
-          # kubectl wait fails at once for a CRD that does not exist yet
-          # shellcheck disable=SC2086
-          timeout 300 bash -c "until kubectl get crd ${crds} >/dev/null 2>&1; do sleep 5; done" || { flux get helmreleases -A; exit 1; }
-          # shellcheck disable=SC2086
-          kubectl wait --for=condition=Established --timeout=2m $(printf 'crd/%s ' ${crds})
+          # kubectl wait fails at once for an object that does not exist yet, so poll for the CRDs first
+          timeout 300 bash -c 'until kubectl get crd certificates.cert-manager.io clusters.postgresql.cnpg.io middlewares.traefik.io ingressroutes.traefik.io >/dev/null 2>&1; do sleep 5; done' || { flux get helmreleases -A; exit 1; }
+          # cert-manager and CloudNativePG have admission webhooks that infra-post is validated against; traefik only needs its CRDs
+          kubectl wait --for=condition=Ready helmrelease/cert-manager -n cert-manager-system --timeout=5m || diagnose gitops-infra
+          kubectl wait --for=condition=Ready helmrelease/cloudnative-pg -n storage-system --timeout=5m || diagnose gitops-infra
           flux reconcile kustomization gitops-infra-post --timeout=3m || diagnose gitops-infra-post
         continue-on-error: true
 
