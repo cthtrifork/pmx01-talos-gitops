@@ -1,6 +1,7 @@
-# Alerts for the Cilium network policies. There is no Alertmanager: nothing is sent, the alerts are read from
+# Alerts for the Cilium network policies, the scrape targets and the node disks. There is no Alertmanager: nothing is sent, the alerts are read from
 # Prometheus (/api/v1/alerts, or ALERTS{alertstate="firing"}), see the "Alerts" section in claude-md/CLAUDE.md.
 # The Prometheus ruleSelector requires the release label.
+---
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
