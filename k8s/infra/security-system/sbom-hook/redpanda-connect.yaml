@@ -24,9 +24,9 @@ pipeline:
         if this.kind != "SbomReport" {
           root = deleted()
         } else {
-          # one Dependency-Track project per image, as in sbom-uploader.yaml: <registry>/<repository>, version = digest
-          # (the tag only if there is none). Trivy identifies an image by its digest, so the VEX statements exported by
-          # vex-export.yaml only match with it.
+          # one Dependency-Track project per image: <registry>/<repository>, version = digest (the tag only if there is
+          # none). Trivy identifies an image by its digest, so the VEX statements exported by vex-export.yaml only match
+          # with it.
           let server = this.report.registry.server.or("")
           let repo = this.report.artifact.repository
           let name = if $server != "" { $server + "/" + $repo } else { $repo }

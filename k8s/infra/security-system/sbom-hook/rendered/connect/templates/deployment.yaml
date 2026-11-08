@@ -42,6 +42,7 @@ spec:
             capabilities:
               drop:
                 - ALL
+            readOnlyRootFilesystem: true
           image: "mirror.gcr.io/redpandadata/connect:4.117.0@sha256:b6df7ca0c506578c8cc8b0cd223c117366bbeac84365f95944d339f0165b551c"
           imagePullPolicy: IfNotPresent
           args:
@@ -86,6 +87,8 @@ spec:
               mountPath: "/redpanda-connect.yaml"
               subPath: "redpanda-connect.yaml"
               readOnly: true
+            - mountPath: /tmp
+              name: tmp
             - mountPath: /etc/connect/redpanda-connect.yaml
               name: connect-config
               readOnly: true
@@ -94,6 +97,8 @@ spec:
         - name: config
           configMap:
             name: sbom-hook-config
+        - emptyDir: {}
+          name: tmp
         - configMap:
             name: sbom-hook-connect-config
           name: connect-config

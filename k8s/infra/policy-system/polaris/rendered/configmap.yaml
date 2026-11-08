@@ -150,3 +150,12 @@ data:
         - linuxHardening
         - insecureCapabilities
         - notReadOnlyRootFilesystem
+      - controllerNames:
+        - adguard-deployment
+        rules:
+        - privilegeEscalationAllowed
+        - insecureCapabilities
+      - controllerNames:
+        - dependency-track-frontend
+        rules:
+        - notReadOnlyRootFilesystem

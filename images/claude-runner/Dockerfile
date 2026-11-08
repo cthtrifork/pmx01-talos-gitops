@@ -6,11 +6,18 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Renovate bumps the version. The linux-x64 checksum is read from the release manifest at build time
 # (https://downloads.claude.ai/claude-code-releases/<version>/manifest.json), so there is nothing to bump by hand.
-ARG CLAUDE_CODE_VERSION=2.1.311 # renovate: datasource=npm depName=@anthropic-ai/claude-code
+# renovate: datasource=npm depName=@anthropic-ai/claude-code
+ARG CLAUDE_CODE_VERSION=2.1.311
 # Keep within one minor version of the cluster
 ARG KUBECTL_VERSION=v1.34.1
-ARG GH_VERSION=2.103.3 # renovate: datasource=github-releases depName=cli/cli
-ARG CRANE_VERSION=0.22.1 # renovate: datasource=github-releases depName=google/go-containerregistry
+# renovate: datasource=github-releases depName=cli/cli
+ARG GH_VERSION=2.103.3
+# renovate: datasource=github-releases depName=google/go-containerregistry
+ARG CRANE_VERSION=0.22.1
+# renovate: datasource=github-releases depName=mikefarah/yq
+ARG YQ_VERSION=4.54.2
+# renovate: datasource=github-releases depName=controlplaneio-fluxcd/flux-operator
+ARG FLUX_OPERATOR_VERSION=0.62.1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git curl ca-certificates openssh-client jq python3 \
@@ -49,6 +56,26 @@ RUN base="https://github.com/google/go-containerregistry/releases/download/v${CR
  && tar -xzf "${tarball}" crane \
  && install -m 0755 crane /usr/local/bin/crane \
  && rm -rf "${tarball}" crane
+
+# yq (mikefarah, the one the repo's CI scripts use), checksum verified against the release's checksums file. Its
+# columns follow checksums_hashes_order; SHA-256 is the 18th hash, so field 19.
+RUN base="https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}" \
+ && cd /tmp \
+ && curl -fsSL "${base}/yq_linux_amd64" -o yq \
+ && echo "$(curl -fsSL "${base}/checksums" | awk '$1=="yq_linux_amd64"{print $19}')  yq" | sha256sum -c - \
+ && install -m 0755 yq /usr/local/bin/yq \
+ && rm -f yq
+
+# Flux MCP server (https://fluxcd.control-plane.io/mcp/), checksum verified against the release's checksums file.
+# The deployment registers it read-only; it talks to the cluster with the pod's ServiceAccount.
+RUN base="https://github.com/controlplaneio-fluxcd/flux-operator/releases/download/v${FLUX_OPERATOR_VERSION}" \
+ && tarball="flux-operator-mcp_${FLUX_OPERATOR_VERSION}_linux_amd64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
+ && curl -fsSL "${base}/flux-operator_${FLUX_OPERATOR_VERSION}_checksums.txt" | grep -F "  ${tarball}" | sha256sum -c - \
+ && tar -xzf "${tarball}" flux-operator-mcp \
+ && install -m 0755 flux-operator-mcp /usr/local/bin/flux-operator-mcp \
+ && rm -rf "${tarball}" flux-operator-mcp
 
 # GitHub access: a token mounted at /etc/github/token, handed to git only for github.com
 COPY git-credential-github-token /usr/local/bin/git-credential-github-token

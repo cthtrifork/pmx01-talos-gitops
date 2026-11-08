@@ -1,9 +1,8 @@
 # Cluster ingress. Nothing is exposed on the LAN: a Cloudflare tunnel (cloudflared sidecar in the Traefik
 # pod) carries public traffic in, and Cloudflare owns DNS and TLS. In the Cloudflare Zero Trust dashboard,
 # create a remotely managed tunnel whose public hostnames point at http://localhost:8000 (the "web"
-# entrypoint below) and store its token as the Secret `cloudflared-tunnel-token` (key `token`) in this
-# namespace:
-#   kubectl -n traefik-system create secret generic cloudflared-tunnel-token --from-literal=token=<TOKEN>
+# entrypoint below) and store its token as the SOPS-encrypted Secret `cloudflared-tunnel-token` (key `token`) in this
+# namespace (see "Secrets (SOPS)" in the root readme.md).
 # Routing and middlewares live with each app (IngressRoute).
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2

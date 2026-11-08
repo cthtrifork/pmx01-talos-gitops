@@ -12,7 +12,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
 | `claude-md/CLAUDE.md` | The only `CLAUDE.md` (user-level and repo notes together), generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
-| `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh` and a git credential helper |
+| `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
 
 ## 1. Build the image
 
@@ -38,26 +38,7 @@ so scope it in the App's settings). The pod holds only that short-lived token.
 2. Generate a private key (downloads a `.pem`), install the App only on the repositories Claude should reach, and note the
    **App ID** (App settings page) and the **installation ID** (the number at the end of the installation's
    URL, `https://github.com/settings/installations/<id>`).
-3. Create the credentials Secret yourself, in the same style as the others:
-
-```sh
-read -rp 'App ID: ' APP_ID
-read -rp 'Installation ID: ' INSTALLATION_ID
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: claude-github-app
-  namespace: claude-system
-type: Opaque
-stringData:
-  app-id: "${APP_ID}"
-  installation-id: "${INSTALLATION_ID}"
-  private-key.pem: |
-$(sed 's/^/    /' /path/to/app-private-key.pem)
-EOF
-unset APP_ID INSTALLATION_ID
-```
+3. Create the credentials Secret `claude-github-app` as a SOPS-encrypted file (command and key rotation: "Secrets (SOPS)" in the root `readme.md`).
 
 4. Run the first refresh now instead of waiting for the schedule, and check it:
 
@@ -70,19 +51,13 @@ kubectl -n claude-system get secret claude-github-token
 If the Job fails, look at `kubectl -n claude-system logs job/first-token -c sign-jwt` and
 `kubectl -n claude-system describe job first-token`. Git pushes fail until the Secret exists (the pod itself starts without it).
 
-The Secret `claude-github-app` is created by hand and is not in Git. Flux only prunes what it applied, so
-it leaves it alone.
+`claude-github-app` is `claude-github-app.enc.yaml`; add it to `kustomization.yaml` `resources:` the first time.
 
 ### Pull token for private images (optional)
 
 `crane` in the pod reads private ghcr.io packages through a Docker config from the Secret `ghcr-pull`, mounted at
-`/etc/registry-auth/config.json` with `DOCKER_CONFIG=/etc/registry-auth`. Create it by hand from a token that has
-**only `read:packages`**, so the pod can read but never push (the Secret is not in Git; the pod starts without it):
-
-```sh
-kubectl -n claude-system create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io --docker-username=<github-user> --docker-password="$GHCR_PULL_TOKEN"
-```
+`/etc/registry-auth/config.json` with `DOCKER_CONFIG=/etc/registry-auth`. Create it as a SOPS-encrypted file (command and rotation: "Secrets (SOPS)" in the root `readme.md`) from a token that has
+**only `read:packages`**, so the pod can read but never push (the pod starts without it).
 
 ## 3. Sign in once
 
@@ -96,6 +71,13 @@ Run `/login`, open the URL on your own machine, paste the code back, then `/exit
 pod starts `claude remote-control` and the session appears at <https://claude.ai/code>. The login and
 its token refreshes stay on the PVC, so restarts need no new login. To sign out, delete the
 `claude-home` PVC. The PVC holds your login: anyone with node access can act as you.
+
+## Flux MCP server
+
+The image carries `flux-operator-mcp` (<https://fluxcd.control-plane.io/mcp/>). The deployment registers it as the
+user-scoped MCP server `flux` at every start, in read-only mode (`--read-only`: no reconcile, suspend, resume or
+apply tools). It uses the pod's in-cluster ServiceAccount, so it can read no more than `rbac.yaml` allows. Check
+with `claude mcp list` in the pod. No egress change is needed, it only talks to the Kubernetes API.
 
 ## Check what the pod can and cannot do
 

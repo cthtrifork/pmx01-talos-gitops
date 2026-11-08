@@ -2,7 +2,7 @@
 # the vex/ directory of this repository, so Trivy (through vex-hub, see ../vex-hub/) hides those findings in every scan.
 # Daily: for each project it fetches the CycloneDX VEX, keeps the decided vulnerabilities, converts them to OpenVEX and
 # writes one document per image, vex/pkg/oci/<project name>/oci.openvex.json (the project name is <registry>/<repository>,
-# see sbom-uploader.yaml; its version, the image digest, becomes the version of the product PURL; projects whose version is
+# the project version, the image digest, becomes the version of the product PURL; projects whose version is
 # not a digest, e.g. created before the digest became the version, are skipped). Then it regenerates vex/index.json
 # (scripts/vex-index.sh) and, if anything changed, pushes the branch dependency-track/vex-export and opens a pull request.
 # It touches nothing outside vex/, never pushes to main, and only deletes documents whose author is Dependency-Track.

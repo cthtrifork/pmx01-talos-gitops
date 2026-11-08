@@ -73,6 +73,8 @@ spec:
           name: zot-config
         - mountPath: /etc/zot/sync
           name: zot-sync-creds
+        - mountPath: /tmp
+          name: tmp
         - mountPath: /etc/zot/certs
           name: zot-certs
           readOnly: true
@@ -95,6 +97,8 @@ spec:
       - name: zot-sync-creds
         secret:
           secretName: zot-sync-creds
+      - emptyDir: {}
+        name: tmp
       - name: zot-certs
         secret:
           secretName: zot-tls-cert

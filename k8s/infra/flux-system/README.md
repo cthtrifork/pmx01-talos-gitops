@@ -9,13 +9,8 @@ Kustomizations apply the new revision right away. The poll stays as the fallback
 
 ## Setup
 
-1. Create the secret. It is both the HMAC secret GitHub signs with and the input of the webhook path:
-
-   ```sh
-   TOKEN=$(openssl rand -hex 32)
-   kubectl -n flux-system create secret generic flux-webhook-token --from-literal=token="$TOKEN"
-   echo "$TOKEN"   # needed for the GitHub webhook below
-   ```
+1. Create the secret `flux-webhook-token` as a SOPS-encrypted file (command: "Secrets (SOPS)" in the root `readme.md`). It is both the HMAC secret GitHub signs with and the input of the webhook path;
+   the command prints the token, which the GitHub webhook below needs.
 
 2. In Cloudflare Zero Trust, on the Traefik tunnel (the one in `traefik-system`), add the public hostname
    `flux-hook.portableinfo.cloud` with service `HTTP` `localhost:8000`. Do not put Cloudflare Access in front of it:

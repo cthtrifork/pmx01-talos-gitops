@@ -1,0 +1,45 @@
+# Default deny both ways for the namespace, then what a runner pod needs. A pod holds the runner and the DinD
+# container, so CI traffic leaves from the pod's own identity. Nothing connects to the runners (they poll GitHub).
+# Jobs reach arbitrary hosts (GitHub, registries, package mirrors), so world is open on every port; narrow it from
+# the drop metrics if the jobs get predictable.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: arc-runners-system-default-deny
+  namespace: arc-runners-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: arc-runners-system-allow-egress
+  namespace: arc-runners-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # The internet and the LAN
+    - toEntities:
+        - world
+    # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: registry-system
+            k8s:app.kubernetes.io/name: zot
+      toPorts:
+        - ports:
+            - { port: "5000", protocol: TCP }

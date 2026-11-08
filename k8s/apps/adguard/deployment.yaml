@@ -22,6 +22,13 @@ spec:
       labels:
         app: adguard-home
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       tolerations:
         # Tolerate the control plane taint
         - key: node-role.kubernetes.io/control-plane
@@ -84,12 +91,29 @@ spec:
             - containerPort: 853
               name: dns-tls
           volumeMounts:
+            - name: tmp
+              mountPath: /tmp
             - name: adguard-data
               mountPath: /opt/adguardhome/work/ # AdGuard Runtime data
             - name: adguard-config
               mountPath: /opt/adguardhome/conf/ # AdGuard configuration
             - name: adguard-tls-cert
               mountPath: /opt/adguardhome/conf/tls/ # TLS certs
+          # The image's AdGuardHome binary has the file capability cap_net_bind_service=+eip (setcap in its Dockerfile),
+          # which is how it binds ports 53, 443 and 853 as non-root. For that to work the capability must be in the
+          # container's bounding set (hence drop ALL, add NET_BIND_SERVICE) and no_new_privs must be off, i.e.
+          # allowPrivilegeEscalation must stay true. With every capability dropped, or with allowPrivilegeEscalation: false,
+          # the kernel refuses to exec the binary ("operation not permitted", see #590).
+          securityContext:
+            allowPrivilegeEscalation: true
+            privileged: false
+            # writes only to the conf and work volumes (and /tmp)
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - "ALL"
+              add:
+                - NET_BIND_SERVICE
           resources:
             requests:
               cpu: 100m
@@ -109,6 +133,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
+        - name: tmp
+          emptyDir: {}
         - name: initial-config
           configMap:
             name: adguard-initial-config

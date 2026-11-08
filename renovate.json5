@@ -162,6 +162,38 @@
       "groupSlug": "dependency-track-images"
     },
     {
+      "description": "sbom-hook and vex-hub pull redpandadata/connect through mirror.gcr.io, which has no digest lookup. The regex manager tracks the same tag as docker.io/redpandadata/connect (renovate comment), so the helm-values duplicate is off.",
+      "matchManagers": [
+        "helm-values"
+      ],
+      "matchPackageNames": [
+        "mirror.gcr.io/redpandadata/connect"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "k8s/infra/kubevirt/{kubevirt,cdi}-operator.yaml are vendored upstream release manifests (CRDs, RBAC, KUBEVIRT_VERSION). A bump of the image line alone runs a new operator on old CRDs, so they are regenerated from the release files instead (versions.env, bumped below).",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "quay.io/kubevirt/virt-operator",
+        "quay.io/kubevirt/cdi-operator"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "KubeVirt and CDI operator upgrades change CRDs and RBAC: review them, no automerge.",
+      "matchDatasources": [
+        "github-releases"
+      ],
+      "matchPackageNames": [
+        "kubevirt/kubevirt",
+        "kubevirt/containerized-data-importer"
+      ],
+      "automerge": false
+    },
+    {
       "description": "Renovate itself (the renovate_version pin and the renovatebot/github-action) automerges for every update type. Last, so it wins over the rules above.",
       "matchPackageNames": ["renovate", "renovatebot/github-action"],
       "automerge": true,
@@ -201,6 +233,17 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?<indentation>\\s+)tag:\\s+\"?(?<currentValue>[-a-zA-Z0-9.]+)?(?:@(?<currentDigest>sha256:[a-zA-Z0-9]+))?\"?"
       ],
       "autoReplaceStringTemplate": "# renovate: datasource={{{datasource}}} depName={{{depName}}}{{#if versioning}} versioning={{{versioning}}}{{/if}}{{{indentation}}}tag: {{{newValue}}}{{#if newDigest}}@{{{newDigest}}}{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "description": "Pinned upstream release versions in versions.env files",
+      "managerFilePatterns": [
+        "/(^|/)versions\\.env$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n[A-Z_]+=(?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "semver"
     },
     {
       "customType": "regex",

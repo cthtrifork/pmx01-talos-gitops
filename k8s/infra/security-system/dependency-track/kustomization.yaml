@@ -4,9 +4,15 @@ kind: Kustomization
 resources:
   - postgres-cluster.yaml
   - kek-job.yaml
-  - sbom-uploader.yaml
   - config-job.yaml
   - vex-export.yaml
   - service-lb.yaml
   - helm-release.yaml
   - helm-repository.yaml
+configMapGenerator:
+  - name: dependency-track-frontend-config
+    namespace: security-system
+    files:
+      - config.json=frontend-config.json
+generatorOptions:
+  disableNameSuffixHash: true # the helm values refer to the ConfigMap by name; Reloader restarts the pod on a change

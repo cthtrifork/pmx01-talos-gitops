@@ -6,7 +6,7 @@
 #  1. Admin: the built-in admin/admin must change its password on first login. With the Secret seeded the Job sets that
 #     password on a fresh install, or just logs in when it is already set.
 #  2. Teams `sbom-uploader` (BOM_UPLOAD, PROJECT_CREATION_UPLOAD; key in the Secret dependency-track-api-key, used by
-#     sbom-uploader.yaml and sbom-hook) and `vex-exporter` (VIEW_PORTFOLIO, VULNERABILITY_ANALYSIS_READ; key in
+#     sbom-hook) and `vex-exporter` (VIEW_PORTFOLIO, VULNERABILITY_ANALYSIS_READ; key in
 #     dependency-track-vex-api-key, used by vex-export.yaml). A key is only created if its Secret does not exist yet.
 #     Permissions are only added, never removed, and an existing Secret is never touched.
 #  3. Extension settings (Trivy analyzer, KEV data sources) from extensions.json below, merged over the current settings
