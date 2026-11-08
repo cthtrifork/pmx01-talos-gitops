@@ -18,9 +18,21 @@ ARG CRANE_VERSION=0.22.1
 ARG YQ_VERSION=4.54.2
 # renovate: datasource=github-releases depName=controlplaneio-fluxcd/flux-operator
 ARG FLUX_OPERATOR_VERSION=0.62.1
+# renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/v(?<version>.+)$
+ARG KUSTOMIZE_VERSION=5.8.3
+# renovate: datasource=github-releases depName=yannh/kubeconform
+ARG KUBECONFORM_VERSION=0.8.0
+# renovate: datasource=github-releases depName=helm/helm
+ARG HELM_VERSION=4.3.1
+# renovate: datasource=github-releases depName=fluxcd/flux2
+ARG FLUX_VERSION=2.10.0
+# renovate: datasource=github-releases depName=rhysd/actionlint
+ARG ACTIONLINT_VERSION=1.7.12
+# renovate: datasource=pypi depName=yamllint
+ARG YAMLLINT_VERSION=1.38.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      git curl ca-certificates openssh-client jq python3 \
+      git curl ca-certificates openssh-client jq python3 python3-pip shellcheck make \
  && rm -rf /var/lib/apt/lists/*
 
 RUN base="https://downloads.claude.ai/claude-code-releases/${CLAUDE_CODE_VERSION}" \
@@ -76,6 +88,56 @@ RUN base="https://github.com/controlplaneio-fluxcd/flux-operator/releases/downlo
  && tar -xzf "${tarball}" flux-operator-mcp \
  && install -m 0755 flux-operator-mcp /usr/local/bin/flux-operator-mcp \
  && rm -rf "${tarball}" flux-operator-mcp
+
+# Tools behind scripts/validate.sh, scripts/ci/render-manifests.sh and the lint job of .github/workflows/validate.yaml,
+# each checksum verified against the release's checksums file (helm: its .sha256sum file). The kustomize tag contains
+# a slash, so it is URL-encoded in the download path.
+RUN base="https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}" \
+ && tarball="kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
+ && curl -fsSL "${base}/checksums.txt" | grep -F "  ${tarball}" | sha256sum -c - \
+ && tar -xzf "${tarball}" kustomize \
+ && install -m 0755 kustomize /usr/local/bin/kustomize \
+ && rm -rf "${tarball}" kustomize
+
+RUN base="https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}" \
+ && tarball="kubeconform-linux-amd64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
+ && curl -fsSL "${base}/CHECKSUMS" | grep -F "  ${tarball}" | sha256sum -c - \
+ && tar -xzf "${tarball}" kubeconform \
+ && install -m 0755 kubeconform /usr/local/bin/kubeconform \
+ && rm -rf "${tarball}" kubeconform
+
+RUN tarball="helm-v${HELM_VERSION}-linux-amd64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "https://get.helm.sh/${tarball}" -o "${tarball}" \
+ && curl -fsSL "https://get.helm.sh/${tarball}.sha256sum" | sha256sum -c - \
+ && tar -xzf "${tarball}" linux-amd64/helm \
+ && install -m 0755 linux-amd64/helm /usr/local/bin/helm \
+ && rm -rf "${tarball}" linux-amd64
+
+RUN base="https://github.com/fluxcd/flux2/releases/download/v${FLUX_VERSION}" \
+ && tarball="flux_${FLUX_VERSION}_linux_amd64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
+ && curl -fsSL "${base}/flux_${FLUX_VERSION}_checksums.txt" | grep -F "  ${tarball}" | sha256sum -c - \
+ && tar -xzf "${tarball}" flux \
+ && install -m 0755 flux /usr/local/bin/flux \
+ && rm -rf "${tarball}" flux
+
+RUN base="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}" \
+ && tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \
+ && cd /tmp \
+ && curl -fsSL "${base}/${tarball}" -o "${tarball}" \
+ && curl -fsSL "${base}/actionlint_${ACTIONLINT_VERSION}_checksums.txt" | grep -F "  ${tarball}" | sha256sum -c - \
+ && tar -xzf "${tarball}" actionlint \
+ && install -m 0755 actionlint /usr/local/bin/actionlint \
+ && rm -rf "${tarball}" actionlint
+
+# yamllint at the version CI pins; Debian's pip is externally managed, hence --break-system-packages
+RUN pip install --no-cache-dir --break-system-packages "yamllint==${YAMLLINT_VERSION}"
 
 # GitHub access: a token mounted at /etc/github/token, handed to git only for github.com
 COPY git-credential-github-token /usr/local/bin/git-credential-github-token
