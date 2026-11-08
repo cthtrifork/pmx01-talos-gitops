@@ -20,6 +20,26 @@ and are not repeated here.
 - ARC: the listener runs in `arc-controller-system`, runner pods in `arc-runners-system`.
 - zot: `zot-0` in `registry-system`; probes `/livez` and `/readyz` show up in its logs.
 
+## Dropped traffic: query the Hubble metrics
+
+Network policies are default-deny per namespace (`CiliumNetworkPolicy`). I cannot `exec` or run the `hubble` CLI, but the
+Cilium agents export Hubble metrics to the same Prometheus (query it as in the next section). Check them after every
+network policy change and before writing a new policy:
+
+- Denied traffic: `sum by (source_namespace,source_workload,destination_namespace,destination_workload,source_ip,destination_ip,traffic_direction)(increase(hubble_drop_total{reason="POLICY_DENIED"}[5m]))>0`.
+  Pod IPs and node IPs are in `source_ip` and `destination_ip`; map nodes with `kubectl get nodes -o wide`. Peers with
+  no workload name (world, host) have empty workload labels, so read the IPs. The metric is configured in
+  `k8s/infra/cilium/helm-release.yaml` (`hubble.metrics.enabled`).
+- What a workload talks to, before writing its policy: `sum by (source,destination,protocol,verdict)(increase(hubble_flows_processed_total{type="Trace"}[12h]))>0`
+  (labels `source` and `destination` are workload names or `reserved:host|remote-node|kube-apiserver|world`). Flows in the
+  reverse direction are replies on an allowed connection and need no rule.
+- Gotchas seen so far: the Omni service exposer runs on the host network, so services with an
+  `omni-kube-service-exposer.sidero.dev/*` annotation need an ingress rule from the `host` and `remote-node` entities;
+  kubelet probes are allowed by Cilium and need no rule; `claude-rc` egress drops are expected for hosts outside the
+  allowlist in `k8s/apps/claude-system/networkpolicy.yaml`.
+- A policy is not live until Flux has applied it: check `kubectl get cnp -A` and `kubectl get kustomization -n flux-system`,
+  then wait a few minutes before reading the drop metric.
+
 ## Disk and resource usage: query Prometheus
 
 I cannot `exec`, and `nodes/proxy` is denied, so use Prometheus. It is reachable from `claude-rc`
