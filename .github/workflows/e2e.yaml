@@ -91,7 +91,7 @@ jobs:
 
       - name: Deploy flux instance
         run: |
-          kubectl apply -f k8s/clusters/pmx01-talos-gitops/flux-instance.yaml
+          kubectl apply -f k8s/clusters/homelab/flux-instance.yaml
       - name: Verify flux instance is ready
         run: |
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m

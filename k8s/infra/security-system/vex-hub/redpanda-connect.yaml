@@ -21,7 +21,7 @@ input:
       - generate:
           interval: 6h
           mapping: root = ""
-      # what the scan jobs request: / is the Trivy VEX hub, /pmx01/ ours
+      # what the scan jobs request: / is the Trivy VEX hub, /homelab/ ours
       - http_server:
           path: /vexhub-main.tar.gz
           allowed_verbs:
@@ -31,11 +31,11 @@ input:
           allowed_verbs:
             - GET
       - http_server:
-          path: /pmx01.tar.gz
+          path: /homelab.tar.gz
           allowed_verbs:
             - GET
       - http_server:
-          path: /pmx01/.well-known/vex-repository.json
+          path: /homelab/.well-known/vex-repository.json
           allowed_verbs:
             - GET
 
@@ -81,31 +81,31 @@ pipeline:
                 request_map: root = ""
                 processors:
                   - http:
-                      url: https://codeload.github.com/cthtrifork/pmx01-talos-gitops/tar.gz/refs/heads/main
+                      url: https://codeload.github.com/cthtrifork/talos-gitops/tar.gz/refs/heads/main
                       verb: GET
                       timeout: 60s
                       retries: 3
                   - cache:
                       resource: vex
                       operator: set
-                      key: /pmx01.tar.gz
+                      key: /homelab.tar.gz
                       value: '$${! content() }'
             - branch:
                 request_map: root = ""
                 processors:
                   - http:
-                      url: https://raw.githubusercontent.com/cthtrifork/pmx01-talos-gitops/main/vex/vex-repository.json
+                      url: https://raw.githubusercontent.com/cthtrifork/talos-gitops/main/vex/vex-repository.json
                       verb: GET
                       timeout: 30s
                       retries: 3
                   - mapping: |
-                      let loc = "http://vex-hub.security-system.svc.cluster.local/pmx01.tar.gz//pmx01-talos-gitops-main/vex"
+                      let loc = "http://vex-hub.security-system.svc.cluster.local/homelab.tar.gz//talos-gitops-main/vex"
                       root = this
                       root.versions = this.versions.map_each(v -> v.without("locations").merge({"locations": [{"url": $loc}]}))
                   - cache:
                       resource: vex
                       operator: set
-                      key: /pmx01/.well-known/vex-repository.json
+                      key: /homelab/.well-known/vex-repository.json
                       value: '$${! content() }'
         - processors:
             - cache:

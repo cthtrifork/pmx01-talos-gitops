@@ -7,6 +7,6 @@ repositories:
     url: http://vex-hub.security-system.svc.cluster.local
     enabled: true
   # our own statements: vex/ in this repository (see vex/README.md), also through the mirror
-  - name: pmx01-vexhub
-    url: http://vex-hub.security-system.svc.cluster.local/pmx01
+  - name: homelab-vexhub
+    url: http://vex-hub.security-system.svc.cluster.local/homelab
     enabled: true
