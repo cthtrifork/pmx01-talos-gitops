@@ -132,7 +132,8 @@ spec:
           tag: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
         # The operator parses the version from the image tag and rejects the digest and the -distroless suffix
         # ("failed to parse Prometheus version"), which stops every change to the Prometheus resource (rule files,
-        # ServiceMonitors). Keep it in step with the tag above; Renovate does not update it.
+        # ServiceMonitors). Renovate bumps it together with the tag above.
+        # renovate: datasource=docker depName=quay.io/prometheus/prometheus versioning=docker
         version: v3.16.0
         replicas: 1
         enableRemoteWriteReceiver: true
