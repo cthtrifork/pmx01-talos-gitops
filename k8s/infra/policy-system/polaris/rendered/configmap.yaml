@@ -150,3 +150,8 @@ data:
         - linuxHardening
         - insecureCapabilities
         - notReadOnlyRootFilesystem
+      - controllerNames:
+        - adguard-deployment
+        rules:
+        - privilegeEscalationAllowed
+        - insecureCapabilities
