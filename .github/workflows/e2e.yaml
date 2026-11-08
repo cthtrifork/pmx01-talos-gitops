@@ -30,7 +30,7 @@ concurrency:
 jobs:
   e2e-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,17 +42,20 @@ jobs:
       - name: Setup kustomize
         uses: fluxcd/pkg/actions/kustomize@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Build Flux Kustomization paths
+        timeout-minutes: 3
         run: ./scripts/ci/build-flux-paths.sh k8s/clusters/homelab
       - name: Setup Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
       - name: Setup Flux Operator CLI
         uses: controlplaneio-fluxcd/flux-operator/actions/setup@48e2cd76c475be87a1c9a8bd83fe07e064abd725 # v0.62.1
       - name: Setup Kubernetes Kind
+        timeout-minutes: 5
         uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           config: scripts/kind.yaml
           cluster_name: homelab
       - name: Install cilium CLI
+        timeout-minutes: 2
         run: |
           CLI_ARCH=amd64
           if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
@@ -86,12 +89,14 @@ jobs:
           CILIUM_VERSION: ${{env.CILIUM_VERSION}}
 
       - name: Wait for cilium to be ready
+        timeout-minutes: 6
         run: |
           interactive="${INTERACTIVE:-true}"
           wait="${WAIT:-5m}"
           cilium status --wait --interactive="${interactive}" --wait-duration="${wait}" # will exit when ready
 
       - name: Install latest flux-operator
+        timeout-minutes: 6
         run: |
           helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
           --namespace flux-system \
@@ -110,6 +115,7 @@ jobs:
         env:
           SYNC_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.head_ref) || github.ref }}
       - name: Verify flux instance is ready
+        timeout-minutes: 6
         run: |
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
 
@@ -129,6 +135,7 @@ jobs:
           rm "${RUNNER_TEMP}/age.agekey"
 
       - name: Wait for successful reconciliation
+        timeout-minutes: 8
         run: |
           wait="${WAIT:-5m}"
           flux reconcile source git flux-system --timeout="${wait}"
@@ -149,6 +156,7 @@ jobs:
             flux suspend kustomization "${ks}"
           done
       - name: Wait for the bootstrap Kustomization
+        timeout-minutes: 6
         run: |
           flux reconcile kustomization gitops-infra-bootstrap --timeout=5m
 
@@ -156,6 +164,7 @@ jobs:
       # decryption and delete the encrypted Secrets, so infra and infra-post can reconcile.
       # Not blocking yet: the first runs show how long this takes and which HelmReleases need tuning.
       - name: Reconcile infra without the encrypted Secrets
+        timeout-minutes: 10
         run: |
           cat > "${RUNNER_TEMP}/no-sops.json" <<'EOF'
           {"spec":{"decryption":null,"patches":[
@@ -177,12 +186,14 @@ jobs:
         continue-on-error: true
 
       - name: List deployed resources
+        timeout-minutes: 2
         if: always()
         run: |
           flux tree ks flux-system
           flux get helmreleases -A || true
 
       - name: Debug failure
+        timeout-minutes: 3
         if: failure()
         run: |
           kubectl get pods -A
