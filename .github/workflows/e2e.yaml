@@ -168,7 +168,6 @@ jobs:
       # - HelmReleases: suspend all but cert-manager, trust-manager, cloudnative-pg, metallb and traefik, which install the CRDs that
       #   infra-post needs. The others are slow, and the cilium release would upgrade the cilium this job installed.
       # The manifests of every release are still applied and dry-run against the API server.
-      # Not blocking yet: the first runs show how long this takes.
       - name: Reconcile infra and infra-post
         timeout-minutes: 14
         run: |
@@ -201,7 +200,6 @@ jobs:
           kubectl wait --for=condition=Ready helmrelease/metallb -n metallb-system --timeout=5m || diagnose gitops-infra
           kubectl wait --for=condition=Ready helmrelease/trust-manager -n cert-manager-system --timeout=5m || diagnose gitops-infra
           flux reconcile kustomization gitops-infra-post --timeout=3m || diagnose gitops-infra-post
-        continue-on-error: true
 
       - name: List deployed resources
         timeout-minutes: 2
