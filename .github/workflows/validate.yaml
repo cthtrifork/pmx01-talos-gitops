@@ -76,4 +76,4 @@ jobs:
       - name: Setup kustomize
         uses: fluxcd/pkg/actions/kustomize@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Build Flux Kustomization paths
-        run: ./scripts/ci/build-flux-paths.sh k8s/clusters/pmx01-talos-gitops
+        run: ./scripts/ci/build-flux-paths.sh k8s/clusters/homelab

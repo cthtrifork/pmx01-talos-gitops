@@ -64,9 +64,6 @@ spec:
       clientServerSkipUpdate: true
       skipJavaDBUpdate: false
       #offlineScan: false
-      podLabels:
-        kube-kraken.dk/with-https-proxy: "true"
-        kube-kraken.dk/mount-root-ca: "true"
       image:
         registry: ghcr.io
         repository: aquasecurity/trivy
@@ -186,8 +183,6 @@ spec:
       #httpProxy: ""
       #httpsProxy: "${HTTPS_PROXY}"
       #noProxy: "${NO_PROXY},trivy-service.security-system"
-      podLabels:
-        kube-kraken.dk/mount-root-ca: "true" # todo
       # Setting this option to true will enable the Client Server mode, managed by the Trivy Operator.
       builtInTrivyServer: true
       exposedSecretScannerEnabled: false # we do not use this feature
@@ -210,11 +205,6 @@ spec:
         memory: 512Mi
     trivyOperator:
       #scanJobPodTemplateLabels: "my-label/mount-root-ca=true"
-      scanJobTolerations:
-        - key: "kube-kraken/role"
-          operator: "Equal"
-          value: "tool"
-          effect: "NoSchedule"
       scanJobCustomVolumesMount:
         - name: trivy-cache
           mountPath: /tmp/trivy/.cache
@@ -286,11 +276,6 @@ spec:
       - name: cache-policies
         emptyDir:
           sizeLimit: 100Mi
-    tolerations:
-      - key: "kube-kraken/role"
-        operator: "Equal"
-        value: "tool"
-        effect: "NoSchedule"
     nodeCollector:
       registry: ghcr.io
       # renovate: datasource=docker depName=ghcr.io/aquasecurity/node-collector versioning=semver

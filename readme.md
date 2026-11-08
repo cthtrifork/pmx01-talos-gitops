@@ -1,4 +1,6 @@
-# PMX TalosOS Cluster
+# talos-gitops
+
+GitOps configuration for the **homelab** Talos Linux Kubernetes cluster, reconciled by Flux (Flux Operator).
 
 Remember to install cilium directly and delete flannel + kubeproxy daemonsets, before flux can be applied.
 
@@ -166,7 +168,7 @@ kubectl --kubeconfig ./kubeconfig.yaml delete configmap kube-flannel-cfg -n kube
 ### Configure flux instance
 
 ```sh
-kubectl --kubeconfig ./kubeconfig.yaml apply -f k8s/clusters/pmx01-talos-gitops/flux-instance.yaml
+kubectl --kubeconfig ./kubeconfig.yaml apply -f k8s/clusters/homelab/flux-instance.yaml
 ```
 
 ## Debugging

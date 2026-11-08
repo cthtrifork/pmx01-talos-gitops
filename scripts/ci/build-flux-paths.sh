@@ -4,7 +4,7 @@
 # and schema-check the output.
 set -euo pipefail
 
-cluster_dir="${1:-k8s/clusters/pmx01-talos-gitops}"
+cluster_dir="${1:-k8s/clusters/homelab}"
 crd_catalog='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 
 if [[ ! -d /tmp/flux-crd-schemas ]]; then
