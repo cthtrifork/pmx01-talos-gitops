@@ -4,7 +4,7 @@
 # mounts the Secret as a directory, so the kubelet refreshes the file in place and no restart is needed
 # (the runner Deployment deliberately does not use Reloader's `auto` mode for that reason).
 #
-# The App credentials are a Secret you create by hand, see README.md; they are not in this repository.
+# The App credentials are the SOPS-encrypted Secret claude-github-app, see README.md.
 ---
 apiVersion: v1
 kind: ServiceAccount
