@@ -99,6 +99,7 @@ jobs:
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@3fa784edd773d56630bb9f62645e08f70c2cff0a # v2.10.0
         with:
+          token: ${{ github.token }}
           version: 'latest'
 
       - name: Wait for successful reconciliation
