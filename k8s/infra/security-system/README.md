@@ -62,15 +62,17 @@ UI or REST API), not through Helm values, so they are not in Git:
    `http://trivy-service.security-system.svc.cluster.local:4954`. It reuses the trivy server that trivy-operator runs,
    so the zot-mirrored database is used and the analyzer needs no internet access. The server has no token set.
 
-Findings come from the projects/SBOMs uploaded to Dependency-Track. `dependency-track/sbom-uploader.yaml` is a CronJob
-(every 6 hours) that uploads trivy-operator's `SbomReport`s, one project per image. It needs an API key, created by hand:
+Findings come from the projects/SBOMs uploaded to Dependency-Track. `sbom-hook/` (Redpanda Connect) receives every
+`SbomReport` that trivy-operator produces or regenerates through its webhook (`operator.webhookBroadcastURL`) and uploads
+it, one project per image; reports are regenerated after `scannerReportTTL`, so nothing needs a second upload path. It
+needs an API key, created by hand:
 
 1. In the UI, Administration > Access Management > Teams: create a team (or use Automation) with the permissions
    `BOM_UPLOAD` and `PROJECT_CREATION_UPLOAD`, and create an API key for it.
 2. `kubectl -n security-system create secret generic dependency-track-api-key --from-literal=api-key=<key>`
    (kept out of Git; or add it SOPS-encrypted).
 
-Until the Secret exists the CronJob fails with a message saying so.
+Until the Secret exists the hook's uploads fail with a 401.
 
 Network policies: if a default-deny is added to `security-system`, also allow Dependency-Track to Postgres (5432),
-trivy-service (4954) and `www.cisa.gov` (443), and the uploader to dependency-track-api-server (8080) and the Kubernetes API.
+trivy-service (4954) and `www.cisa.gov` (443), and sbom-hook to dependency-track-api-server (8080).

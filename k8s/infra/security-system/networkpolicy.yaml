@@ -36,7 +36,7 @@ spec:
         - kube-apiserver
 ---
 # Dependency-Track API: the UI in the browser and the LAN clients (dependency-track-api-server-lb, 192.168.1.242 is
-# world), the Omni exposer, the SBOM uploaders, Prometheus (management port 9000). Needs the database, Trivy and the
+# world), the Omni exposer, sbom-hook, Prometheus (management port 9000). Needs the database, Trivy and the
 # internet (vulnerability feeds).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -59,8 +59,6 @@ spec:
     - fromEndpoints:
         - matchLabels:
             app.kubernetes.io/instance: sbom-hook
-        - matchLabels:
-            app.kubernetes.io/name: dependency-track-sbom-uploader
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
@@ -305,21 +303,3 @@ spec:
             - { port: "5000", protocol: TCP }
     - toEntities:
         - world
----
-# Daily SBOM catch-up CronJob: uploads to Dependency-Track (the API server comes from the default allow).
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: dependency-track-sbom-uploader
-  namespace: security-system
-spec:
-  endpointSelector:
-    matchLabels:
-      app.kubernetes.io/name: dependency-track-sbom-uploader
-  egress:
-    - toEndpoints:
-        - matchLabels:
-            app.kubernetes.io/name: dependency-track-api-server
-      toPorts:
-        - ports:
-            - { port: "8080", protocol: TCP }
