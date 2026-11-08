@@ -159,24 +159,20 @@ jobs:
         timeout-minutes: 6
         run: |
           flux reconcile kustomization gitops-infra-bootstrap --timeout=5m
-          # Ready does not wait for the release; infra applies PrometheusRules and ServiceMonitors
-          timeout 300 bash -c 'until kubectl get helmrelease prometheus-operator-crds -n kube-prometheus-stack-system >/dev/null 2>&1; do sleep 3; done'
-          kubectl wait --for=condition=Ready helmrelease/prometheus-operator-crds -n kube-prometheus-stack-system --timeout=4m
 
       # kind is not the real cluster, so on the live Kustomizations only (never in git):
       # - SOPS: drop decryption and delete the encrypted Secrets (the key is not available)
-      # - HelmReleases: suspend all but cert-manager, trust-manager, cloudnative-pg, metallb and traefik, which install the CRDs that
-      #   infra-post needs. The others are slow, and the cilium release would upgrade the cilium this job installed.
+      # - HelmReleases in gitops-infra: suspend them, they are slow and the cilium release would upgrade the
+      #   cilium this job installed. The CRD providers are in gitops-infra-controllers/-ingress, which run for real.
       # The manifests of every release are still applied and dry-run against the API server.
       - name: Reconcile infra and infra-post
-        timeout-minutes: 14
+        timeout-minutes: 15
         run: |
           cat > "${RUNNER_TEMP}/infra.json" <<'EOF'
-          {"spec":{"decryption":null,"healthChecks":null,"patches":[
+          {"spec":{"decryption":null,"patches":[
             {"target":{"kind":"Secret","name":"github-auth"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: github-auth\n"},
             {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"},
-            {"target":{"kind":"HelmRelease"},"patch":"- op: add\n  path: /spec/suspend\n  value: true\n"},
-            {"target":{"kind":"HelmRelease","name":"^(cert-manager|trust-manager|cloudnative-pg|metallb|traefik)$"},"patch":"- op: replace\n  path: /spec/suspend\n  value: false\n"}]}}
+            {"target":{"kind":"HelmRelease"},"patch":"- op: add\n  path: /spec/suspend\n  value: true\n"}]}}
           EOF
           cat > "${RUNNER_TEMP}/post.json" <<'EOF'
           {"spec":{"decryption":null,"patches":[
@@ -186,20 +182,13 @@ jobs:
           kubectl patch kustomization gitops-infra-post -n flux-system --type merge --patch-file "${RUNNER_TEMP}/post.json"
           diagnose() {
             kubectl get kustomization "$1" -n flux-system -o jsonpath='{range .status.conditions[*]}{.type}={.status}: {.message}{"\n"}{end}'
-            kubectl logs -n flux-system deploy/kustomize-controller --since=10m | grep "\"$1\"" | tail -10 | cut -c1-400
+            kubectl logs -n flux-system deploy/kustomize-controller --since=15m | grep "\"$1\"" | tail -10 | cut -c1-400
             flux get helmreleases -A || true
             exit 1
           }
-          kubectl wait --for=condition=Ready kustomization gitops-infra -n flux-system --timeout=4m || diagnose gitops-infra
-          # Ready does not wait for the releases, so wait for the CRDs before applying infra-post
-          # kubectl wait fails at once for an object that does not exist yet, so poll for the CRDs first
-          timeout 300 bash -c 'until kubectl get crd certificates.cert-manager.io clusters.postgresql.cnpg.io middlewares.traefik.io ingressroutes.traefik.io ipaddresspools.metallb.io bundles.trust.cert-manager.io >/dev/null 2>&1; do sleep 5; done' || { flux get helmreleases -A; exit 1; }
-          # cert-manager, trust-manager, CloudNativePG and MetalLB have admission webhooks that infra-post is validated against; traefik only needs its CRDs
-          kubectl wait --for=condition=Ready helmrelease/cert-manager -n cert-manager-system --timeout=5m || diagnose gitops-infra
-          kubectl wait --for=condition=Ready helmrelease/cloudnative-pg -n storage-system --timeout=5m || diagnose gitops-infra
-          kubectl wait --for=condition=Ready helmrelease/metallb -n metallb-system --timeout=5m || diagnose gitops-infra
-          kubectl wait --for=condition=Ready helmrelease/trust-manager -n cert-manager-system --timeout=5m || diagnose gitops-infra
-          flux reconcile kustomization gitops-infra-post --timeout=3m || diagnose gitops-infra-post
+          for ks in gitops-infra-controllers gitops-infra-ingress gitops-infra gitops-infra-post; do
+            flux reconcile kustomization "${ks}" --timeout=8m || diagnose "${ks}"
+          done
 
       - name: List deployed resources
         timeout-minutes: 2

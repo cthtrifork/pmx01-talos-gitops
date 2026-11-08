@@ -1,0 +1,15 @@
+---
+# Releases that install CRDs and admission webhooks used by the rest of the cluster. gitops-infra-controllers waits for
+# them, so everything after it can rely on the CRDs. The files stay in their component directories (which keep the
+# network policies and the generated rendered/ directories).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../cert-manager/helm-release.yaml
+  - ../cert-manager/helm-repository.yaml
+  - ../trust-manager/helm-release.yaml
+  - ../trust-manager/helm-repository.yaml
+  - ../metallb/helm-release.yaml
+  - ../metallb/helm-repository.yaml
+  - ../storage-system/namespace.yaml
+  - ../storage-system/cloudnative-pg/

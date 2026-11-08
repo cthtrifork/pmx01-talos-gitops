@@ -16,6 +16,50 @@ spec:
     kind: GitRepository
     name: flux-system #gitops
   path: ../../k8s/infra/bootstrap
+  wait: true # gitops-infra applies PrometheusRules and ServiceMonitors, which need the CRDs of prometheus-operator-crds
+  timeout: 5m
+  postBuild:
+    substitute:
+      var_substitution_enabled: "true"
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gitops-infra-controllers
+  namespace: flux-system
+spec:
+  interval: 30m
+  prune: true
+  wait: true # cert-manager, trust-manager, MetalLB and CloudNativePG install the CRDs and webhooks that later layers use
+  timeout: 10m
+  dependsOn:
+    - name: gitops-infra-bootstrap
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../k8s/infra/controllers
+  postBuild:
+    substitute:
+      var_substitution_enabled: "true"
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gitops-infra-ingress
+  namespace: flux-system
+spec:
+  interval: 30m
+  prune: true
+  wait: true # Traefik installs the CRDs of the IngressRoutes and Middlewares that gitops-infra-post applies
+  timeout: 10m
+  dependsOn:
+    - name: gitops-infra-controllers
+  sourceRef:
+    kind: GitRepository
+    name: flux-system #gitops
+  path: ../../k8s/infra/ingress
   postBuild:
     substitute:
       var_substitution_enabled: "true"
@@ -35,6 +79,7 @@ spec:
   prune: true
   dependsOn:
     - name: gitops-infra-bootstrap
+    - name: gitops-infra-ingress
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
