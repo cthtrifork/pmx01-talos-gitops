@@ -105,6 +105,8 @@ jobs:
           sed "s|ref: \"refs/heads/main\"|ref: \"${SYNC_REF}\"|" k8s/clusters/homelab/flux-instance.yaml |
             tee "${RUNNER_TEMP}/flux-instance.yaml" | grep -F "ref: "
           kubectl apply -f "${RUNNER_TEMP}/flux-instance.yaml"
+          # the flux-system Kustomization applies flux-instance.yaml from the ref and would reset the sync ref to main
+          kubectl annotate fluxinstance flux -n flux-system kustomize.toolkit.fluxcd.io/reconcile=disabled
         env:
           SYNC_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.head_ref) || github.ref }}
       - name: Verify flux instance is ready
@@ -167,7 +169,7 @@ jobs:
         if: always()
         run: |
           flux tree ks flux-system
-          flux get helmreleases -A
+          flux get helmreleases -A || true
 
       - name: Debug failure
         if: failure()
