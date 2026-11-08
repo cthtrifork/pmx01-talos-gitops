@@ -99,6 +99,8 @@ spec:
         - matchName: ghcr.io
         - matchName: quay.io
         - matchPattern: "*.quay.io"
+        # index.docker.io is the registry host crane uses for docker.io images; it answers with registry-1.docker.io
+        - matchName: index.docker.io
         - matchName: registry-1.docker.io
         - matchName: auth.docker.io
         - matchName: production.cloudflare.docker.com

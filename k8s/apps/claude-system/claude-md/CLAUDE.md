@@ -115,6 +115,12 @@ network policy change and before writing a new policy:
   `omni-kube-service-exposer.sidero.dev/*` annotation need an ingress rule from the `host` and `remote-node` entities;
   kubelet probes are allowed by Cilium and need no rule; `claude-rc` egress drops are expected for hosts outside the
   allowlist in `k8s/apps/claude-system/networkpolicy.yaml`.
+- My own denied traffic: run `scripts/claude-drops.sh [window]` (default 24h). It lists the destinations `claude-rc` was
+  denied, with a reverse DNS name per IP (`ec2-*` AWS, `*.googleusercontent.com` Google, `cloudfront.net`, `cdn-*.github.com`
+  GitHub Pages, so the name is only a hint). Docker Hub's pool shows as AWS: match IPs against `getent ahostsv4 <host>` of the
+  hosts I used. Known and left blocked: `34.149.66.165` is Claude Code's Datadog telemetry (`http-intake.logs.us5.datadoghq.com`).
+  Run it when a command fails on connect, before asking the user to widen the allowlist. IP drops without a workload name
+  (`-/-`) from a long window predate the `source_ip` and `destination_ip` labels; use a short window.
 - A policy is not live until Flux has applied it: check `kubectl get cnp -A` and `kubectl get kustomization -n flux-system`,
   then wait a few minutes before reading the drop metric.
 
