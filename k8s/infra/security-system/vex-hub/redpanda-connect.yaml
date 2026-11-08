@@ -99,7 +99,11 @@ pipeline:
                       timeout: 30s
                       retries: 3
                   - mapping: |
+<<<<<<< HEAD
                       let loc = "http://vex-hub.security-system.svc.cluster.local/homelab.tar.gz//talos-gitops-main/vex"
+=======
+                      let loc = "http://vex-hub.security-system.svc.cluster.local/kube-kraken.tar.gz//talos-gitops-main/vex"
+>>>>>>> origin/main
                       root = this
                       root.versions = this.versions.map_each(v -> v.without("locations").merge({"locations": [{"url": $loc}]}))
                   - cache:

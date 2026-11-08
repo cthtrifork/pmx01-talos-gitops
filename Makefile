@@ -42,10 +42,14 @@ render-manifests-incremental: $(RENDER_STAMPS)
 	cd $(@D)/.. && $(PROJECT_ROOT)/scripts/ci/render-manifests.sh
 	@touch $@
 
-# Fallback: always rerun all renders, regardless of timestamps
+# Fallback: always rerun renders, regardless of timestamps
+# Renders every component by default; override RENDER_DIRS="dir1 dir2" to limit it
+ifeq ($(strip $(RENDER_DIRS)),)
+override RENDER_DIRS := $(HELM_DIRS)
+endif
 render-manifests:
 	@set -e; \
-	for d in $(HELM_DIRS); do \
+	for d in $(RENDER_DIRS); do \
 	  mkdir -p "$$d/rendered"; \
 	  (cd "$$d" && $(PROJECT_ROOT)/scripts/ci/render-manifests.sh); \
 	done
