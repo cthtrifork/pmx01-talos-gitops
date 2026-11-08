@@ -24,9 +24,10 @@ A change takes effect for the next scan job; reports are regenerated after `scan
 
 ## Zot CA trust
 
-zot's certificate comes from `certificate-cluster-issuer`. `trivy-operator/ca-certificate.yaml` issues a throwaway
-certificate in this namespace only to get the root CA as `ca.crt`; the trivy server, the scan jobs and the operator
-mount it as `/etc/ssl/certs/zot-ca.crt` (Go reads extra files there), so no `dbRepositoryInsecure` is needed.
+zot's certificate comes from `certificate-cluster-issuer`. trust-manager's `portableinfo-ca-bundle` Bundle
+(`k8s/infra/post/trust-manager`) puts the root CA in a ConfigMap of that name (key `ca-bundle.crt`) in every namespace; the
+trivy server, the scan jobs and the operator mount it as `/etc/ssl/certs/zot-ca.crt` (Go reads extra files there), so no
+`dbRepositoryInsecure` is needed.
 
 ## Network policies
 
