@@ -5,14 +5,10 @@ resources:
   - cilium/
   - local-path-provisioner/
   - openebs-system/
-  - cert-manager/
-  - trust-manager/
   - flux-system/
   #- kubevirt/
   - metrics-server/
-  - metallb/
   - kube-prometheus-stack/
-  - storage-system/
   - policy-system/
   - registry-system/
   - ingress-system/

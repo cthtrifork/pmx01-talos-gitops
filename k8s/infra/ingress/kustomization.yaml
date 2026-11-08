@@ -1,9 +1,0 @@
----
-# Needs the MetalLB CRDs and controller: Traefik's Service only becomes ready once MetalLB assigns an address
-# from the pool. Traefik installs the CRDs of the IngressRoutes and Middlewares in gitops-infra-post.
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - metallb-pool.yaml
-  - ../ingress-system/namespace.yaml
-  - ../ingress-system/traefik/

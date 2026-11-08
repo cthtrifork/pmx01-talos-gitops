@@ -163,9 +163,7 @@ jobs:
       # kind is not the real cluster, so on the live Kustomizations only (never in git):
       # - SOPS: drop decryption and delete the encrypted Secrets (the key is not available)
       # - HelmReleases in gitops-infra: suspend them, they are slow and the cilium release would upgrade the
-      #   cilium this job installed. The CRD providers are in gitops-infra-controllers/-ingress, which run for real.
-      # - Traefik: do not wait for its pod, the cloudflared sidecar needs a real tunnel token. The release still
-      #   installs the CRDs.
+      #   cilium this job installed. The CRD providers are in gitops-infra-controllers, which runs for real.
       # The manifests of every release are still applied and dry-run against the API server.
       - name: Reconcile infra and infra-post
         timeout-minutes: 15
@@ -180,11 +178,6 @@ jobs:
           {"spec":{"decryption":null,"patches":[
             {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"}]}}
           EOF
-          cat > "${RUNNER_TEMP}/ingress.json" <<'EOF'
-          {"spec":{"patches":[
-            {"target":{"kind":"HelmRelease","name":"traefik"},"patch":"- op: add\n  path: /spec/install/disableWait\n  value: true\n- op: add\n  path: /spec/upgrade\n  value:\n    disableWait: true\n"}]}}
-          EOF
-          kubectl patch kustomization gitops-infra-ingress -n flux-system --type merge --patch-file "${RUNNER_TEMP}/ingress.json"
           kubectl patch kustomization gitops-infra -n flux-system --type merge --patch-file "${RUNNER_TEMP}/infra.json"
           kubectl patch kustomization gitops-infra-post -n flux-system --type merge --patch-file "${RUNNER_TEMP}/post.json"
           diagnose() {
@@ -193,7 +186,7 @@ jobs:
             flux get helmreleases -A || true
             exit 1
           }
-          for ks in gitops-infra-controllers gitops-infra-ingress gitops-infra gitops-infra-post; do
+          for ks in gitops-infra-controllers gitops-infra gitops-infra-post; do
             flux reconcile kustomization "${ks}" --timeout=8m || diagnose "${ks}"
           done
 

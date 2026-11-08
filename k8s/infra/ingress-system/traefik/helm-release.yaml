@@ -19,8 +19,11 @@ spec:
   driftDetection:
     mode: enabled
   install:
+    crds: Skip # installed by traefik-crds in gitops-infra-controllers
     strategy:
       name: RetryOnFailure
+  upgrade:
+    crds: Skip
   values:
     image:
       registry: mirror.gcr.io

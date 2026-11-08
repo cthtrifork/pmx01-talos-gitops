@@ -1,0 +1,15 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: traefik-crds
+  namespace: traefik-system
+spec:
+  interval: 12h
+  url: oci://ghcr.io/traefik/helm/traefik-crds
+  ref:
+    tag: 1.18.0
+    digest: sha256:efb6414499f6b94645da850bd3f55c8ee0ab780ca439d225279d7e026f4675fb
+  layerSelector:
+    mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+    operation: extract
