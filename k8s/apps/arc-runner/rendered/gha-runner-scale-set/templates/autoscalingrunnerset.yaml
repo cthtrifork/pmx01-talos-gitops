@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 00c015c4ea765aac4d50087c30eb837e2ff8916ef95b207bf6f53f1f44a7102
+    actions.github.com/values-hash: 8ebb3489fa7425dfe057a93071e4a18e645d1aef50a4d6ef83be6c6371cdd63
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -71,7 +71,7 @@ spec:
           value: "true"
         - name: RUNNER_UPDATE_CA_CERTS
           value: "1"
-        image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.9.0@sha256:3b51b2cd016c5e8849d083cd1da9f4bb31e2b950ae9f5378a55098e7a9f25385
+        image: ghcr.io/cthtrifork/talos-gitops/github-actions-runner:v0.11.0@sha256:86d54c1c6df0e0c8ba46c423735639cb6d26bb74e3c1653e221fd1dfa5094055
         imagePullPolicy: IfNotPresent
         name: runner
         resources:
@@ -149,7 +149,7 @@ spec:
         - -r
         - /home/runner/externals/.
         - /home/runner/tmpDir/
-        image: ghcr.io/cthtrifork/pmx01-talos-gitops/github-actions-runner:v0.9.0@sha256:3b51b2cd016c5e8849d083cd1da9f4bb31e2b950ae9f5378a55098e7a9f25385
+        image: ghcr.io/cthtrifork/talos-gitops/github-actions-runner:v0.11.0@sha256:86d54c1c6df0e0c8ba46c423735639cb6d26bb74e3c1653e221fd1dfa5094055
         imagePullPolicy: IfNotPresent
         name: init-dind-externals
         resources:
