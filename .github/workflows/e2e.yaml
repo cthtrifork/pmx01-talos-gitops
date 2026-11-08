@@ -119,6 +119,15 @@ jobs:
           token: ${{ github.token }}
           version: 'latest'
 
+      # Kustomizations with spec.decryption fail until the secret exists. Bootstrap has no encrypted
+      # files, so a throwaway age key is enough for it.
+      - name: Create a throwaway SOPS key
+        run: |
+          sudo apt-get install -y --no-install-recommends age
+          age-keygen -o "${RUNNER_TEMP}/age.agekey"
+          kubectl create secret generic sops-age -n flux-system --from-file=age.agekey="${RUNNER_TEMP}/age.agekey"
+          rm "${RUNNER_TEMP}/age.agekey"
+
       - name: Wait for successful reconciliation
         run: |
           wait="${WAIT:-5m}"
@@ -141,12 +150,7 @@ jobs:
           done
       - name: Wait for the bootstrap Kustomization
         run: |
-          # no encrypted files in bootstrap: a throwaway age key satisfies the decryption secretRef
-          sudo apt-get install -y --no-install-recommends age
-          age-keygen -o "${RUNNER_TEMP}/age.agekey"
-          kubectl create secret generic sops-age -n flux-system --from-file=age.agekey="${RUNNER_TEMP}/age.agekey"
-          rm "${RUNNER_TEMP}/age.agekey"
-          kubectl wait --for=condition=Ready kustomization gitops-infra-bootstrap -n flux-system --timeout=5m
+          flux reconcile kustomization gitops-infra-bootstrap --timeout=5m
 
       # The real SOPS key is not available in kind. On the live Kustomizations only (never in git) drop
       # decryption and delete the encrypted Secrets, so infra and infra-post can reconcile.
