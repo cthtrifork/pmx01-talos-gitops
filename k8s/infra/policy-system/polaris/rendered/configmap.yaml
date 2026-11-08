@@ -144,7 +144,6 @@ data:
         - spegel
         rules:
         - runAsRootAllowed
-        - livenessProbeMissing
       - controllerNames:
         - metallb-frr-k8s
         - omni-kube-service-exposer
