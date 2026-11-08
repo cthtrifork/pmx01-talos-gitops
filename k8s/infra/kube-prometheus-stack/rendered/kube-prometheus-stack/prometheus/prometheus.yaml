@@ -45,6 +45,9 @@ spec:
   nodeSelector:
     kubernetes.io/os: linux
   paused: false
+  podMetadata:
+    labels:
+      prometheus-scrape: "true"
   podMonitorNamespaceSelector: {}
   podMonitorSelector: {}
   portName: http-web
