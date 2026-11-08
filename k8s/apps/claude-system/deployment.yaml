@@ -44,7 +44,7 @@ spec:
       # (the restricted PSA rules out a root one). Wiped on every pod start, like the emptyDir it replaces.
       initContainers:
         - name: private-tmp
-          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
+          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.10.0@sha256:2b0c980a41a5785c61c763d165002a4c7d4edee945312e40d71cf62063c94c11
           command:
             - "/bin/bash"
             - "-c"
@@ -66,7 +66,7 @@ spec:
               mountPath: /mnt/workspace
       containers:
         - name: claude
-          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.9.0@sha256:317a043a7d80fc3402216b54821f8bd2e94db4b10ed5100df35593c925219bd2
+          image: ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:v0.10.0@sha256:2b0c980a41a5785c61c763d165002a4c7d4edee945312e40d71cf62063c94c11
           command:
             - "/bin/bash"
             - "-c"
