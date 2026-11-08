@@ -48,5 +48,8 @@ spec:
       # cert auth matches the certificate CN against the role name.
       - hostssl harper harper_sync all cert
       - hostssl harper harper_admin all cert
+  inheritedMetadata:
+    labels:
+      prometheus-scrape: "true"
   monitoring:
     enablePodMonitor: true
