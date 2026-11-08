@@ -47,3 +47,22 @@ curl -s -G "$P/api/v1/query" --data-urlencode 'query=<promql>'
 - zot's own metrics (`zot_*`, e.g. per-repo storage) should be scraped by `k8s/infra/registry-system/zot/servicemonitor.yaml`.
   The chart's ServiceMonitor was rejected by the operator (it references a missing Secret `basic-auth`).
   If `zot_*` series are missing, check `kubectl logs -n kube-prometheus-stack-system deploy/kube-prom-operator | grep zot`.
+
+## Polaris report (cluster audit score)
+
+The Polaris dashboard (`polaris-dashboard` in `policy-system`) is reachable from `claude-rc` (egress rule in
+`k8s/apps/claude-system/networkpolicy.yaml`). The report is only served over HTTP, there is no Kubernetes object for it:
+
+```sh
+curl -s http://polaris-dashboard.policy-system.svc.cluster.local/results.json -o <scratchpad>/polaris.json
+```
+
+- `Score` is the overall score; `AuditTime` says when it was computed. Polaris re-audits when asked, but a config change is a
+  Helm upgrade that restarts the dashboard, so wait for the new pod (`kubectl get pods -n policy-system -l app=polaris`) and
+  check that `AuditTime` is after the merge before trusting the numbers.
+- Findings are in `Results[]` (one per controller), at `.Results`, `.PodResult.Results` and `.PodResult.ContainerResults[].Results`;
+  a failing check has `Success: false`. Group them by check ID and severity with a few lines of Python (`python3 -I`).
+- Checks, exemptions and ignored rules live in `k8s/infra/policy-system/polaris/helm-release.yaml`. `controllerNames` match by
+  prefix, so a name like `arc-ubuntu` also covers the generated listener and runner pods. Every exemption there has a comment saying why.
+- Do not treat a finding as real without looking: `sensitiveContainerEnvVar` and `sensitiveConfigmapContent` are keyword matches on names.
+
