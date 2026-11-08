@@ -75,29 +75,6 @@ spec:
       ports:
         - { protocol: TCP, port: 9000 }
 ---
-# Sync metrics (port 9102, never routed by Traefik): Prometheus only.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: sync-metrics-ingress
-  namespace: harper-pad
-spec:
-  podSelector:
-    matchLabels:
-      app: harper-pad-sync
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-prometheus-stack-system
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: prometheus
-      ports:
-        - { protocol: TCP, port: 9102 }
----
 # Admin pod: no ingress at all. Out to Cloudflare for the tunnel only (7844 tunnel, 443 api).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -123,7 +100,8 @@ spec:
         - { protocol: UDP, port: 7844 }
         - { protocol: TCP, port: 443 }
 ---
-# PostgreSQL: only the sync and admin pods, plus the CNPG operator and Prometheus.
+# PostgreSQL: only the sync and admin pods, plus the CNPG operator (Prometheus reaches the pods through the
+# prometheus-scrape label, see kube-prometheus-stack).
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -157,9 +135,3 @@ spec:
       ports:
         - { protocol: TCP, port: 8000 }
         - { protocol: TCP, port: 5432 }
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-prometheus-stack-system
-      ports:
-        - { protocol: TCP, port: 9187 }
