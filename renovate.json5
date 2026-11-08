@@ -162,6 +162,16 @@
       "groupSlug": "dependency-track-images"
     },
     {
+      "description": "sbom-hook and vex-hub pull redpandadata/connect through mirror.gcr.io, which has no digest lookup. The regex manager tracks the same tag as docker.io/redpandadata/connect (renovate comment), so the helm-values duplicate is off.",
+      "matchManagers": [
+        "helm-values"
+      ],
+      "matchPackageNames": [
+        "mirror.gcr.io/redpandadata/connect"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Renovate itself (the renovate_version pin and the renovatebot/github-action) automerges for every update type. Last, so it wins over the rules above.",
       "matchPackageNames": ["renovate", "renovatebot/github-action"],
       "automerge": true,
