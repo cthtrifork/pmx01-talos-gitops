@@ -89,9 +89,13 @@ jobs:
           --create-namespace \
           --wait
 
+      # The FluxInstance syncs refs/heads/main; point it at the ref under test (refs/pull/<n>/merge
+      # on a pull request, so the merge result is tested) instead of the already merged state.
       - name: Deploy flux instance
         run: |
-          kubectl apply -f k8s/clusters/homelab/flux-instance.yaml
+          sed "s|ref: \"refs/heads/main\"|ref: \"${GITHUB_REF}\"|" k8s/clusters/homelab/flux-instance.yaml |
+            tee "${RUNNER_TEMP}/flux-instance.yaml" | grep -F "ref: "
+          kubectl apply -f "${RUNNER_TEMP}/flux-instance.yaml"
       - name: Verify flux instance is ready
         run: |
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
@@ -105,8 +109,30 @@ jobs:
       - name: Wait for successful reconciliation
         run: |
           wait="${WAIT:-5m}"
+          flux reconcile source git flux-system --timeout="${wait}"
           flux reconcile kustomization flux-system --timeout="${wait}"
           kubectl wait --for=condition=Ready kustomization flux-system -n flux-system --timeout=5m
+          # fail if Flux deployed anything other than the commit under test
+          revision="$(kubectl get gitrepository flux-system -n flux-system -o jsonpath='{.status.artifact.revision}')"
+          echo "Flux synced ${revision}, expected ${GITHUB_SHA}"
+          case "${revision}" in *"${GITHUB_SHA}") ;; *) exit 1 ;; esac
+
+      # Exemptions to keep the job short: the workloads (apps, app-controllers, virtualmachines) are
+      # not reconciled here, and Kustomizations that need the real SOPS key cannot decrypt in kind.
+      # Their manifests are covered by validate.yaml and the harper-pad dry-run below.
+      - name: Suspend Kustomizations that are not tested here
+        run: |
+          for ks in app app-controllers gitops-virtualmachines; do
+            flux suspend kustomization "${ks}"
+          done
+      - name: Wait for the bootstrap Kustomization
+        run: |
+          # no encrypted files in bootstrap: a throwaway age key satisfies the decryption secretRef
+          sudo apt-get install -y --no-install-recommends age
+          age-keygen -o "${RUNNER_TEMP}/age.agekey"
+          kubectl create secret generic sops-age -n flux-system --from-file=age.agekey="${RUNNER_TEMP}/age.agekey"
+          rm "${RUNNER_TEMP}/age.agekey"
+          kubectl wait --for=condition=Ready kustomization gitops-infra-bootstrap -n flux-system --timeout=5m
 
       - name: List deployed resources
         run: flux tree ks flux-system
