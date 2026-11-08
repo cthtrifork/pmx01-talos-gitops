@@ -23,6 +23,7 @@ spec:
       labels:
         app.kubernetes.io/instance: zot
         app.kubernetes.io/name: zot
+        prometheus-scrape: "true"
     spec:
       containers:
       - env:
