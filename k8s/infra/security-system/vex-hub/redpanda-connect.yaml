@@ -21,7 +21,7 @@ input:
       - generate:
           interval: 6h
           mapping: root = ""
-      # what the scan jobs request: / is the Trivy VEX hub, /kube-kraken/ ours
+      # what the scan jobs request: / is the Trivy VEX hub, /homelab/ ours
       - http_server:
           path: /vexhub-main.tar.gz
           allowed_verbs:
@@ -31,11 +31,11 @@ input:
           allowed_verbs:
             - GET
       - http_server:
-          path: /kube-kraken.tar.gz
+          path: /homelab.tar.gz
           allowed_verbs:
             - GET
       - http_server:
-          path: /kube-kraken/.well-known/vex-repository.json
+          path: /homelab/.well-known/vex-repository.json
           allowed_verbs:
             - GET
 
@@ -88,7 +88,7 @@ pipeline:
                   - cache:
                       resource: vex
                       operator: set
-                      key: /kube-kraken.tar.gz
+                      key: /homelab.tar.gz
                       value: '$${! content() }'
             - branch:
                 request_map: root = ""
@@ -99,13 +99,13 @@ pipeline:
                       timeout: 30s
                       retries: 3
                   - mapping: |
-                      let loc = "http://vex-hub.security-system.svc.cluster.local/kube-kraken.tar.gz//talos-gitops-main/vex"
+                      let loc = "http://vex-hub.security-system.svc.cluster.local/homelab.tar.gz//talos-gitops-main/vex"
                       root = this
                       root.versions = this.versions.map_each(v -> v.without("locations").merge({"locations": [{"url": $loc}]}))
                   - cache:
                       resource: vex
                       operator: set
-                      key: /kube-kraken/.well-known/vex-repository.json
+                      key: /homelab/.well-known/vex-repository.json
                       value: '$${! content() }'
         - processors:
             - cache:

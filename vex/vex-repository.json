@@ -1,5 +1,5 @@
 {
-  "name": "kube-kraken VEX",
+  "name": "homelab VEX",
   "description": "VEX statements for the images that run on the homelab cluster",
   "versions": [
     {

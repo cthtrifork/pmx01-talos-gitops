@@ -1,4 +1,6 @@
-# Homelab Talos Cluster
+# talos-gitops
+
+GitOps configuration for the **homelab** Talos Linux Kubernetes cluster, reconciled by Flux (Flux Operator).
 
 Remember to install cilium directly and delete flannel + kubeproxy daemonsets, before flux can be applied.
 

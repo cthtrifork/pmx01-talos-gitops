@@ -21,8 +21,6 @@ spec:
       labels:
         app.kubernetes.io/instance: trivy-server
         app.kubernetes.io/name: trivy-server
-        kube-kraken.dk/mount-root-ca: "true"
-        kube-kraken.dk/with-https-proxy: "true"
     spec:
       automountServiceAccountToken: false
       containers:
@@ -110,11 +108,6 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: trivy-operator
-      tolerations:
-      - effect: NoSchedule
-        key: kube-kraken/role
-        operator: Equal
-        value: tool
       volumes:
       - emptyDir: {}
         name: tmp-data

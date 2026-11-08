@@ -14,7 +14,6 @@ data:
   scanJob.customVolumesMount: '[{"mountPath":"/tmp/trivy/.cache","name":"trivy-cache"},{"mountPath":"/etc/ssl/certs/zot-ca.crt","name":"zot-ca","readOnly":true,"subPath":"ca.crt"},{"mountPath":"/.trivy/vex/repository.yaml","name":"repository-config","subPath":"repository.yaml"},{"mountPath":"/etc/trivy/.trivyignore.yaml","name":"ignore-file","subPath":".trivyignore.yaml"},{"mountPath":"/etc/trivy/ignore-policy.rego","name":"ignore-policy","subPath":"ignorePolicy"}]'
   scanJob.podTemplateContainerSecurityContext: '{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"privileged":false,"readOnlyRootFilesystem":true}'
   scanJob.podTemplatePodSecurityContext: '{"fsGroup":65534,"runAsGroup":65534,"runAsNonRoot":true,"runAsUser":65534,"seccompProfile":{"type":"RuntimeDefault"}}'
-  scanJob.tolerations: '[{"effect":"NoSchedule","key":"kube-kraken/role","operator":"Equal","value":"tool"}]'
   scanJob.useGCRServiceAccount: "true"
   trivy.serverURL: http://trivy-service.security-system:4954
   vulnerabilityReports.scanJobsInSameNamespace: "false"

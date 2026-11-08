@@ -53,12 +53,7 @@ extract_and_validate() {
 flux envsubst <"$HELM_REPOSITORY_FILE" >"$HELM_REPOSITORY_FILE.tmp"
 HELM_REPOSITORY_NAME=$(extract_and_validate '.metadata.name' "$HELM_REPOSITORY_FILE".tmp)
 
-HELM_REPOSITORY_URL=$(extract_and_validate '.metadata.annotations.["kube-kraken.dk/chart-mirror-source"]' "$HELM_REPOSITORY_FILE".tmp "false")
-
-flux envsubst <"$HELM_REPOSITORY_FILE" >"$HELM_REPOSITORY_FILE.tmp"
-if [[ "$HELM_REPOSITORY_URL" == "null" ]]; then
-  HELM_REPOSITORY_URL=$(extract_and_validate '.spec.url' "$HELM_REPOSITORY_FILE".tmp)
-fi
+HELM_REPOSITORY_URL=$(extract_and_validate '.spec.url' "$HELM_REPOSITORY_FILE".tmp)
 
 HELM_REPOSITORY_TYPE=$(extract_and_validate '.kind' "$HELM_REPOSITORY_FILE".tmp "false")
 

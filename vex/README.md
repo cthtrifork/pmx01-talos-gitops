@@ -2,7 +2,7 @@
 
 Our own VEX statements, following the [VEX repository specification](https://github.com/aquasecurity/vex-repo-spec)
 and the layout of the [Trivy VEX Hub](https://github.com/aquasecurity/vexhub). Trivy reads it as the repository
-`kube-kraken-vexhub` (`k8s/infra/security-system/trivy-operator/vex/repository.yaml`), through the in-cluster mirror
+`homelab-vexhub` (`k8s/infra/security-system/trivy-operator/vex/repository.yaml`), through the in-cluster mirror
 `k8s/infra/security-system/vex-hub/`, and filters the findings of every scan with it.
 
 ```text

@@ -24,7 +24,6 @@ spec:
       labels:
         app.kubernetes.io/instance: trivy-operator
         app.kubernetes.io/name: trivy-operator
-        kube-kraken.dk/mount-root-ca: "true"
     spec:
       automountServiceAccountToken: true
       containers:
@@ -93,11 +92,6 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: trivy-operator
-      tolerations:
-      - effect: NoSchedule
-        key: kube-kraken/role
-        operator: Equal
-        value: tool
       volumes:
       - name: zot-ca
         secret:
