@@ -90,6 +90,7 @@ data:
         - omni-kube-service-exposer
         rules:
         - hostNetworkSet
+        - insecureCapabilities
       - controllerNames:
         - spegel
         rules:
