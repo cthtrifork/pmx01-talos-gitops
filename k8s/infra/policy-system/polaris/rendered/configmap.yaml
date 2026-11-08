@@ -155,7 +155,3 @@ data:
         rules:
         - privilegeEscalationAllowed
         - insecureCapabilities
-      - controllerNames:
-        - dependency-track-frontend
-        rules:
-        - notReadOnlyRootFilesystem
