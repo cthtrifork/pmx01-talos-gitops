@@ -87,6 +87,8 @@ spec:
           env:
             - name: DISABLE_AUTOUPDATER
               value: "1" # the binary is baked into the image
+            - name: CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+              value: "1" # no telemetry (Datadog) or error reporting: those hosts are not in the egress allowlist
             - name: DOCKER_CONFIG
               value: /etc/registry-auth # registry credentials for crane, from the optional Secret ghcr-pull
             - name: CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX

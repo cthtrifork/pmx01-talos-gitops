@@ -89,6 +89,8 @@ spec:
         - matchName: cilium.io
         - matchPattern: "*.cilium.io"
         - matchPattern: "*.githubusercontent.com"
+        # GitHub Pages sites (docs, JSON schema catalogs)
+        - matchPattern: "*.github.io"
         # Actions job logs (gh run view --log): the receiver and the results blob storage the logs redirect to
         - matchPattern: "*.actions.githubusercontent.com"
         - matchPattern: "*.blob.core.windows.net"
