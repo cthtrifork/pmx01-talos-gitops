@@ -3,7 +3,8 @@
 # admin hostname (remotely managed tunnel, behind Cloudflare Access with OIDC) to http://localhost:9001.
 #
 # Needs the Secret harper-pad-admin-tunnel (key `token`), a SOPS-encrypted file (see "Secrets (SOPS)" in the root readme.md).
-# The app listens on loopback, which kubelet cannot probe, so there are no probes on it.
+# The app listens on loopback, which kubelet cannot probe, and its image has no shell or health command, so the app has
+# no probes (Polaris exemption); the cloudflared sidecar is probed with `cloudflared tunnel ready`.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -50,6 +51,28 @@ spec:
                 secretKeyRef:
                   name: harper-pad-admin-tunnel
                   key: token
+          # kubelet cannot reach the loopback metrics port, so ask cloudflared itself (exec)
+          livenessProbe:
+            exec:
+              command:
+                - "cloudflared"
+                - "tunnel"
+                - "--metrics"
+                - "127.0.0.1:2000"
+                - "ready"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - "cloudflared"
+                - "tunnel"
+                - "--metrics"
+                - "127.0.0.1:2000"
+                - "ready"
+            periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 10m

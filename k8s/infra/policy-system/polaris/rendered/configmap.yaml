@@ -63,17 +63,37 @@ data:
         - kube-apiserver
         - kube-controller-manager
         - kube-scheduler
-        - kube-prometheus-stack-prometheus-node-exporter
-        - metallb-speaker
-        - metallb-frr-k8s
-        - omni-kube-service-exposer
-        - spegel
         rules:
         - hostNetworkSet
         - hostPIDSet
         - hostPathSet
         - dangerousCapabilities
         - insecureCapabilities
+      - controllerNames:
+        - kube-prometheus-stack-prometheus-node-exporter
+        rules:
+        - hostNetworkSet
+        - hostPIDSet
+        - hostPathSet
+      - controllerNames:
+        - metallb-speaker
+        rules:
+        - hostNetworkSet
+        - insecureCapabilities
+      - controllerNames:
+        - metallb-frr-k8s
+        rules:
+        - hostNetworkSet
+        - dangerousCapabilities
+        - insecureCapabilities
+      - controllerNames:
+        - omni-kube-service-exposer
+        rules:
+        - hostNetworkSet
+      - controllerNames:
+        - spegel
+        rules:
+        - hostPathSet
       - controllerNames:
         - arc-ubuntu-runner
         namespace: arc-runners-system
@@ -104,6 +124,10 @@ data:
       - controllerNames:
         - cert-manager
         - cert-manager-cainjector
+        rules:
+        - readinessProbeMissing
+        - livenessProbeMissing
+      - controllerNames:
         - arc-ubuntu
         rules:
         - readinessProbeMissing
@@ -111,8 +135,16 @@ data:
         - notReadOnlyRootFilesystem
       - controllerNames:
         - coredns
-        - spegel
         - metallb-speaker
+        rules:
+        - runAsRootAllowed
+        - linuxHardening
+      - controllerNames:
+        - spegel
+        rules:
+        - runAsRootAllowed
+        - livenessProbeMissing
+      - controllerNames:
         - metallb-frr-k8s
         - omni-kube-service-exposer
         rules:
@@ -130,14 +162,13 @@ data:
         - memoryLimitsMissing
       - controllerNames:
         - claude-rc
-        - harper-pad-admin
         rules:
         - livenessProbeMissing
         - readinessProbeMissing
       - containerNames:
-        - cloudflared
+        - admin
         controllerNames:
-        - traefik
+        - harper-pad-admin
         rules:
         - livenessProbeMissing
         - readinessProbeMissing
@@ -154,8 +185,3 @@ data:
         - adguard-deployment
         rules:
         - privilegeEscalationAllowed
-        - insecureCapabilities
-      - controllerNames:
-        - dependency-track-frontend
-        rules:
-        - notReadOnlyRootFilesystem

@@ -134,7 +134,28 @@ spec:
                   key: token
                   name: cloudflared-tunnel-token
           image: mirror.gcr.io/cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
+          livenessProbe:
+            exec:
+              command:
+                - cloudflared
+                - tunnel
+                - --metrics
+                - 127.0.0.1:2000
+                - ready
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
           name: cloudflared
+          readinessProbe:
+            exec:
+              command:
+                - cloudflared
+                - tunnel
+                - --metrics
+                - 127.0.0.1:2000
+                - ready
+            periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             limits:
               memory: 128Mi
