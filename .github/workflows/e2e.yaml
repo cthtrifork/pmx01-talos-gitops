@@ -166,8 +166,11 @@ jobs:
             kubectl patch kustomization "${ks}" -n flux-system --type merge --patch-file "${RUNNER_TEMP}/no-sops.json"
           done
           for ks in gitops-infra gitops-infra-post; do
-            kubectl wait --for=condition=Ready kustomization "${ks}" -n flux-system --timeout=12m || {
+            kubectl wait --for=condition=Ready kustomization "${ks}" -n flux-system --timeout=4m || {
               kubectl get kustomization "${ks}" -n flux-system -o jsonpath='{range .status.conditions[*]}{.type}={.status}: {.message}{"\n"}{end}'
+              kubectl get kustomization "${ks}" -n flux-system -o jsonpath='{.spec.decryption}{" "}{.spec.patches}{"\n"}'
+              kubectl logs -n flux-system deploy/kustomize-controller --since=5m | grep "\"${ks}\"" | tail -15 | cut -c1-400
+              flux get helmreleases -A || true
               exit 1
             }
           done
