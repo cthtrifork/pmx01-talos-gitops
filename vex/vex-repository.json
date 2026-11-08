@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
   "name": "homelab VEX",
-=======
-  "name": "kube-kraken VEX",
->>>>>>> origin/main
   "description": "VEX statements for the images that run on the homelab cluster",
   "versions": [
     {
