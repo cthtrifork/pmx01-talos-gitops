@@ -14,6 +14,8 @@ ARG KUBECTL_VERSION=v1.34.1
 ARG GH_VERSION=2.103.3
 # renovate: datasource=github-releases depName=google/go-containerregistry
 ARG CRANE_VERSION=0.22.1
+# renovate: datasource=github-releases depName=mikefarah/yq
+ARG YQ_VERSION=4.54.2
 # renovate: datasource=github-releases depName=controlplaneio-fluxcd/flux-operator
 ARG FLUX_OPERATOR_VERSION=0.62.1
 
@@ -54,6 +56,15 @@ RUN base="https://github.com/google/go-containerregistry/releases/download/v${CR
  && tar -xzf "${tarball}" crane \
  && install -m 0755 crane /usr/local/bin/crane \
  && rm -rf "${tarball}" crane
+
+# yq (mikefarah, the one the repo's CI scripts use), checksum verified against the release's checksums file. Its
+# columns follow checksums_hashes_order; SHA-256 is the 18th hash, so field 19.
+RUN base="https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}" \
+ && cd /tmp \
+ && curl -fsSL "${base}/yq_linux_amd64" -o yq \
+ && echo "$(curl -fsSL "${base}/checksums" | awk '$1=="yq_linux_amd64"{print $19}')  yq" | sha256sum -c - \
+ && install -m 0755 yq /usr/local/bin/yq \
+ && rm -f yq
 
 # Flux MCP server (https://fluxcd.control-plane.io/mcp/), checksum verified against the release's checksums file.
 # The deployment registers it read-only; it talks to the cluster with the pod's ServiceAccount.
