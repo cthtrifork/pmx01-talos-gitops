@@ -1,0 +1,38 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# Distributes CA bundles (the Bundle in k8s/infra/post/trust-manager) as ConfigMaps to every namespace.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: trust-manager
+  namespace: cert-manager-system
+spec:
+  interval: 30m
+  timeout: 10m
+  chartRef:
+    kind: OCIRepository
+    name: trust-manager
+  driftDetection:
+    mode: enabled
+  install:
+    strategy:
+      name: RetryOnFailure
+  values:
+    crds:
+      enabled: true
+    app:
+      trust:
+        # cert-manager-system holds the root CA Secret (portableinfo-root-ca) that the Bundle reads
+        namespace: cert-manager-system
+    image:
+      # renovate: datasource=docker depName=quay.io/jetstack/trust-manager versioning=docker
+      tag: v0.26.0@sha256:783afe31d39f122a811b96ac3aedab9f358488088df21622ae5b057b4a38b5c2
+    defaultPackageImage:
+      # renovate: datasource=docker depName=quay.io/jetstack/trust-pkg-debian-trixie versioning=docker
+      tag: 20250419-deb13u1.1@sha256:477cc69ef6a026b90a6d67d4ac7114735c5f66edf1cc97e68b9da599adf231af
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
