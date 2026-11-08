@@ -17,7 +17,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 ## 1. Build the image
 
 Run the **Publish to Github** workflow (`workflow_dispatch`, tag prefix `rc`) or push a `v*` tag. It
-publishes `ghcr.io/cthtrifork/pmx01-talos-gitops/claude-runner:<tag>`. Put that tag, pinned by digest,
+publishes `ghcr.io/cthtrifork/talos-gitops/claude-runner:<tag>`. Put that tag, pinned by digest,
 in `deployment.yaml`. Renovate bumps `CLAUDE_CODE_VERSION` in the Dockerfile; the checksum is read from the release manifest at build time
 (checksum: `https://downloads.claude.ai/claude-code-releases/<version>/manifest.json`, `linux-x64`).
 

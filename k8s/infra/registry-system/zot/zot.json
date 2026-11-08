@@ -60,7 +60,7 @@
         {
           "repositories": [
             "ghcr-private/cthtrifork/homeserver-bootc/**",
-            "ghcr-private/cthtrifork/pmx01-talos-gitops/github-actions-runner"
+            "ghcr-private/cthtrifork/talos-gitops/github-actions-runner"
           ],
           "deleteReferrers": true,
           "deleteUntagged": true,
