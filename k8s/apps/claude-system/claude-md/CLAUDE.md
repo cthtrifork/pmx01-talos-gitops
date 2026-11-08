@@ -33,6 +33,25 @@ mounted through a generated ConfigMap: edit it there, not in the pod (pod change
   (`rendered/` is generated), Prometheus `k8s/infra/kube-prometheus-stack/`, local-path `k8s/infra/local-path-provisioner/`,
   this pod `k8s/apps/claude-system/`.
 
+## Working in the repo: one git worktree per task
+
+Several sessions can use `/workspace` at the same time, and `/workspace/pmx01-talos-gitops` is a single shared clone: its
+checked-out branch can change under you between two commands. That once put a commit on another session's branch. So never
+edit or commit in the shared clone; give every task its own worktree.
+
+- Create it from fresh `main`, outside the clone:
+  `git -C /workspace/pmx01-talos-gitops fetch origin main && git -C /workspace/pmx01-talos-gitops worktree add /workspace/wt-<topic> -b claude/<topic> origin/main`,
+  then work only in `/workspace/wt-<topic>` (use absolute paths; a `cd` into the clone resets in the next call).
+- Before every commit and push, check `git branch --show-current` and `git status -s`. Push the branch by name
+  (`git push -u origin claude/<topic>`), never a bare `git push`. Do not force-push. The render workflow may push a
+  `chore: render manifests` commit to your PR branch: `git pull --rebase origin claude/<topic>`, then push normally.
+- The stash is shared by all worktrees. Do not use `git stash`; set work aside with a temporary WIP commit.
+- `git worktree list` shows the other sessions' `wt-*` worktrees. Do not touch them or their branches, and do not
+  reset, rebase or delete a branch you did not create in this task.
+- When the PR is merged or abandoned: `git -C /workspace/pmx01-talos-gitops worktree remove /workspace/wt-<topic>` and
+  `git -C /workspace/pmx01-talos-gitops branch -D claude/<topic>`. A worktree costs far less disk than a clone, but the volume
+  does not enforce sizes, so clean up.
+
 ## Inspecting container images
 
 - `crane` is for **inspection only** (`manifest`, `config`, `ls`, `digest`; pipe through `jq` to sum layer sizes). Never
