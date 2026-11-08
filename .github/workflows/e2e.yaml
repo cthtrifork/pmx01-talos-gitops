@@ -30,7 +30,7 @@ concurrency:
 jobs:
   e2e-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,17 +42,20 @@ jobs:
       - name: Setup kustomize
         uses: fluxcd/pkg/actions/kustomize@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Build Flux Kustomization paths
+        timeout-minutes: 3
         run: ./scripts/ci/build-flux-paths.sh k8s/clusters/homelab
       - name: Setup Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
       - name: Setup Flux Operator CLI
         uses: controlplaneio-fluxcd/flux-operator/actions/setup@48e2cd76c475be87a1c9a8bd83fe07e064abd725 # v0.62.1
       - name: Setup Kubernetes Kind
+        timeout-minutes: 5
         uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           config: scripts/kind.yaml
           cluster_name: homelab
       - name: Install cilium CLI
+        timeout-minutes: 2
         run: |
           CLI_ARCH=amd64
           if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
@@ -86,12 +89,14 @@ jobs:
           CILIUM_VERSION: ${{env.CILIUM_VERSION}}
 
       - name: Wait for cilium to be ready
+        timeout-minutes: 6
         run: |
           interactive="${INTERACTIVE:-true}"
           wait="${WAIT:-5m}"
           cilium status --wait --interactive="${interactive}" --wait-duration="${wait}" # will exit when ready
 
       - name: Install latest flux-operator
+        timeout-minutes: 6
         run: |
           helm install flux-operator oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator \
           --namespace flux-system \
@@ -110,6 +115,7 @@ jobs:
         env:
           SYNC_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.head_ref) || github.ref }}
       - name: Verify flux instance is ready
+        timeout-minutes: 6
         run: |
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
 
@@ -129,6 +135,7 @@ jobs:
           rm "${RUNNER_TEMP}/age.agekey"
 
       - name: Wait for successful reconciliation
+        timeout-minutes: 8
         run: |
           wait="${WAIT:-5m}"
           flux reconcile source git flux-system --timeout="${wait}"
@@ -149,37 +156,60 @@ jobs:
             flux suspend kustomization "${ks}"
           done
       - name: Wait for the bootstrap Kustomization
+        timeout-minutes: 6
         run: |
           flux reconcile kustomization gitops-infra-bootstrap --timeout=5m
+          # Ready does not wait for the release; infra applies PrometheusRules and ServiceMonitors
+          timeout 300 bash -c 'until kubectl get helmrelease prometheus-operator-crds -n kube-prometheus-stack-system >/dev/null 2>&1; do sleep 3; done'
+          kubectl wait --for=condition=Ready helmrelease/prometheus-operator-crds -n kube-prometheus-stack-system --timeout=4m
 
-      # The real SOPS key is not available in kind. On the live Kustomizations only (never in git) drop
-      # decryption and delete the encrypted Secrets, so infra and infra-post can reconcile.
-      # Not blocking yet: the first runs show how long this takes and which HelmReleases need tuning.
-      - name: Reconcile infra without the encrypted Secrets
+      # kind is not the real cluster, so on the live Kustomizations only (never in git):
+      # - SOPS: drop decryption and delete the encrypted Secrets (the key is not available)
+      # - HelmReleases: suspend all but cert-manager, trust-manager, cloudnative-pg, metallb and traefik, which install the CRDs that
+      #   infra-post needs. The others are slow, and the cilium release would upgrade the cilium this job installed.
+      # The manifests of every release are still applied and dry-run against the API server.
+      - name: Reconcile infra and infra-post
+        timeout-minutes: 14
         run: |
-          cat > "${RUNNER_TEMP}/no-sops.json" <<'EOF'
-          {"spec":{"decryption":null,"patches":[
+          cat > "${RUNNER_TEMP}/infra.json" <<'EOF'
+          {"spec":{"decryption":null,"healthChecks":null,"patches":[
             {"target":{"kind":"Secret","name":"github-auth"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: github-auth\n"},
+            {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"},
+            {"target":{"kind":"HelmRelease"},"patch":"- op: add\n  path: /spec/suspend\n  value: true\n"},
+            {"target":{"kind":"HelmRelease","name":"^(cert-manager|trust-manager|cloudnative-pg|metallb|traefik)$"},"patch":"- op: replace\n  path: /spec/suspend\n  value: false\n"}]}}
+          EOF
+          cat > "${RUNNER_TEMP}/post.json" <<'EOF'
+          {"spec":{"decryption":null,"patches":[
             {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"}]}}
           EOF
-          for ks in gitops-infra gitops-infra-post; do
-            kubectl patch kustomization "${ks}" -n flux-system --type merge --patch-file "${RUNNER_TEMP}/no-sops.json"
-          done
-          for ks in gitops-infra gitops-infra-post; do
-            kubectl wait --for=condition=Ready kustomization "${ks}" -n flux-system --timeout=12m || {
-              kubectl get kustomization "${ks}" -n flux-system -o jsonpath='{range .status.conditions[*]}{.type}={.status}: {.message}{"\n"}{end}'
-              exit 1
-            }
-          done
-        continue-on-error: true
+          kubectl patch kustomization gitops-infra -n flux-system --type merge --patch-file "${RUNNER_TEMP}/infra.json"
+          kubectl patch kustomization gitops-infra-post -n flux-system --type merge --patch-file "${RUNNER_TEMP}/post.json"
+          diagnose() {
+            kubectl get kustomization "$1" -n flux-system -o jsonpath='{range .status.conditions[*]}{.type}={.status}: {.message}{"\n"}{end}'
+            kubectl logs -n flux-system deploy/kustomize-controller --since=10m | grep "\"$1\"" | tail -10 | cut -c1-400
+            flux get helmreleases -A || true
+            exit 1
+          }
+          kubectl wait --for=condition=Ready kustomization gitops-infra -n flux-system --timeout=4m || diagnose gitops-infra
+          # Ready does not wait for the releases, so wait for the CRDs before applying infra-post
+          # kubectl wait fails at once for an object that does not exist yet, so poll for the CRDs first
+          timeout 300 bash -c 'until kubectl get crd certificates.cert-manager.io clusters.postgresql.cnpg.io middlewares.traefik.io ingressroutes.traefik.io ipaddresspools.metallb.io bundles.trust.cert-manager.io >/dev/null 2>&1; do sleep 5; done' || { flux get helmreleases -A; exit 1; }
+          # cert-manager, trust-manager, CloudNativePG and MetalLB have admission webhooks that infra-post is validated against; traefik only needs its CRDs
+          kubectl wait --for=condition=Ready helmrelease/cert-manager -n cert-manager-system --timeout=5m || diagnose gitops-infra
+          kubectl wait --for=condition=Ready helmrelease/cloudnative-pg -n storage-system --timeout=5m || diagnose gitops-infra
+          kubectl wait --for=condition=Ready helmrelease/metallb -n metallb-system --timeout=5m || diagnose gitops-infra
+          kubectl wait --for=condition=Ready helmrelease/trust-manager -n cert-manager-system --timeout=5m || diagnose gitops-infra
+          flux reconcile kustomization gitops-infra-post --timeout=3m || diagnose gitops-infra-post
 
       - name: List deployed resources
+        timeout-minutes: 2
         if: always()
         run: |
           flux tree ks flux-system
           flux get helmreleases -A || true
 
       - name: Debug failure
+        timeout-minutes: 3
         if: failure()
         run: |
           kubectl get pods -A
