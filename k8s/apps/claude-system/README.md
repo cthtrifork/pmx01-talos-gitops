@@ -12,7 +12,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
 | `claude-md/CLAUDE.md` | User-level memory, generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
-| `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh` and a git credential helper |
+| `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
 
 ## 1. Build the image
 
@@ -96,6 +96,13 @@ Run `/login`, open the URL on your own machine, paste the code back, then `/exit
 pod starts `claude remote-control` and the session appears at <https://claude.ai/code>. The login and
 its token refreshes stay on the PVC, so restarts need no new login. To sign out, delete the
 `claude-home` PVC. The PVC holds your login: anyone with node access can act as you.
+
+## Flux MCP server
+
+The image carries `flux-operator-mcp` (<https://fluxcd.control-plane.io/mcp/>). The deployment registers it as the
+user-scoped MCP server `flux` at every start, in read-only mode (`--read-only`: no reconcile, suspend, resume or
+apply tools). It uses the pod's in-cluster ServiceAccount, so it can read no more than `rbac.yaml` allows. Check
+with `claude mcp list` in the pod. No egress change is needed, it only talks to the Kubernetes API.
 
 ## Check what the pod can and cannot do
 

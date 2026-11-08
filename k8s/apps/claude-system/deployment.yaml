@@ -79,6 +79,10 @@ spec:
                 echo "not logged in: kubectl -n claude-system exec -it deploy/claude-rc -- claude"
                 sleep 30
               done
+              # Flux MCP server, read-only. User scope is stored in ~/.claude.json on the PVC, so re-register on
+              # every start (remove first, `mcp add` fails if the name exists).
+              claude mcp remove --scope user flux >/dev/null 2>&1 || true
+              claude mcp add --scope user flux -- flux-operator-mcp serve --read-only
               exec claude remote-control --name pmx01-talos
           env:
             - name: DISABLE_AUTOUPDATER
