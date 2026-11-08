@@ -51,11 +51,17 @@ data:
         - cluster-reconciler-flux-system
         - flux-operator
         - flux-operator-cluster-admin
-        - flux-web-admin
-        - flux-web-user
-        - cloudnative-pg
         rules:
         - clusterrolebindingClusterAdmin
+        - clusterrolebindingPodExecAttach
+      - controllerNames:
+        - flux-web-admin
+        - flux-web-user
+        rules:
+        - clusterrolePodExecAttach
+      - controllerNames:
+        - cloudnative-pg
+        rules:
         - clusterrolebindingPodExecAttach
         - clusterrolePodExecAttach
       - controllerNames:
