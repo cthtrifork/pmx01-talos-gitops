@@ -6,11 +6,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Renovate bumps the version. The linux-x64 checksum is read from the release manifest at build time
 # (https://downloads.claude.ai/claude-code-releases/<version>/manifest.json), so there is nothing to bump by hand.
-ARG CLAUDE_CODE_VERSION=2.1.311 # renovate: datasource=npm depName=@anthropic-ai/claude-code
+# renovate: datasource=npm depName=@anthropic-ai/claude-code
+ARG CLAUDE_CODE_VERSION=2.1.311
 # Keep within one minor version of the cluster
 ARG KUBECTL_VERSION=v1.34.1
-ARG GH_VERSION=2.103.3 # renovate: datasource=github-releases depName=cli/cli
-ARG CRANE_VERSION=0.22.1 # renovate: datasource=github-releases depName=google/go-containerregistry
+# renovate: datasource=github-releases depName=cli/cli
+ARG GH_VERSION=2.103.3
+# renovate: datasource=github-releases depName=google/go-containerregistry
+ARG CRANE_VERSION=0.22.1
 # renovate: datasource=github-releases depName=controlplaneio-fluxcd/flux-operator
 ARG FLUX_OPERATOR_VERSION=0.62.1
 
