@@ -27,7 +27,7 @@ spec:
     image:
       registry: mirror.gcr.io
     database:
-      # -rw is the CNPG read-write service of postgres-cluster.yaml
+      # -rw is the CNPG read-write service of the Cluster in post/security-system/dependency-track-postgres-cluster.yaml
       jdbcUrl: "jdbc:postgresql://dependency-track-db-rw.security-system.svc.cluster.local:5432/dtrack"
       existingSecret:
         name: dependency-track-db-app # created by CNPG

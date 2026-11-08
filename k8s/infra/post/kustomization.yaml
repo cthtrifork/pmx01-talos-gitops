@@ -8,4 +8,8 @@ resources:
   #- kubevirt/kubevirt.yaml
   #- kubevirt/cdi.yaml
   - metallb/l2announcement.yaml
+  # resources that use CRDs installed by the HelmReleases in k8s/infra (cert-manager, CloudNativePG, Traefik)
+  - flux-system/ingressroute.yaml
+  - registry-system/zot-certificate.yaml
+  - security-system/dependency-track-postgres-cluster.yaml
   #- kyverno-policies/

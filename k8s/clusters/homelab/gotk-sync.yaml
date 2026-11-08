@@ -39,6 +39,21 @@ spec:
     kind: GitRepository
     name: flux-system #gitops
   path: ../../k8s/infra
+  # gitops-infra-post applies resources that use the CRDs these releases install
+  timeout: 15m
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: cert-manager
+      namespace: cert-manager-system
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: cloudnative-pg
+      namespace: storage-system
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: traefik
+      namespace: traefik-system
   postBuild:
     substitute:
       var_substitution_enabled: "true"
