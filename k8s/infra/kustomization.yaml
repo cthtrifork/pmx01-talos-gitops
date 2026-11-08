@@ -7,7 +7,6 @@ resources:
   - openebs-system/
   - cert-manager/
   - trust-manager/
-  - reflector/
   - flux-system/
   #- kubevirt/
   - metrics-server/
