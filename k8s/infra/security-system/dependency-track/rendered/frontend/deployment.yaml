@@ -29,6 +29,8 @@ spec:
         app.kubernetes.io/instance: dependency-track
         app.kubernetes.io/name: dependency-track-frontend
         app.kubernetes.io/component: frontend
+      annotations:
+        reloader.stakater.com/auto: "true"
     spec:
       serviceAccountName: dependency-track
       automountServiceAccountToken: false
@@ -44,7 +46,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
@@ -84,6 +86,17 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - mountPath: /etc/nginx/conf.d
+              name: nginx-conf
+            - mountPath: /opt/owasp/dependency-track-frontend/static/config.json
+              name: frontend-config
+              readOnly: true
+              subPath: config.json
       volumes:
         - name: tmp
           emptyDir: {}
+        - emptyDir: {}
+          name: nginx-conf
+        - configMap:
+            name: dependency-track-frontend-config
+          name: frontend-config

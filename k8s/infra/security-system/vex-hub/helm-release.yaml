@@ -47,6 +47,7 @@ spec:
         type: RuntimeDefault
     securityContext:
       allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
       capabilities:
         drop:
           - ALL
@@ -59,10 +60,14 @@ spec:
       - /etc/connect/redpanda-connect.yaml
       - --disable-telemetry
     extraVolumes:
+      - name: tmp
+        emptyDir: {}
       - name: connect-config
         configMap:
           name: vex-hub-connect-config
     extraVolumeMounts:
+      - name: tmp
+        mountPath: /tmp
       - name: connect-config
         mountPath: /etc/connect/redpanda-connect.yaml
         subPath: redpanda-connect.yaml
