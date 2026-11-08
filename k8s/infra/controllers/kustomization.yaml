@@ -8,4 +8,4 @@ resources:
   - trust-manager/
   - metallb/
   - storage-system/
-  - traefik-crds/
+  - ingress-system/

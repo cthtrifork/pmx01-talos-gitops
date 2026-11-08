@@ -31,7 +31,7 @@ metadata:
 spec:
   interval: 30m
   prune: true
-  wait: true # cert-manager, trust-manager, MetalLB, CloudNativePG and the Traefik CRDs that later layers use
+  wait: true # cert-manager, trust-manager, MetalLB, CloudNativePG and Traefik, which install the CRDs and webhooks that later layers use
   timeout: 10m
   dependsOn:
     - name: gitops-infra-bootstrap
