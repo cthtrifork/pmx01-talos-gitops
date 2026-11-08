@@ -16,10 +16,8 @@ networking:
     - "svc.cluster.local"
     - "cluster.local"
 nodes:
-  # == Control planes ==
+  # A single node (control plane, schedulable) boots faster and needs less memory than control plane + worker.
   - role: control-plane
-  # == Workers ==
-  - role: worker
     # Extra port mappings are added to allow access to cluster services via localhost on the host machine.
     extraPortMappings:
       - containerPort: 443

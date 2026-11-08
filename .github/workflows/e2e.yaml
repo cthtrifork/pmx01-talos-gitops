@@ -34,6 +34,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Fail fast: build every path Flux syncs before spending time on a cluster
+      - name: Setup yq
+        uses: fluxcd/pkg/actions/yq@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
+      - name: Setup kubeconform
+        uses: fluxcd/pkg/actions/kubeconform@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
+      - name: Setup kustomize
+        uses: fluxcd/pkg/actions/kustomize@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
+      - name: Build Flux Kustomization paths
+        run: ./scripts/ci/build-flux-paths.sh k8s/clusters/homelab
       - name: Setup Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
       - name: Setup Flux Operator CLI
@@ -89,9 +98,17 @@ jobs:
           --create-namespace \
           --wait
 
+      # The FluxInstance syncs refs/heads/main; point it at the branch under test instead of the already
+      # merged state. source-controller cannot fetch the synthetic refs/pull/<n>/merge commit.
       - name: Deploy flux instance
         run: |
-          kubectl apply -f k8s/clusters/homelab/flux-instance.yaml
+          sed "s|ref: \"refs/heads/main\"|ref: \"${SYNC_REF}\"|" k8s/clusters/homelab/flux-instance.yaml |
+            tee "${RUNNER_TEMP}/flux-instance.yaml" | grep -F "ref: "
+          kubectl apply -f "${RUNNER_TEMP}/flux-instance.yaml"
+          # the flux-system Kustomization applies flux-instance.yaml from the ref and would reset the sync ref to main
+          kubectl annotate fluxinstance flux -n flux-system kustomize.toolkit.fluxcd.io/reconcile=disabled
+        env:
+          SYNC_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.head_ref) || github.ref }}
       - name: Verify flux instance is ready
         run: |
           kubectl wait --for=condition=Ready fluxinstance flux -n flux-system --timeout=5m
@@ -102,42 +119,47 @@ jobs:
           token: ${{ github.token }}
           version: 'latest'
 
+      # Kustomizations with spec.decryption fail until the secret exists. Bootstrap has no encrypted
+      # files, so a throwaway age key is enough for it.
+      - name: Create a throwaway SOPS key
+        run: |
+          sudo apt-get install -y --no-install-recommends age
+          age-keygen -o "${RUNNER_TEMP}/age.agekey"
+          kubectl create secret generic sops-age -n flux-system --from-file=age.agekey="${RUNNER_TEMP}/age.agekey"
+          rm "${RUNNER_TEMP}/age.agekey"
+
       - name: Wait for successful reconciliation
         run: |
           wait="${WAIT:-5m}"
+          flux reconcile source git flux-system --timeout="${wait}"
           flux reconcile kustomization flux-system --timeout="${wait}"
           kubectl wait --for=condition=Ready kustomization flux-system -n flux-system --timeout=5m
+          # fail if Flux deployed anything other than the commit under test
+          revision="$(kubectl get gitrepository flux-system -n flux-system -o jsonpath='{.status.artifact.revision}')"
+          echo "Flux synced ${revision}, expected ${EXPECTED_SHA}"
+          case "${revision}" in *"${EXPECTED_SHA}") ;; *) exit 1 ;; esac
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      # Only the Flux sync and bootstrap are reconciled. gitops-infra cannot be reconciled on a fresh
+      # cluster: its HelmReleases install the cert-manager, CloudNativePG and Traefik CRDs that other
+      # resources in the same Kustomization use, so the server-side dry-run fails (and SOPS secrets cannot
+      # be decrypted). The rest is built and schema-checked by the first steps.
+      - name: Suspend Kustomizations that are not tested here
+        run: |
+          for ks in gitops-infra gitops-infra-post app-controllers app gitops-virtualmachines; do
+            flux suspend kustomization "${ks}"
+          done
+      - name: Wait for the bootstrap Kustomization
+        run: |
+          flux reconcile kustomization gitops-infra-bootstrap --timeout=5m
 
       - name: List deployed resources
-        run: flux tree ks flux-system
+        if: always()
+        run: |
+          flux tree ks flux-system
+          flux get helmreleases -A || true
 
-      # Server-side dry-run of the harper-pad manifests against a real API server: checks the
-      # schemas of the cert-manager, CloudNativePG, Prometheus Operator (PodMonitor) and Traefik resources (CRDs from the rendered
-      # manifests in this repo and the Traefik chart) and Pod Security admission for the restricted namespace.
-      - name: Install CRDs needed by harper-pad
-        run: |
-          kubectl apply --server-side --force-conflicts \
-            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_certificates.yaml \
-            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_issuers.yaml \
-            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_clusterissuers.yaml
-          kubectl apply --server-side --force-conflicts \
-            -f k8s/infra/storage-system/cloudnative-pg/rendered/crds/crds.yaml
-          kubectl apply --server-side --force-conflicts \
-            -f k8s/infra/bootstrap/kube-prometheus-stack/prometheus-operator-crds/rendered/prometheus-operator-crds/charts/crds/templates/crd-podmonitors.yaml
-          # Traefik ships its CRDs in the chart's crds/ directory, which helm template does not render
-          helm show crds oci://ghcr.io/traefik/helm/traefik --version "${TRAEFIK_CHART_VERSION}" |
-            kubectl apply --server-side --force-conflicts -f -
-          kubectl wait --for=condition=Established --timeout=2m \
-            crd/certificates.cert-manager.io crd/issuers.cert-manager.io crd/clusters.postgresql.cnpg.io \
-            crd/middlewares.traefik.io crd/ingressroutes.traefik.io crd/podmonitors.monitoring.coreos.com
-        env:
-          TRAEFIK_CHART_VERSION: "42.3.1" # renovate: datasource=docker depName=ghcr.io/traefik/helm/traefik
-      - name: Dry-run harper-pad against the API server
-        run: |
-          kubectl kustomize k8s/apps/harper-pad > "${RUNNER_TEMP}/harper-pad.yaml"
-          # the namespace has to exist for a namespaced dry-run
-          kubectl apply -f k8s/apps/harper-pad/namespace.yaml
-          kubectl apply --dry-run=server -f "${RUNNER_TEMP}/harper-pad.yaml"
       - name: Debug failure
         if: failure()
         run: |
