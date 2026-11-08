@@ -3,6 +3,11 @@ name: Render manifests
 on:
   # Manual run on a chosen branch
   workflow_dispatch:
+    inputs:
+      render_all:
+        description: "Render all components instead of only the changed ones"
+        type: boolean
+        default: true
   # Render and commit the result back to the PR branch
   pull_request:
     paths:
@@ -45,6 +50,50 @@ jobs:
           # Persisted for the push below
           token: ${{ steps.app-token.outputs.token }}
 
+      - name: Get changed files
+        id: changed
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: step-security/changed-files@2e07db73e5ccdb319b9a6c7766bd46d39d304bad # v47.0.5
+        with:
+          files: |
+            k8s/**
+            scripts/ci/render-manifests.sh
+            Makefile
+          separator: "\n"
+
+      # Map changed files to the component dirs (holding helm-release.yaml) to render.
+      # Render everything when not a PR, requested manually, or the render tooling changed.
+      - name: Select components to render
+        id: select
+        env:
+          EVENT: ${{ github.event_name }}
+          RENDER_ALL: ${{ inputs.render_all }}
+          CHANGED: ${{ steps.changed.outputs.all_changed_files }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT" != "pull_request" && "$RENDER_ALL" != "false" ]] \
+            || grep -qxE 'Makefile|scripts/ci/render-manifests.sh' <<<"$CHANGED"; then
+            echo "Rendering all components"
+            echo "dirs=" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          dirs=()
+          while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            d=$(dirname "$f")
+            while [[ "$d" != "." && "$d" != "/" ]]; do
+              if [[ -f "$d/helm-release.yaml" && -f "$d/helm-repository.yaml" ]]; then
+                dirs+=("./$d")
+                break
+              fi
+              d=$(dirname "$d")
+            done
+          done <<<"$CHANGED"
+          selected=$(printf '%s\n' "${dirs[@]}" | sort -u | tr '\n' ' ')
+          echo "Components to render: ${selected:-none}"
+          echo "dirs=$selected" >>"$GITHUB_OUTPUT"
+          echo "none=$([[ -z "${selected// }" ]] && echo true || echo false)" >>"$GITHUB_OUTPUT"
+
       - name: Log in to the Container registry
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
         with:
@@ -53,17 +102,19 @@ jobs:
           password: ${{ github.token }}
 
       - name: Setup Flux CLI
+        if: ${{ steps.select.outputs.none != 'true' }}
         uses: fluxcd/flux2/action@22c6ee1a6099ce252b729199c105a38319b587d4 # main
         with:
           token: ${{ github.token }}
 
       - name: Render manifests
+        if: ${{ steps.select.outputs.none != 'true' }}
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4
         with: # give up to 3x5 minutes
           timeout_minutes: 5
           max_attempts: 3
           retry_on: timeout
-          command: make render-manifests -j $(nproc)
+          command: make render-manifests RENDER_DIRS="${{ steps.select.outputs.dirs }}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
