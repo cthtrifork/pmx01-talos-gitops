@@ -106,17 +106,37 @@ spec:
             - kube-apiserver
             - kube-controller-manager
             - kube-scheduler
-            - kube-prometheus-stack-prometheus-node-exporter
-            - metallb-speaker
-            - metallb-frr-k8s
-            - omni-kube-service-exposer
-            - spegel
           rules:
             - hostNetworkSet
             - hostPIDSet
             - hostPathSet
             - dangerousCapabilities
             - insecureCapabilities
+        - controllerNames:
+            - kube-prometheus-stack-prometheus-node-exporter
+          rules:
+            - hostNetworkSet
+            - hostPIDSet
+            - hostPathSet
+        - controllerNames:
+            - metallb-speaker
+          rules:
+            - hostNetworkSet
+            - insecureCapabilities
+        - controllerNames:
+            - metallb-frr-k8s
+          rules:
+            - hostNetworkSet
+            - dangerousCapabilities
+            - insecureCapabilities
+        - controllerNames:
+            - omni-kube-service-exposer
+          rules:
+            - hostNetworkSet
+        - controllerNames:
+            - spegel
+          rules:
+            - hostPathSet
         # Docker-in-Docker CI runner: privileged and root by design, isolated to its own namespace
         - namespace: arc-runners-system
           controllerNames:
@@ -153,6 +173,10 @@ spec:
         - controllerNames:
             - cert-manager
             - cert-manager-cainjector
+          rules:
+            - readinessProbeMissing
+            - livenessProbeMissing
+        - controllerNames:
             - arc-ubuntu
           rules:
             - readinessProbeMissing
@@ -162,8 +186,16 @@ spec:
         # MetalLB (speaker and frr-k8s need raw sockets and file ownership), the Omni service exposer (managed by Omni)
         - controllerNames:
             - coredns
-            - spegel
             - metallb-speaker
+          rules:
+            - runAsRootAllowed
+            - linuxHardening
+        - controllerNames:
+            - spegel
+          rules:
+            - runAsRootAllowed
+            - livenessProbeMissing
+        - controllerNames:
             - metallb-frr-k8s
             - omni-kube-service-exposer
           rules:
@@ -213,11 +245,3 @@ spec:
             - adguard-deployment
           rules:
             - privilegeEscalationAllowed
-            - insecureCapabilities
-        # dependency-track-frontend needs a writable root filesystem: its entrypoint renders the nginx site config into
-        # /etc/nginx/conf.d and writes API_BASE_URL into static/config.json at start, and skips the env configuration when it
-        # cannot (the chart ships readOnlyRootFilesystem: false for this reason)
-        - controllerNames:
-            - dependency-track-frontend
-          rules:
-            - notReadOnlyRootFilesystem
