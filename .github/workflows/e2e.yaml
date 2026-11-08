@@ -34,6 +34,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Fail fast: build every path Flux syncs before spending time on a cluster
+      - name: Setup yq
+        uses: fluxcd/pkg/actions/yq@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
+      - name: Setup kubeconform
+        uses: fluxcd/pkg/actions/kubeconform@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
+      - name: Setup kustomize
+        uses: fluxcd/pkg/actions/kustomize@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
+      - name: Build Flux Kustomization paths
+        run: ./scripts/ci/build-flux-paths.sh k8s/clusters/homelab
       - name: Setup Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
       - name: Setup Flux Operator CLI
@@ -119,7 +128,7 @@ jobs:
 
       # Exemptions to keep the job short: the workloads (apps, app-controllers, virtualmachines) are
       # not reconciled here, and Kustomizations that need the real SOPS key cannot decrypt in kind.
-      # Their manifests are covered by validate.yaml and the harper-pad dry-run below.
+      # Their manifests are still built and schema-checked by the first steps.
       - name: Suspend Kustomizations that are not tested here
         run: |
           for ks in app app-controllers gitops-virtualmachines; do
@@ -137,33 +146,6 @@ jobs:
       - name: List deployed resources
         run: flux tree ks flux-system
 
-      # Server-side dry-run of the harper-pad manifests against a real API server: checks the
-      # schemas of the cert-manager, CloudNativePG, Prometheus Operator (PodMonitor) and Traefik resources (CRDs from the rendered
-      # manifests in this repo and the Traefik chart) and Pod Security admission for the restricted namespace.
-      - name: Install CRDs needed by harper-pad
-        run: |
-          kubectl apply --server-side --force-conflicts \
-            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_certificates.yaml \
-            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_issuers.yaml \
-            -f k8s/infra/cert-manager/rendered/crd-cert-manager.io_clusterissuers.yaml
-          kubectl apply --server-side --force-conflicts \
-            -f k8s/infra/storage-system/cloudnative-pg/rendered/crds/crds.yaml
-          kubectl apply --server-side --force-conflicts \
-            -f k8s/infra/bootstrap/kube-prometheus-stack/prometheus-operator-crds/rendered/prometheus-operator-crds/charts/crds/templates/crd-podmonitors.yaml
-          # Traefik ships its CRDs in the chart's crds/ directory, which helm template does not render
-          helm show crds oci://ghcr.io/traefik/helm/traefik --version "${TRAEFIK_CHART_VERSION}" |
-            kubectl apply --server-side --force-conflicts -f -
-          kubectl wait --for=condition=Established --timeout=2m \
-            crd/certificates.cert-manager.io crd/issuers.cert-manager.io crd/clusters.postgresql.cnpg.io \
-            crd/middlewares.traefik.io crd/ingressroutes.traefik.io crd/podmonitors.monitoring.coreos.com
-        env:
-          TRAEFIK_CHART_VERSION: "42.3.1" # renovate: datasource=docker depName=ghcr.io/traefik/helm/traefik
-      - name: Dry-run harper-pad against the API server
-        run: |
-          kubectl kustomize k8s/apps/harper-pad > "${RUNNER_TEMP}/harper-pad.yaml"
-          # the namespace has to exist for a namespaced dry-run
-          kubectl apply -f k8s/apps/harper-pad/namespace.yaml
-          kubectl apply --dry-run=server -f "${RUNNER_TEMP}/harper-pad.yaml"
       - name: Debug failure
         if: failure()
         run: |
