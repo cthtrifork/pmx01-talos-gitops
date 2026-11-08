@@ -1,6 +1,6 @@
 # Read-only cluster access for the Claude Code pod. Built-in `view` covers workloads, services,
 # events, logs and so on, and deliberately does NOT include Secrets. The extra role adds the CRDs
-# this cluster uses, plus nodes and storage. Nothing here has a write verb, pods/exec or Secrets.
+# this cluster uses, plus nodes, storage and cluster-wide RBAC objects (to audit Polaris RBAC findings). Nothing here has a write verb, pods/exec or Secrets.
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -27,6 +27,15 @@ rules:
       - storage.k8s.io
     resources:
       - storageclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+      - clusterrolebindings
     verbs:
       - get
       - list
