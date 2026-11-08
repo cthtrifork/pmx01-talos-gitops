@@ -122,7 +122,7 @@ spec:
                     echo "$doc" >> $generated
                     new=$(jq -s --arg name "$name" --arg now "$now" '
                       {"@context": "https://openvex.dev/ns/v0.2.0",
-                       "@id": ("https://github.com/cthtrifork/pmx01-talos-gitops/" + "vex/pkg/oci/" + $name),
+                       "@id": ("https://github.com/cthtrifork/talos-gitops/" + "vex/pkg/oci/" + $name),
                        author: "Dependency-Track", role: "Automated export from Dependency-Track",
                        timestamp: $now, version: 1,
                        statements: (add | unique_by([.vulnerability.name, .products[0]."@id"]) | sort_by([.vulnerability.name, .products[0]."@id"]))}' "/work/out/$f")
@@ -168,9 +168,9 @@ spec:
                 - name: DT_URL
                   value: http://dependency-track-api-server.security-system.svc.cluster.local:8080
                 - name: REPO
-                  value: cthtrifork/pmx01-talos-gitops
+                  value: cthtrifork/talos-gitops
                 - name: GIT_URL
-                  value: https://github.com/cthtrifork/pmx01-talos-gitops.git
+                  value: https://github.com/cthtrifork/talos-gitops.git
                 - name: GITHUB_API
                   value: https://api.github.com
                 - name: BRANCH

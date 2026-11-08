@@ -1,4 +1,4 @@
-# CLAUDE.md for the pmx01-talos cluster runner
+# CLAUDE.md for the homelab cluster runner
 
 User-level memory for the `claude-rc` pod. Managed in Git (`k8s/apps/claude-system/claude-md/CLAUDE.md`) and
 mounted through a generated ConfigMap: edit it there, not in the pod (pod changes are lost on restart).
@@ -21,11 +21,11 @@ mounted through a generated ConfigMap: edit it there, not in the pod (pod change
 
 ## How changes are made
 
-- Flux reconciles `github.com/cthtrifork/pmx01-talos-gitops`. Never `kubectl apply` or patch live objects; propose a PR.
+- Flux reconciles `github.com/cthtrifork/talos-gitops`. Never `kubectl apply` or patch live objects; propose a PR.
 - Layout: `k8s/` (apps and infra, Kustomize), `images/` (CI-built images), `patches/` (Talos patches), `scripts/`, `docs/`.
 - Never push to `main`. Branch `claude/<short-topic>`, commit, push, and open the PR yourself with `gh pr create`,
   without waiting to be asked. Say what changed, why and how it was verified, and put the PR link in the final reply.
-  If `gh` is unavailable, share `https://github.com/cthtrifork/pmx01-talos-gitops/pull/new/<branch>`.
+  If `gh` is unavailable, share `https://github.com/cthtrifork/talos-gitops/pull/new/<branch>`.
 - Conventional Commits with a scope, e.g. `fix(claude-system): select the claude-rc pod in the egress policy`.
 - Renovate manages versions and pins images by digest. Keep that style; do not bump versions by hand unless asked.
 - Keep manifests minimal and in the style of their neighbours. Validate with `kubectl kustomize <dir>` before the PR.
@@ -35,12 +35,12 @@ mounted through a generated ConfigMap: edit it there, not in the pod (pod change
 
 ## Working in the repo: one git worktree per task
 
-Several sessions can use `/workspace` at the same time, and `/workspace/pmx01-talos-gitops` is a single shared clone: its
+Several sessions can use `/workspace` at the same time, and `/workspace/talos-gitops` is a single shared clone: its
 checked-out branch can change under you between two commands. That once put a commit on another session's branch. So never
 edit or commit in the shared clone; give every task its own worktree.
 
 - Create it from fresh `main`, outside the clone:
-  `git -C /workspace/pmx01-talos-gitops fetch origin main && git -C /workspace/pmx01-talos-gitops worktree add /workspace/wt-<topic> -b claude/<topic> origin/main`,
+  `git -C /workspace/talos-gitops fetch origin main && git -C /workspace/talos-gitops worktree add /workspace/wt-<topic> -b claude/<topic> origin/main`,
   then work only in `/workspace/wt-<topic>` (use absolute paths; a `cd` into the clone resets in the next call).
 - Before every commit and push, check `git branch --show-current` and `git status -s`. Push the branch by name
   (`git push -u origin claude/<topic>`), never a bare `git push`. Do not force-push. The render workflow may push a
@@ -48,8 +48,8 @@ edit or commit in the shared clone; give every task its own worktree.
 - The stash is shared by all worktrees. Do not use `git stash`; set work aside with a temporary WIP commit.
 - `git worktree list` shows the other sessions' `wt-*` worktrees. Do not touch them or their branches, and do not
   reset, rebase or delete a branch you did not create in this task.
-- When the PR is merged or abandoned: `git -C /workspace/pmx01-talos-gitops worktree remove /workspace/wt-<topic>` and
-  `git -C /workspace/pmx01-talos-gitops branch -D claude/<topic>`. A worktree costs far less disk than a clone, but the volume
+- When the PR is merged or abandoned: `git -C /workspace/talos-gitops worktree remove /workspace/wt-<topic>` and
+  `git -C /workspace/talos-gitops branch -D claude/<topic>`. A worktree costs far less disk than a clone, but the volume
   does not enforce sizes, so clean up.
 
 ## Inspecting container images
@@ -75,7 +75,7 @@ edit or commit in the shared clone; give every task its own worktree.
 ## GitHub access
 
 - `gh` and `git` use a short-lived GitHub App token (refreshed hourly), not narrowed per request: it has everything the
-  App is granted on its repositories (pmx01-talos-gitops, homeserver-bootc and others), including Workflows. Changes
+  App is granted on its repositories (talos-gitops, homeserver-bootc and others), including Workflows. Changes
   under `.github/workflows/` still go through a PR.
 - Egress is a Cilium allowlist (`k8s/apps/claude-system/networkpolicy.yaml`). If a command hangs on connect, the host is
   probably not allowed: see "Dropped traffic" below, then propose the policy change as a PR.
