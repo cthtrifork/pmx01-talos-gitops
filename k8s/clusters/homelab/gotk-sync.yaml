@@ -61,6 +61,10 @@ spec:
       kind: HelmRelease
       name: traefik
       namespace: traefik-system
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: metallb
+      namespace: metallb-system
   postBuild:
     substitute:
       var_substitution_enabled: "true"

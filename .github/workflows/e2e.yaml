@@ -162,7 +162,7 @@ jobs:
 
       # kind is not the real cluster, so on the live Kustomizations only (never in git):
       # - SOPS: drop decryption and delete the encrypted Secrets (the key is not available)
-      # - HelmReleases: suspend all but cert-manager, cloudnative-pg and traefik, which install the CRDs that
+      # - HelmReleases: suspend all but cert-manager, cloudnative-pg, metallb and traefik, which install the CRDs that
       #   infra-post needs. The others are slow, and the cilium release would upgrade the cilium this job installed.
       # The manifests of every release are still applied and dry-run against the API server.
       # Not blocking yet: the first runs show how long this takes.
@@ -174,7 +174,7 @@ jobs:
             {"target":{"kind":"Secret","name":"github-auth"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: github-auth\n"},
             {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"},
             {"target":{"kind":"HelmRelease"},"patch":"- op: add\n  path: /spec/suspend\n  value: true\n"},
-            {"target":{"kind":"HelmRelease","name":"^(cert-manager|cloudnative-pg|traefik)$"},"patch":"- op: replace\n  path: /spec/suspend\n  value: false\n"}]}}
+            {"target":{"kind":"HelmRelease","name":"^(cert-manager|cloudnative-pg|metallb|traefik)$"},"patch":"- op: replace\n  path: /spec/suspend\n  value: false\n"}]}}
           EOF
           cat > "${RUNNER_TEMP}/post.json" <<'EOF'
           {"spec":{"decryption":null,"patches":[
@@ -191,10 +191,11 @@ jobs:
           kubectl wait --for=condition=Ready kustomization gitops-infra -n flux-system --timeout=4m || diagnose gitops-infra
           # Ready does not wait for the releases, so wait for the CRDs before applying infra-post
           # kubectl wait fails at once for an object that does not exist yet, so poll for the CRDs first
-          timeout 300 bash -c 'until kubectl get crd certificates.cert-manager.io clusters.postgresql.cnpg.io middlewares.traefik.io ingressroutes.traefik.io >/dev/null 2>&1; do sleep 5; done' || { flux get helmreleases -A; exit 1; }
-          # cert-manager and CloudNativePG have admission webhooks that infra-post is validated against; traefik only needs its CRDs
+          timeout 300 bash -c 'until kubectl get crd certificates.cert-manager.io clusters.postgresql.cnpg.io middlewares.traefik.io ingressroutes.traefik.io ipaddresspools.metallb.io >/dev/null 2>&1; do sleep 5; done' || { flux get helmreleases -A; exit 1; }
+          # cert-manager, CloudNativePG and MetalLB have admission webhooks that infra-post is validated against; traefik only needs its CRDs
           kubectl wait --for=condition=Ready helmrelease/cert-manager -n cert-manager-system --timeout=5m || diagnose gitops-infra
           kubectl wait --for=condition=Ready helmrelease/cloudnative-pg -n storage-system --timeout=5m || diagnose gitops-infra
+          kubectl wait --for=condition=Ready helmrelease/metallb -n metallb-system --timeout=5m || diagnose gitops-infra
           flux reconcile kustomization gitops-infra-post --timeout=3m || diagnose gitops-infra-post
         continue-on-error: true
 
