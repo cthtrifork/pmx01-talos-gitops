@@ -76,6 +76,8 @@ spec:
         # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
         # renovate: datasource=docker depName=registry.k8s.io/kube-state-metrics/kube-state-metrics versioning=docker
         tag: v2.20.0
+      podLabels:
+        prometheus-scrape: "true"
       resources:
         requests:
           cpu: 10m
@@ -135,6 +137,9 @@ spec:
         # ServiceMonitors). Renovate bumps it together with the tag above.
         # renovate: datasource=docker depName=quay.io/prometheus/prometheus versioning=docker
         version: v3.16.0
+        podMetadata:
+          labels:
+            prometheus-scrape: "true"
         replicas: 1
         enableRemoteWriteReceiver: true
         enableFeatures:
