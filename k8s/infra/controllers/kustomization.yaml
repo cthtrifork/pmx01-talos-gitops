@@ -1,0 +1,11 @@
+---
+# Releases that install CRDs and admission webhooks used by the rest of the cluster. gitops-infra-controllers waits
+# for them, so gitops-infra and gitops-infra-post can rely on the CRDs and webhooks.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - cert-manager/
+  - trust-manager/
+  - metallb/
+  - storage-system/
+  - ingress-system/

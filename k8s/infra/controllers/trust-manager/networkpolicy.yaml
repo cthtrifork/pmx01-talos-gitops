@@ -1,4 +1,4 @@
-# The namespace default-deny and the DNS/API server egress come from k8s/infra/cert-manager/networkpolicy.yaml.
+# The namespace default-deny and the DNS/API server egress come from k8s/infra/controllers/cert-manager/networkpolicy.yaml.
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
 # Admission webhook for Bundles: called by the API server (host network) on the pod port 6443.
