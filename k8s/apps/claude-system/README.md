@@ -104,23 +104,23 @@ cluster Prometheus, through its OTLP receiver (`enableOTLPReceiver` in `k8s/infr
 Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`), which is promoted to a label.
 
 Both senders set exactly these variables (`claude-rc` in `deployment.yaml`, the VM in homeserver-bootc `managed-settings.json`);
-only the environment name differs:
+only the endpoint and the environment name differ:
 
 | Variable | Value | Why |
 |---|---|---|
 | `CLAUDE_CODE_ENABLE_TELEMETRY` | `1` | switches the exporter on; independent of `DISABLE_TELEMETRY=1` (Datadog and error reporting) |
 | `OTEL_METRICS_EXPORTER` | `otlp` | |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | what Prometheus' receiver takes |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://otel.portableinfo.cloud/api/v1/otlp` | Claude Code appends `/v1/metrics` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | VM: `http://otel.portableinfo.cloud/api/v1/otlp`; `claude-rc`: `http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090/api/v1/otlp` | Claude Code appends `/v1/metrics`; the pod stays inside the cluster, so its telemetry does not depend on Cloudflare DNS or the load balancer address |
 | `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | `delta` | the default is cumulative, and with `session_id` off several `claude` processes (the VM has several sessions and two users) would write the same series with different totals; deltas add up |
 | `OTEL_RESOURCE_ATTRIBUTES` | `environment=claude-rc` / `claude-vm` | promoted to a label |
 | `OTEL_METRICS_INCLUDE_SESSION_ID` | `false` | see the labels note below |
 | `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` | `false` | constant, so no use as a label |
 
 - **Receiver:** `otel.portableinfo.cloud` is a Cloudflare A record `otel` -> `192.168.1.243` (DNS only): the MetalLB address of
-  `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards HTTP by `Host`. `claude-rc` uses the same name
-  (it reaches Prometheus through the address, allowed by its policy to Prometheus on 9090), so the two senders cannot drift apart. LAN
-  only, no ingress, no authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off).
+  `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards HTTP by `Host`. LAN only, no ingress, no
+  authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off). `claude-rc` uses the in-cluster
+  service instead (its policy allows Prometheus on 9090).
 - **Delta counters:** `otlp-deltatocumulative` adds them up in memory, so a Prometheus restart starts the counters at 0
   (`increase()` copes with that).
 - **Names:** `otlp.translationStrategy: UnderscoreEscapingWithoutSuffixes` gives `claude_code_token_usage{environment,model,type}`,
