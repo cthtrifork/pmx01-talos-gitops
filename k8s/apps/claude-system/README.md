@@ -116,8 +116,9 @@ Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`
   kubelet and Dependency-Track scrapes (they were 104k of 193k series); `_sum` and `_count` stay, percentiles of those are gone.
   `local-path` does not enforce the volume size; watch `NodeFilesystemAlmostFull` for the node.
 - Claude Code sends its attributes on every datapoint and Prometheus keeps them all as labels: besides `environment`, `model` and
-  `type` also `user_email`, `user_id`, `organization_id`, `terminal_type`, `effort` and `query_source`, which Claude Code cannot
-  switch off (they are constant for one account, so they do not multiply series). `session_id` and `user_account_uuid` are switched
-  off with `OTEL_METRICS_INCLUDE_SESSION_ID=false` and `OTEL_METRICS_INCLUDE_ACCOUNT_UUID=false`: a session id would start a new set
-  of series per session, and `increase()` would miss the first export of each. Series stored before that keep their `session_id`.
-  Queries always `sum by (environment, ...)`.
+  `type` also `user_email`, `user_id`, `organization_id`, `terminal_type`, `effort` and `query_source`. They are kept: with one or two
+  users they cost nothing, and they allow a per-user split. `session_id` and `user_account_uuid` are switched off with
+  `OTEL_METRICS_INCLUDE_SESSION_ID=false` and `OTEL_METRICS_INCLUDE_ACCOUNT_UUID=false`, for accuracy rather than size: every session
+  would be its own cumulative series, `increase()` cannot see the first export of a series, and a session that exports once or twice
+  would count as zero (`increase(claude_code_session_count[1h])` came back empty). Series stored before that keep their `session_id`.
+  The usage API always sums by `environment`, so it is unaffected by the extra labels.
