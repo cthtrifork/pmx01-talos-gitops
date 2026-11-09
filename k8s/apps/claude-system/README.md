@@ -115,4 +115,9 @@ Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`
 - **Retention:** 30 days on a 20Gi volume (`retentionSize` 16GiB). To afford it, histogram buckets are dropped from the apiserver,
   kubelet and Dependency-Track scrapes (they were 104k of 193k series); `_sum` and `_count` stay, percentiles of those are gone.
   `local-path` does not enforce the volume size; watch `NodeFilesystemAlmostFull` for the node.
-- Only `environment`, `model` and `type` are labels. `user.email`, `user.id` and `session.id` are not promoted.
+- Claude Code sends its attributes on every datapoint and Prometheus keeps them all as labels: besides `environment`, `model` and
+  `type` also `user_email`, `user_id`, `organization_id`, `terminal_type`, `effort` and `query_source`, which Claude Code cannot
+  switch off (they are constant for one account, so they do not multiply series). `session_id` and `user_account_uuid` are switched
+  off with `OTEL_METRICS_INCLUDE_SESSION_ID=false` and `OTEL_METRICS_INCLUDE_ACCOUNT_UUID=false`: a session id would start a new set
+  of series per session, and `increase()` would miss the first export of each. Series stored before that keep their `session_id`.
+  Queries always `sum by (environment, ...)`.

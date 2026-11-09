@@ -108,6 +108,10 @@ spec:
               value: delta
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: environment=claude-rc
+            - name: OTEL_METRICS_INCLUDE_SESSION_ID
+              value: "false" # a session_id label would start a new set of series per session
+            - name: OTEL_METRICS_INCLUDE_ACCOUNT_UUID
+              value: "false"
             - name: CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY
               value: "1" # no "How is Claude doing?" survey in a headless pod
             - name: CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL
