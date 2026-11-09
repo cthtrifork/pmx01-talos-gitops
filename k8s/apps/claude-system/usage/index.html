@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude usage</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f4f4f1;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #7c7a74;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --ring: rgba(11, 11, 11, 0.10);
+    --env-rc: #2a78d6;
+    --env-vm: #eb6834;
+    --tok-input: #1baf7a;
+    --tok-output: #eda100;
+    --tok-cread: #e87ba4;
+    --tok-cwrite: #008300;
+    --on-tok-input: #ffffff;
+    --on-tok-output: #0b0b0b;
+    --on-tok-cread: #ffffff;
+    --on-tok-cwrite: #ffffff;
+    --env-other: #898781;
+    --bar-neutral: #b9b7ae;
+    --warn-bg: #fff4d6;
+    --warn-ink: #5b4300;
+    --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255, 255, 255, 0.10);
+      --env-rc: #3987e5; --env-vm: #d95926;
+      --tok-input: #199e70; --tok-output: #c98500; --tok-cread: #d55181; --tok-cwrite: #008300;
+      --on-tok-output: #0b0b0b;
+      --bar-neutral: #4a4945; --warn-bg: #3a2f10; --warn-ink: #f2d98a;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255, 255, 255, 0.10);
+    --env-rc: #3987e5; --env-vm: #d95926;
+    --tok-input: #199e70; --tok-output: #c98500; --tok-cread: #d55181; --tok-cwrite: #008300;
+    --on-tok-output: #0b0b0b;
+    --bar-neutral: #4a4945; --warn-bg: #3a2f10; --warn-ink: #f2d98a;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 var(--font);
+    padding-block: 20px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { max-width: 68rem; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 14px; margin: 0; font-weight: 650; }
+  .sub { color: var(--muted); font-size: 12px; }
+  code, .src { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+  .group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 2px; }
+  .seg button { all: unset; cursor: pointer; padding: 5px 12px; border-radius: 6px; color: var(--ink-2); font-size: 13px; }
+  .seg button[aria-pressed="true"] { background: var(--page); color: var(--ink); font-weight: 600; }
+  .seg button:focus-visible { outline: 2px solid var(--env-rc); outline-offset: 1px; }
+
+  .panel { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 16px; min-width: 0; }
+  .panel-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 16px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; }
+  .tile .k { color: var(--ink-2); font-size: 12px; }
+  .tile .v { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin: 2px 0; }
+  .tile.hero .v { font-size: 40px; }
+  .tile .s { color: var(--muted); font-size: 12px; }
+  .tile .src { display: block; margin-top: 6px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--muted); font: 11px var(--font); }
+  svg .grid { stroke: var(--grid); }
+  svg .axis { stroke: var(--axis); }
+  svg rect.hit { fill: transparent; }
+  svg g.col:hover .seg-fill { filter: brightness(1.08); }
+  svg g.col:hover rect.hit { fill: var(--ring); }
+  svg .seg-fill { stroke: var(--surface); stroke-width: 2; }
+  svg text.inbar { font-weight: 600; }
+
+  .tip { position: fixed; z-index: 5; pointer-events: none; background: var(--ink); color: var(--page); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 16px rgba(0,0,0,.25); max-width: 16rem; }
+  .tip b { display: block; margin-bottom: 2px; }
+  .tip .r { display: flex; justify-content: space-between; gap: 16px; }
+  .tip[hidden] { display: none; }
+
+  .row { display: grid; grid-template-columns: 9.5rem 1fr 4.5rem; gap: 10px; align-items: center; padding: 6px 0; }
+  .row .name { font-size: 13px; overflow-wrap: anywhere; }
+  .row .name small { display: block; color: var(--muted); font-size: 11px; }
+  .row .val { text-align: right; }
+  .track { height: 22px; display: flex; gap: 2px; }
+  .track .seg-b { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; min-width: 0; overflow: hidden; }
+  .track .neutral { background: var(--bar-neutral); justify-content: flex-start; }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  th:first-child, td:first-child { text-align: left; }
+  td.l, th.l { text-align: left; }
+  tfoot td { font-weight: 650; border-bottom: 0; }
+  details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; margin-top: 10px; }
+  details summary:focus-visible { outline: 2px solid var(--env-rc); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  #error { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 8px 12px; font-size: 12px; }
+  .empty { color: var(--muted); padding: 12px 0; }
+</style>
+</head>
+<body>
+<main>
+  <p id="error" role="alert" hidden></p>
+  <header class="bar">
+    <div>
+      <h1>Claude usage</h1>
+      <div class="sub" id="range">UTC days · from Prometheus</div>
+    </div>
+    <div class="group">
+      <div class="seg" role="group" aria-label="Environment" id="envSeg"></div>
+      <div class="seg" role="group" aria-label="Period" id="periodSeg">
+        <button data-p="today" aria-pressed="false">Today</button>
+        <button data-p="7d" aria-pressed="true">7 days</button>
+        <button data-p="30d" aria-pressed="false">30 days</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="tiles" id="tiles" aria-label="Totals"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Per day</h2>
+      <div class="seg" role="group" aria-label="Metric" id="metricSeg">
+        <button data-m="cost" aria-pressed="true">Cost</button>
+        <button data-m="tokens" aria-pressed="false">Tokens</button>
+        <button data-m="sessions" aria-pressed="false">Sessions</button>
+        <button data-m="commits" aria-pressed="false">Commits</button>
+        <button data-m="pull_requests" aria-pressed="false">Pull requests</button>
+      </div>
+    </div>
+    <div class="legend" id="envLegend"></div>
+    <svg id="daily" viewBox="0 0 720 240" role="img" aria-label="Stacked columns per day by environment"></svg>
+    <details><summary>View as table</summary><div class="scroll"><table id="dailyTable"></table></div></details>
+    <div class="src" id="dailySrc"></div>
+  </section>
+
+  <div class="cols">
+    <section class="panel">
+      <div class="panel-head"><h2>Cost by model</h2><span class="src">claude_code_cost_usage{model}</span></div>
+      <div id="modelCost"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>Token mix by model</h2><span class="src">claude_code_token_usage{model,type}</span></div>
+      <div class="legend" id="tokLegend"></div>
+      <div id="tokMix"></div>
+      <div class="sub" style="margin-top:8px">Cache hit = cache read ÷ (input + cache read + cache write).</div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>By model and environment</h2><span class="src">tokens, cost and lines carry both labels</span></div>
+    <div class="scroll"><table id="modelTable"></table></div>
+  </section>
+
+  <div class="cols">
+    <section class="panel">
+      <div class="panel-head"><h2>Output by environment</h2><span class="src">commit_count and pull_request_count have no model label</span></div>
+      <div class="scroll"><table id="actTable"></table></div>
+      <div class="sub" style="margin-top:8px">Cost per commit and per pull request divide the environment's whole cost by its commits or pull requests, so sessions that only read code count against them.</div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>Edit tool decisions</h2><span class="src">claude_code_code_edit_tool_decision</span></div>
+      <div class="scroll"><table id="editTable"></table></div>
+    </section>
+  </div>
+
+  <p class="sub" id="gen">Counts come from <code>increase()</code> of the collector's counters; the first export of a new model or environment is not counted.</p>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+"use strict";
+const TOK = [
+  { k: "input", label: "Input", v: "--tok-input", on: "--on-tok-input" },
+  { k: "output", label: "Output", v: "--tok-output", on: "--on-tok-output" },
+  { k: "cacheRead", label: "Cache read", v: "--tok-cread", on: "--on-tok-cread" },
+  { k: "cacheCreation", label: "Cache write", v: "--tok-cwrite", on: "--on-tok-cwrite" },
+];
+const PERIOD_DAYS = { today: 1, "7d": 7, "30d": 30 };
+const state = { env: "all", period: "7d", metric: "cost", summary: null, daily: null, breakdown: null, decisions: null };
+const $ = (id) => document.getElementById(id);
+const css = (v) => `var(${v})`;
+const usd = (v) => "$" + (v >= 1000 ? Math.round(v).toLocaleString() : v >= 100 ? v.toFixed(0) : v.toFixed(2));
+const compact = (v) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: v >= 1e7 ? 0 : 1 }).format(v);
+const num = (v) => Math.round(v).toLocaleString("en");
+const sum = (a) => a.reduce((x, y) => x + y, 0);
+function el(tag, attrs, text) { const e = document.createElement(tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; return e; }
+function sv(tag, attrs, text) { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); if (text !== undefined) e.textContent = text; return e; }
+const setPressed = (id, key, val) => { for (const b of $(id).querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset[key] === String(val))); };
+
+// environments get the validated slots in sorted order; a third one falls back to grey
+let ENVS = [];
+const envVar = (e) => ["--env-rc", "--env-vm"][ENVS.indexOf(e)] || "--env-other";
+const shownEnvs = () => (state.env === "all" ? ENVS : ENVS.filter((e) => e === state.env));
+const emptyBlock = (text) => el("div", { class: "empty" }, text);
+
+async function get(path) {
+  const r = await fetch(path, { headers: { accept: "application/json" } });
+  if (!r.ok) throw new Error(path + " answered " + r.status);
+  return r.json();
+}
+
+const tip = $("tip");
+function showTip(ev, title, lines) {
+  tip.replaceChildren(el("b", {}, title));
+  for (const [dot, name, val] of lines) {
+    const r = el("div", { class: "r" });
+    const l = el("span"); if (dot) { const d = el("span", { class: "dot" }); d.style.background = css(dot); l.append(d); } l.append(name);
+    r.append(l, el("span", {}, val)); tip.append(r);
+  }
+  tip.hidden = false;
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(ev.clientX + 14, innerWidth - w - 8) + "px";
+  tip.style.top = Math.max(8, Math.min(ev.clientY - h - 10, innerHeight - h - 8)) + "px";
+}
+const hideTip = () => { tip.hidden = true; };
+
+const windowData = () => state.summary && state.summary.windows[state.period];
+function totals() {
+  const w = windowData(); if (!w) return null;
+  if (state.env === "all") return w.total;
+  return w.environments[state.env] || null;
+}
+function modelRows() { return (state.breakdown ? state.breakdown.rows : []).filter((r) => state.env === "all" || r.environment === state.env); }
+function byModel() {
+  const out = {};
+  for (const r of modelRows()) {
+    const o = out[r.model] || (out[r.model] = { cost: 0, tokens: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 } });
+    o.cost += r.cost_usd; for (const k in o.tokens) o.tokens[k] += r.tokens[k];
+  }
+  return Object.entries(out).sort((a, b) => b[1].cost - a[1].cost);
+}
+
+function renderControls() {
+  const seg = $("envSeg"); seg.replaceChildren();
+  for (const e of ["all", ...ENVS]) { const b = el("button", { "data-e": e, "aria-pressed": String(state.env === e) }, e === "all" ? "All" : e); seg.append(b); }
+}
+
+function renderTiles() {
+  const t = totals(), box = $("tiles"); box.replaceChildren();
+  if (!t) { box.append(emptyBlock("No data for this selection yet.")); return; }
+  const days = PERIOD_DAYS[state.period];
+  const hit = t.tokens.cacheRead / Math.max(t.tokens.input + t.tokens.cacheRead + t.tokens.cacheCreation, 1);
+  const items = [
+    { k: "Cost", v: usd(t.cost_usd), s: state.period === "today" ? "since 00:00 UTC" : usd(t.cost_usd / days) + " per day", src: "cost_usage", hero: true },
+    { k: "Tokens", v: compact(t.tokens.total), s: "out " + compact(t.tokens.output) + " · in " + compact(t.tokens.input), src: "token_usage" },
+    { k: "Cache hit", v: (hit * 100).toFixed(1) + "%", s: "derived from tokens by type", src: "token_usage{type}" },
+    { k: "Sessions", v: num(t.sessions), s: t.sessions ? usd(t.cost_usd / t.sessions) + " per session" : "no sessions", src: "session_count" },
+    { k: "Commits", v: num(t.commits), s: t.pull_requests ? num(t.pull_requests) + " pull request" + (t.pull_requests > 1 ? "s" : "") : "no pull requests", src: "commit_count" },
+    { k: "Cost per commit", v: t.commits ? usd(t.cost_usd / t.commits) : "–", s: t.pull_requests ? usd(t.cost_usd / t.pull_requests) + " per pull request" : "derived", src: "cost_usage ÷ commit_count" },
+    { k: "Lines changed", v: compact(t.lines.added + t.lines.removed), s: "+" + compact(t.lines.added) + " −" + compact(t.lines.removed), src: "lines_of_code_count{type}" },
+    { k: "Active time", v: t.active_hours.toFixed(1) + " h", s: "across all sessions", src: "active_time_total" },
+  ];
+  box.replaceChildren(...items.map((i) => { const d = el("div", { class: "tile" + (i.hero ? " hero" : "") }); d.append(el("div", { class: "k" }, i.k), el("div", { class: "v" }, i.v), el("div", { class: "s" }, i.s), el("span", { class: "src" }, "claude_code_" + i.src)); return d; }));
+}
+
+function renderDaily() {
+  const svg = $("daily"); svg.replaceChildren();
+  const envs = shownEnvs(), m = state.metric;
+  const all = state.daily ? state.daily.days : [];
+  const ds = all.slice(-(state.period === "30d" ? 30 : 7));
+  const key = m === "cost" ? "cost_usd" : m;
+  const val = (d, e) => (d.environments[e] ? d.environments[e][key] : 0);
+  const fmt = m === "cost" ? usd : m === "tokens" ? compact : num;
+  $("envLegend").replaceChildren(...envs.map((e) => { const s = el("span"); const i = el("i"); i.style.background = css(envVar(e)); s.append(i, e); return s; }));
+  $("dailySrc").textContent = { cost: "claude_code_cost_usage{environment}", tokens: "claude_code_token_usage{environment}", sessions: "claude_code_session_count{environment}", commits: "claude_code_commit_count{environment}", pull_requests: "claude_code_pull_request_count{environment}" }[m];
+  const t = $("dailyTable"); t.replaceChildren();
+  const totalsPerDay = ds.map((d) => sum(envs.map((e) => val(d, e))));
+  if (!ds.length || !envs.length || Math.max(0, ...totalsPerDay) === 0) {
+    svg.append(sv("text", { x: 360, y: 120, "text-anchor": "middle" }, "No usage in this period yet"));
+  } else {
+    const max = Math.max(...totalsPerDay) * 1.08;
+    const L = 44, R = 78, T = 8, B = 24, W = 720, H = 240, pw = (W - L - R) / ds.length, ph = H - T - B;
+    for (const f of [0, 0.5, 1]) {
+      const y = T + ph * (1 - f);
+      svg.append(sv("line", { x1: L, x2: W - R, y1: y, y2: y, class: f ? "grid" : "axis" }), sv("text", { x: L - 6, y: y + 4, "text-anchor": "end" }, fmt(max * f)));
+    }
+    ds.forEach((d, i) => {
+      const g = sv("g", { class: "col" }), x = L + i * pw + pw * 0.14, w = pw * 0.72;
+      g.append(sv("rect", { x: L + i * pw, y: T, width: pw, height: ph, class: "hit" }));
+      let acc = 0;
+      envs.forEach((e) => {
+        const v = val(d, e), h = v / max * ph;
+        if (h > 0) g.append(sv("rect", { x, y: T + ph - (acc / max * ph) - h, width: w, height: h, rx: 3, fill: css(envVar(e)), class: "seg-fill" }));
+        acc += v;
+      });
+      g.addEventListener("pointermove", (ev) => showTip(ev, d.date, [...envs.map((e) => [envVar(e), e, fmt(val(d, e))]), ...(envs.length > 1 ? [[null, "Total", fmt(totalsPerDay[i])]] : [])]));
+      g.addEventListener("pointerleave", hideTip);
+      svg.append(g);
+      if (ds.length <= 8 || i % Math.ceil(ds.length / 8) === 0 || i === ds.length - 1) svg.append(sv("text", { x: x + w / 2, y: H - 6, "text-anchor": "middle" }, d.date.slice(5)));
+    });
+    const last = ds[ds.length - 1]; let acc = 0;
+    envs.forEach((e) => { const v = val(last, e); const mid = T + ph - (acc + v / 2) / max * ph; acc += v; svg.append(sv("text", { x: W - R + 8, y: mid + 4 }, e)); });
+  }
+  const hr = el("tr"); hr.append(el("th", {}, "Day (UTC)"), ...envs.map((e) => el("th", {}, e)), ...(envs.length > 1 ? [el("th", {}, "Total")] : [])); t.append(hr);
+  [...ds].reverse().forEach((d) => { const r = el("tr"); r.append(el("td", {}, d.date), ...envs.map((e) => el("td", {}, fmt(val(d, e)))), ...(envs.length > 1 ? [el("td", {}, fmt(totalsPerDay[ds.indexOf(d)]))] : [])); t.append(r); });
+}
+
+function renderModels() {
+  const bm = byModel();
+  if (!bm.length) { for (const id of ["modelCost", "tokMix"]) $(id).replaceChildren(emptyBlock("No model usage in this period yet.")); $("tokLegend").replaceChildren(); return; }
+  const total = sum(bm.map(([, v]) => v.cost)), max = Math.max(bm[0][1].cost, 0.0001);
+  $("modelCost").replaceChildren(...bm.map(([m, v]) => {
+    const r = el("div", { class: "row" }), tr = el("div", { class: "track" }), b = el("div", { class: "seg-b neutral" });
+    b.style.width = Math.max(v.cost / max * 100, 2) + "%"; tr.append(b);
+    const nm = el("div", { class: "name" }, m); nm.append(el("small", {}, (total ? v.cost / total * 100 : 0).toFixed(0) + "% of cost"));
+    r.append(nm, tr, el("div", { class: "val" }, usd(v.cost))); return r;
+  }));
+  $("tokLegend").replaceChildren(...TOK.map((t) => { const s = el("span"); const i = el("i"); i.style.background = css(t.v); s.append(i, t.label); return s; }));
+  $("tokMix").replaceChildren(...bm.map(([m, v]) => {
+    const tt = Math.max(sum(Object.values(v.tokens)), 1), r = el("div", { class: "row" }), tr = el("div", { class: "track" });
+    for (const t of TOK) {
+      const share = v.tokens[t.k] / tt * 100, b = el("div", { class: "seg-b" });
+      b.style.cssText = `width:${share}%;flex:0 0 auto;background:${css(t.v)};color:${css(t.on)}`;
+      if (share >= 9) b.textContent = share.toFixed(0) + "%";
+      b.addEventListener("pointermove", (ev) => showTip(ev, m, [[t.v, t.label, compact(v.tokens[t.k]) + " · " + share.toFixed(1) + "%"]]));
+      b.addEventListener("pointerleave", hideTip);
+      tr.append(b);
+    }
+    const hit = v.tokens.cacheRead / Math.max(v.tokens.input + v.tokens.cacheRead + v.tokens.cacheCreation, 1);
+    const nm = el("div", { class: "name" }, m); nm.append(el("small", {}, compact(tt) + " tokens"));
+    r.append(nm, tr, el("div", { class: "val" }, (hit * 100).toFixed(0) + "% hit")); return r;
+  }));
+}
+
+function renderTables() {
+  const mt = $("modelTable"); mt.replaceChildren();
+  const h = el("tr"); h.append(el("th", {}, "Environment"), el("th", { class: "l" }, "Model"), ...["Cost", "Input", "Output", "Cache read", "Cache write", "Lines"].map((x) => el("th", {}, x))); mt.append(h);
+  for (const o of modelRows()) {
+    const tr = el("tr"), c = el("td"), d = el("span", { class: "dot" }); d.style.background = css(envVar(o.environment)); c.append(d, o.environment || "–");
+    tr.append(c, el("td", { class: "l" }, o.model || "–"), el("td", {}, usd(o.cost_usd)), el("td", {}, num(o.tokens.input)), el("td", {}, num(o.tokens.output)), el("td", {}, num(o.tokens.cacheRead)), el("td", {}, num(o.tokens.cacheCreation)), el("td", {}, "+" + num(o.lines.added) + " −" + num(o.lines.removed))); mt.append(tr);
+  }
+  const at = $("actTable"); at.replaceChildren();
+  const ah = el("tr"); ah.append(el("th", {}, "Environment"), ...["Sessions", "Active", "Lines", "Commits", "Pull requests", "Cost per commit", "Cost per PR"].map((x) => el("th", {}, x))); at.append(ah);
+  const w = windowData(), envs = shownEnvs();
+  const line = (label, dot, v) => {
+    const tr = el("tr"), c = el("td"); if (dot) { const d = el("span", { class: "dot" }); d.style.background = css(dot); c.append(d); } c.append(label);
+    tr.append(c, el("td", {}, num(v.sessions)), el("td", {}, v.active_hours.toFixed(1) + " h"), el("td", {}, "+" + num(v.lines.added) + " −" + num(v.lines.removed)), el("td", {}, num(v.commits)), el("td", {}, num(v.pull_requests)),
+      el("td", {}, v.commits ? usd(v.cost_usd / v.commits) : "–"), el("td", {}, v.pull_requests ? usd(v.cost_usd / v.pull_requests) : "–"));
+    return tr;
+  };
+  for (const e of envs) { const v = w && w.environments[e]; if (v) at.append(line(e, envVar(e), v)); }
+  if (envs.length > 1 && w) { const f = el("tfoot"); f.append(line("Total", null, w.total)); at.append(f); }
+
+  const et = $("editTable"); et.replaceChildren();
+  const eh = el("tr"); eh.append(...["Environment", "Tool", "Decision", "Language", "Source", "Count"].map((x, i) => el("th", { class: i < 5 ? "l" : "" }, x))); et.append(eh);
+  const dr = (state.decisions ? state.decisions.rows : []).filter((r) => state.env === "all" || r.environment === state.env);
+  if (!dr.length) { const tr = el("tr"), c = el("td", {}, "No edit decisions in this period yet"); c.colSpan = 6; tr.append(c); et.append(tr); }
+  for (const r of dr) { const tr = el("tr"); tr.append(el("td", { class: "l" }, r.environment), el("td", { class: "l" }, r.tool), el("td", { class: "l" }, r.decision), el("td", { class: "l" }, r.language), el("td", { class: "l" }, r.source), el("td", {}, num(r.count))); et.append(tr); }
+}
+
+function render() {
+  renderControls(); renderTiles(); renderDaily(); renderModels(); renderTables();
+  const d = state.daily && state.daily.days; if (d && d.length) $("range").textContent = `${d[Math.max(0, d.length - (state.period === "30d" ? 30 : 7))].date} to ${d[d.length - 1].date} · UTC days · from Prometheus`;
+}
+
+async function load() {
+  try {
+    const [s, d, b, x] = await Promise.all([get("api/v1/summary"), get("api/v1/daily?days=30"), get("api/v1/breakdown?window=" + state.period), get("api/v1/decisions?window=" + state.period)]);
+    Object.assign(state, { summary: s, daily: d, breakdown: b, decisions: x });
+    ENVS = [...new Set([...d.environments, ...Object.keys(s.windows["30d"].environments)])].sort();
+    if (state.env !== "all" && !ENVS.includes(state.env)) state.env = "all";
+    $("error").hidden = true;
+  } catch (e) {
+    $("error").textContent = "Could not load usage: " + e.message + ". Showing the last data received.";
+    $("error").hidden = false;
+  }
+  render();
+}
+
+$("envSeg").addEventListener("click", (e) => { const v = e.target.dataset && e.target.dataset.e; if (v) { state.env = v; render(); } });
+$("periodSeg").addEventListener("click", (e) => { const v = e.target.dataset && e.target.dataset.p; if (v) { state.period = v; setPressed("periodSeg", "p", v); load(); } });
+$("metricSeg").addEventListener("click", (e) => { const v = e.target.dataset && e.target.dataset.m; if (v) { state.metric = v; setPressed("metricSeg", "m", v); renderDaily(); } });
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

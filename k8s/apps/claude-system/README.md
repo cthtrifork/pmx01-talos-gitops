@@ -12,6 +12,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
 | `claude-md/CLAUDE.md` | The only `CLAUDE.md` (user-level and repo notes together), generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `claude-md/skills/<name>/SKILL.md` | Task-specific runbooks split out of `CLAUDE.md`, generated into the `claude-skills` ConfigMap and mounted at `/etc/claude-skills` (items map each key to `<name>/SKILL.md`); each is symlinked into `~/.claude/skills/` at pod start |
+| `usage/` | Usage page and JSON API out: `usage.yaml` (a second Redpanda Connect), `redpanda-connect.yaml` (PromQL behind each endpoint), `index.html` (the page) |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
 | `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
 
@@ -102,12 +103,26 @@ Claude Code exports OpenTelemetry metrics (tokens, cost, sessions, lines of code
 cluster Prometheus, through its OTLP receiver (`enableOTLPReceiver` in `k8s/infra/kube-prometheus-stack/helm-release.yaml`).
 Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`), which is promoted to a label.
 
-- **Receiver:** `http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090/api/v1/otlp/v1/metrics` for `claude-rc`;
-  `http://otel.portableinfo.cloud/api/v1/otlp/v1/metrics` for the VM. Create the Cloudflare A record `otel` -> `192.168.1.243`
-  (DNS only): that is the MetalLB address of `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards
-  HTTP by `Host`. LAN only, no ingress, no authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off).
-- **Delta counters:** Claude Code sends delta temporality; `otlp-deltatocumulative` adds them up in memory, so a Prometheus restart
-  starts the counters at 0 (`increase()` copes with that).
+Both senders set exactly these variables (`claude-rc` in `deployment.yaml`, the VM in homeserver-bootc `managed-settings.json`);
+only the environment name differs:
+
+| Variable | Value | Why |
+|---|---|---|
+| `CLAUDE_CODE_ENABLE_TELEMETRY` | `1` | switches the exporter on; independent of `DISABLE_TELEMETRY=1` (Datadog and error reporting) |
+| `OTEL_METRICS_EXPORTER` | `otlp` | |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | what Prometheus' receiver takes |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://otel.portableinfo.cloud/api/v1/otlp` | Claude Code appends `/v1/metrics` |
+| `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | `delta` | the default is cumulative, and with `session_id` off several `claude` processes (the VM has several sessions and two users) would write the same series with different totals; deltas add up |
+| `OTEL_RESOURCE_ATTRIBUTES` | `environment=claude-rc` / `claude-vm` | promoted to a label |
+| `OTEL_METRICS_INCLUDE_SESSION_ID` | `false` | see the labels note below |
+| `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` | `false` | constant, so no use as a label |
+
+- **Receiver:** `otel.portableinfo.cloud` is a Cloudflare A record `otel` -> `192.168.1.243` (DNS only): the MetalLB address of
+  `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards HTTP by `Host`. `claude-rc` uses the same name
+  (it reaches Prometheus through the address, allowed by its policy to Prometheus on 9090), so the two senders cannot drift apart. LAN
+  only, no ingress, no authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off).
+- **Delta counters:** `otlp-deltatocumulative` adds them up in memory, so a Prometheus restart starts the counters at 0
+  (`increase()` copes with that).
 - **Names:** `otlp.translationStrategy: UnderscoreEscapingWithoutSuffixes` gives `claude_code_token_usage{environment,model,type}`,
   `claude_code_cost_usage{environment,model}` (USD), and `claude_code_session_count`, `claude_code_lines_of_code_count{type}`,
   `claude_code_commit_count`, `claude_code_pull_request_count`, `claude_code_active_time_total` (seconds), all with `environment`.
@@ -122,3 +137,24 @@ Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`
   would be its own cumulative series, `increase()` cannot see the first export of a series, and a session that exports once or twice
   would count as zero (`increase(claude_code_session_count[1h])` came back empty). Series stored before that keep their `session_id`.
   The usage API always sums by `environment`, so it is unaffected by the extra labels.
+
+### Usage page and API
+
+`usage/usage.yaml` is a Redpanda Connect that holds no data: every request becomes PromQL against Prometheus.
+It is exposed through the Omni service exposer (`omni-kube-service-exposer.sidero.dev/*` on `Service/claude-usage`, port
+50091, plain HTTP, LAN only, read-only, aggregates only).
+
+| Request | Answer |
+|---|---|
+| `GET /` | the page (`usage/index.html`: totals, per-day columns by environment, cost and token mix by model, tables) |
+| `GET /api/v1/summary` | today (since 00:00 UTC), 7d and 30d: total and per environment |
+| `GET /api/v1/daily?days=30` | cost, tokens, sessions, commits and pull requests per UTC day and environment (2-90 days, today included) |
+| `GET /api/v1/breakdown?window=7d` | tokens, cost and lines changed per environment and model (`today`, `7d`, `30d`) |
+| `GET /api/v1/decisions?window=7d` | edit tool decisions per environment, tool, decision, language and source (top 50) |
+| `GET /healthz` | `ok` |
+
+A failed Prometheus query answers `502`. Query parameters are clamped numbers or picked from a list, never PromQL text.
+Only series Prometheus holds are shown. Tokens, cost and lines have a `model` label; sessions, commits, pull requests and active
+time do not, so they are per environment only (and so is cost per commit). The page script is plain JavaScript with no external assets; the numbers are `increase()` over
+the window, so the very first export of a new model or environment is not counted.
+From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`.
