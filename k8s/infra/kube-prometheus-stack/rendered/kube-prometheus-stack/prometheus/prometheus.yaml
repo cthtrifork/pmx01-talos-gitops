@@ -33,7 +33,8 @@ spec:
   enableAdminAPI: false
   enableFeatures:
   - exemplar-storage
-  enableOTLPReceiver: false
+  - otlp-deltatocumulative
+  enableOTLPReceiver: true
   enableRemoteWriteReceiver: true
   externalUrl: http://kube-prom-prometheus.kube-prometheus-stack-system:9090
   hostNetwork: false
@@ -44,6 +45,10 @@ spec:
   logLevel: info
   nodeSelector:
     kubernetes.io/os: linux
+  otlp:
+    promoteResourceAttributes:
+    - environment
+    translationStrategy: UnderscoreEscapingWithoutSuffixes
   paused: false
   podMetadata:
     labels:
