@@ -153,6 +153,8 @@
         <button data-m="cost" aria-pressed="true">Cost</button>
         <button data-m="tokens" aria-pressed="false">Tokens</button>
         <button data-m="sessions" aria-pressed="false">Sessions</button>
+        <button data-m="commits" aria-pressed="false">Commits</button>
+        <button data-m="pull_requests" aria-pressed="false">Pull requests</button>
       </div>
     </div>
     <div class="legend" id="envLegend"></div>
@@ -175,14 +177,21 @@
   </div>
 
   <section class="panel">
-    <div class="panel-head"><h2>By model and environment</h2><span class="src">tokens and cost carry both labels</span></div>
+    <div class="panel-head"><h2>By model and environment</h2><span class="src">tokens, cost and lines carry both labels</span></div>
     <div class="scroll"><table id="modelTable"></table></div>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Activity by environment</h2><span class="src">no model label on these series</span></div>
-    <div class="scroll"><table id="actTable"></table></div>
-  </section>
+  <div class="cols">
+    <section class="panel">
+      <div class="panel-head"><h2>Output by environment</h2><span class="src">commit_count and pull_request_count have no model label</span></div>
+      <div class="scroll"><table id="actTable"></table></div>
+      <div class="sub" style="margin-top:8px">Cost per commit and per pull request divide the environment's whole cost by its commits or pull requests, so sessions that only read code count against them.</div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>Edit tool decisions</h2><span class="src">claude_code_code_edit_tool_decision</span></div>
+      <div class="scroll"><table id="editTable"></table></div>
+    </section>
+  </div>
 
   <p class="sub" id="gen">Counts come from <code>increase()</code> of the collector's counters; the first export of a new model or environment is not counted.</p>
 </main>
@@ -197,7 +206,7 @@ const TOK = [
   { k: "cacheCreation", label: "Cache write", v: "--tok-cwrite", on: "--on-tok-cwrite" },
 ];
 const PERIOD_DAYS = { today: 1, "7d": 7, "30d": 30 };
-const state = { env: "all", period: "7d", metric: "cost", summary: null, daily: null, breakdown: null };
+const state = { env: "all", period: "7d", metric: "cost", summary: null, daily: null, breakdown: null, decisions: null };
 const $ = (id) => document.getElementById(id);
 const css = (v) => `var(${v})`;
 const usd = (v) => "$" + (v >= 1000 ? Math.round(v).toLocaleString() : v >= 100 ? v.toFixed(0) : v.toFixed(2));
@@ -266,9 +275,10 @@ function renderTiles() {
     { k: "Tokens", v: compact(t.tokens.total), s: "out " + compact(t.tokens.output) + " · in " + compact(t.tokens.input), src: "token_usage" },
     { k: "Cache hit", v: (hit * 100).toFixed(1) + "%", s: "derived from tokens by type", src: "token_usage{type}" },
     { k: "Sessions", v: num(t.sessions), s: t.sessions ? usd(t.cost_usd / t.sessions) + " per session" : "no sessions", src: "session_count" },
-    { k: "Active time", v: t.active_hours.toFixed(1) + " h", s: "across all sessions", src: "active_time_total" },
+    { k: "Commits", v: num(t.commits), s: t.pull_requests ? num(t.pull_requests) + " pull request" + (t.pull_requests > 1 ? "s" : "") : "no pull requests", src: "commit_count" },
+    { k: "Cost per commit", v: t.commits ? usd(t.cost_usd / t.commits) : "–", s: t.pull_requests ? usd(t.cost_usd / t.pull_requests) + " per pull request" : "derived", src: "cost_usage ÷ commit_count" },
     { k: "Lines changed", v: compact(t.lines.added + t.lines.removed), s: "+" + compact(t.lines.added) + " −" + compact(t.lines.removed), src: "lines_of_code_count{type}" },
-    { k: "Commits · PRs", v: num(t.commits) + " · " + num(t.pull_requests), s: "created by Claude", src: "commit_count, pull_request_count" },
+    { k: "Active time", v: t.active_hours.toFixed(1) + " h", s: "across all sessions", src: "active_time_total" },
   ];
   box.replaceChildren(...items.map((i) => { const d = el("div", { class: "tile" + (i.hero ? " hero" : "") }); d.append(el("div", { class: "k" }, i.k), el("div", { class: "v" }, i.v), el("div", { class: "s" }, i.s), el("span", { class: "src" }, "claude_code_" + i.src)); return d; }));
 }
@@ -282,7 +292,7 @@ function renderDaily() {
   const val = (d, e) => (d.environments[e] ? d.environments[e][key] : 0);
   const fmt = m === "cost" ? usd : m === "tokens" ? compact : num;
   $("envLegend").replaceChildren(...envs.map((e) => { const s = el("span"); const i = el("i"); i.style.background = css(envVar(e)); s.append(i, e); return s; }));
-  $("dailySrc").textContent = { cost: "claude_code_cost_usage{environment}", tokens: "claude_code_token_usage{environment}", sessions: "claude_code_session_count{environment}" }[m];
+  $("dailySrc").textContent = { cost: "claude_code_cost_usage{environment}", tokens: "claude_code_token_usage{environment}", sessions: "claude_code_session_count{environment}", commits: "claude_code_commit_count{environment}", pull_requests: "claude_code_pull_request_count{environment}" }[m];
   const t = $("dailyTable"); t.replaceChildren();
   const totalsPerDay = ds.map((d) => sum(envs.map((e) => val(d, e))));
   if (!ds.length || !envs.length || Math.max(0, ...totalsPerDay) === 0) {
@@ -344,20 +354,28 @@ function renderModels() {
 
 function renderTables() {
   const mt = $("modelTable"); mt.replaceChildren();
-  const h = el("tr"); h.append(el("th", {}, "Environment"), el("th", { class: "l" }, "Model"), ...["Cost", "Input", "Output", "Cache read", "Cache write"].map((x) => el("th", {}, x))); mt.append(h);
+  const h = el("tr"); h.append(el("th", {}, "Environment"), el("th", { class: "l" }, "Model"), ...["Cost", "Input", "Output", "Cache read", "Cache write", "Lines"].map((x) => el("th", {}, x))); mt.append(h);
   for (const o of modelRows()) {
     const tr = el("tr"), c = el("td"), d = el("span", { class: "dot" }); d.style.background = css(envVar(o.environment)); c.append(d, o.environment || "–");
-    tr.append(c, el("td", { class: "l" }, o.model || "–"), el("td", {}, usd(o.cost_usd)), el("td", {}, num(o.tokens.input)), el("td", {}, num(o.tokens.output)), el("td", {}, num(o.tokens.cacheRead)), el("td", {}, num(o.tokens.cacheCreation))); mt.append(tr);
+    tr.append(c, el("td", { class: "l" }, o.model || "–"), el("td", {}, usd(o.cost_usd)), el("td", {}, num(o.tokens.input)), el("td", {}, num(o.tokens.output)), el("td", {}, num(o.tokens.cacheRead)), el("td", {}, num(o.tokens.cacheCreation)), el("td", {}, "+" + num(o.lines.added) + " −" + num(o.lines.removed))); mt.append(tr);
   }
   const at = $("actTable"); at.replaceChildren();
-  const ah = el("tr"); ah.append(el("th", {}, "Environment"), ...["Sessions", "Active", "Lines added", "Lines removed", "Commits", "Pull requests"].map((x) => el("th", {}, x))); at.append(ah);
+  const ah = el("tr"); ah.append(el("th", {}, "Environment"), ...["Sessions", "Active", "Lines", "Commits", "Pull requests", "Cost per commit", "Cost per PR"].map((x) => el("th", {}, x))); at.append(ah);
   const w = windowData(), envs = shownEnvs();
-  for (const e of envs) {
-    const v = w && w.environments[e]; if (!v) continue;
-    const tr = el("tr"), c = el("td"), d = el("span", { class: "dot" }); d.style.background = css(envVar(e)); c.append(d, e);
-    tr.append(c, el("td", {}, num(v.sessions)), el("td", {}, v.active_hours.toFixed(1) + " h"), el("td", {}, num(v.lines.added)), el("td", {}, num(v.lines.removed)), el("td", {}, num(v.commits)), el("td", {}, num(v.pull_requests))); at.append(tr);
-  }
-  if (envs.length > 1 && w) { const f = el("tfoot"), tr = el("tr"), v = w.total; tr.append(el("td", {}, "Total"), el("td", {}, num(v.sessions)), el("td", {}, v.active_hours.toFixed(1) + " h"), el("td", {}, num(v.lines.added)), el("td", {}, num(v.lines.removed)), el("td", {}, num(v.commits)), el("td", {}, num(v.pull_requests))); f.append(tr); at.append(f); }
+  const line = (label, dot, v) => {
+    const tr = el("tr"), c = el("td"); if (dot) { const d = el("span", { class: "dot" }); d.style.background = css(dot); c.append(d); } c.append(label);
+    tr.append(c, el("td", {}, num(v.sessions)), el("td", {}, v.active_hours.toFixed(1) + " h"), el("td", {}, "+" + num(v.lines.added) + " −" + num(v.lines.removed)), el("td", {}, num(v.commits)), el("td", {}, num(v.pull_requests)),
+      el("td", {}, v.commits ? usd(v.cost_usd / v.commits) : "–"), el("td", {}, v.pull_requests ? usd(v.cost_usd / v.pull_requests) : "–"));
+    return tr;
+  };
+  for (const e of envs) { const v = w && w.environments[e]; if (v) at.append(line(e, envVar(e), v)); }
+  if (envs.length > 1 && w) { const f = el("tfoot"); f.append(line("Total", null, w.total)); at.append(f); }
+
+  const et = $("editTable"); et.replaceChildren();
+  const eh = el("tr"); eh.append(...["Environment", "Tool", "Decision", "Language", "Source", "Count"].map((x, i) => el("th", { class: i < 5 ? "l" : "" }, x))); et.append(eh);
+  const dr = (state.decisions ? state.decisions.rows : []).filter((r) => state.env === "all" || r.environment === state.env);
+  if (!dr.length) { const tr = el("tr"), c = el("td", {}, "No edit decisions in this period yet"); c.colSpan = 6; tr.append(c); et.append(tr); }
+  for (const r of dr) { const tr = el("tr"); tr.append(el("td", { class: "l" }, r.environment), el("td", { class: "l" }, r.tool), el("td", { class: "l" }, r.decision), el("td", { class: "l" }, r.language), el("td", { class: "l" }, r.source), el("td", {}, num(r.count))); et.append(tr); }
 }
 
 function render() {
@@ -367,8 +385,8 @@ function render() {
 
 async function load() {
   try {
-    const [s, d, b] = await Promise.all([get("api/v1/summary"), get("api/v1/daily?days=30"), get("api/v1/breakdown?window=" + state.period)]);
-    Object.assign(state, { summary: s, daily: d, breakdown: b });
+    const [s, d, b, x] = await Promise.all([get("api/v1/summary"), get("api/v1/daily?days=30"), get("api/v1/breakdown?window=" + state.period), get("api/v1/decisions?window=" + state.period)]);
+    Object.assign(state, { summary: s, daily: d, breakdown: b, decisions: x });
     ENVS = [...new Set([...d.environments, ...Object.keys(s.windows["30d"].environments)])].sort();
     if (state.env !== "all" && !ENVS.includes(state.env)) state.env = "all";
     $("error").hidden = true;

@@ -124,7 +124,7 @@ pipeline:
                       "30d" => "2592000s"
                       _ => "604800s"
                     }
-                    meta promql = "label_replace(sum by (environment, model, type)(increase(claude_code_token_usage[" + @q + "])),\"series\",\"tokens\",\"\",\"\") or label_replace(sum by (environment, model)(increase(claude_code_cost_usage[" + @q + "])),\"series\",\"cost\",\"\",\"\")"
+                    meta promql = "label_replace(sum by (environment, model, type)(increase(claude_code_token_usage[" + @q + "])),\"series\",\"tokens\",\"\",\"\") or label_replace(sum by (environment, model)(increase(claude_code_cost_usage[" + @q + "])),\"series\",\"cost\",\"\",\"\") or label_replace(sum by (environment, model, type)(increase(claude_code_lines_of_code_count[" + @q + "])),\"series\",\"lines\",\"\",\"\")"
                     root.window = $win
                 - branch:
                     request_map: 'root = ""'
@@ -154,6 +154,10 @@ pipeline:
                         "output": {"r": $r, "e": k.e, "m": k.m, "s": "tokens", "t": "output"}.apply("pick").round(),
                         "cacheRead": {"r": $r, "e": k.e, "m": k.m, "s": "tokens", "t": "cacheRead"}.apply("pick").round(),
                         "cacheCreation": {"r": $r, "e": k.e, "m": k.m, "s": "tokens", "t": "cacheCreation"}.apply("pick").round()
+                      },
+                      "lines": {
+                        "added": {"r": $r, "e": k.e, "m": k.m, "s": "lines", "t": "added"}.apply("pick").round(),
+                        "removed": {"r": $r, "e": k.e, "m": k.m, "s": "lines", "t": "removed"}.apply("pick").round()
                       }
                     }).sort_by(r -> 0 - r.cost_usd)
 
@@ -168,7 +172,7 @@ pipeline:
                     root.today_s = [(now().ts_unix() % 86400), 60].max()
                     meta start = ($midnight - ($days - 2) * 86400).int64().string()
                     meta end = $midnight.int64().string()
-                    meta promql = "label_replace(sum by (environment)(increase(claude_code_cost_usage[1d])),\"series\",\"cost\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_token_usage[1d])),\"series\",\"tokens\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_session_count[1d])),\"series\",\"sessions\",\"\",\"\")"
+                    meta promql = "label_replace(sum by (environment)(increase(claude_code_cost_usage[1d])),\"series\",\"cost\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_token_usage[1d])),\"series\",\"tokens\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_session_count[1d])),\"series\",\"sessions\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_commit_count[1d])),\"series\",\"commits\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_pull_request_count[1d])),\"series\",\"prs\",\"\",\"\")"
                 # completed days: increase over the day before each midnight
                 - branch:
                     request_map: 'root = ""'
@@ -195,6 +199,8 @@ pipeline:
                       root.cost_usd = ((((this.p.cost | {}).get($e) | {}).get($t) | 0) * 10000).round() / 10000
                       root.tokens = ((this.p.tokens | {}).get($e) | {}).get($t).or(0).round()
                       root.sessions = ((this.p.sessions | {}).get($e) | {}).get($t).or(0).round()
+                      root.commits = ((this.p.commits | {}).get($e) | {}).get($t).or(0).round()
+                      root.pull_requests = ((this.p.prs | {}).get($e) | {}).get($t).or(0).round()
                     }
                     let done = range(0, this.days - 1).map_each(i -> ($start + i * 86400).int64()).map_each(t -> {
                       "date": (t - 86400).ts_format("2006-01-02", "UTC"),
@@ -206,9 +212,42 @@ pipeline:
                       "environments": $envs.fold({}, f -> f.tally.merge({f.value: {
                         "cost_usd": (this.today.environments.get(f.value) | {}).cost_usd | 0,
                         "tokens": ((this.today.environments.get(f.value) | {}).tokens | {}).total | 0,
-                        "sessions": (this.today.environments.get(f.value) | {}).sessions | 0
+                        "sessions": (this.today.environments.get(f.value) | {}).sessions | 0,
+                        "commits": (this.today.environments.get(f.value) | {}).commits | 0,
+                        "pull_requests": (this.today.environments.get(f.value) | {}).pull_requests | 0
                       }}))
                     })
+
+        - check: '@http_server_request_path == "/api/v1/decisions"'
+          processors:
+            - try:
+                - mapping: |
+                    let win = if ["today", "30d"].contains(@window.or("7d")) { @window } else { "7d" }
+                    meta q = match $win {
+                      "today" => ([(now().ts_unix() % 86400), 60].max()).string() + "s"
+                      "30d" => "2592000s"
+                      _ => "604800s"
+                    }
+                    meta promql = "sum by (environment, tool_name, decision, language, source)(increase(claude_code_code_edit_tool_decision[" + @q + "]))"
+                    root.window = $win
+                - branch:
+                    request_map: 'root = ""'
+                    processors:
+                      - http:
+                          url: '${PROM_URL:http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090}/api/v1/query?query=${! @promql.escape_url_query() }'
+                          verb: GET
+                          timeout: 10s
+                    result_map: 'root.prom = this.data.result'
+                - mapping: |
+                    root.window = this.window
+                    root.rows = this.prom.map_each(x -> {
+                      "environment": x.metric.environment.or(""),
+                      "tool": x.metric.tool_name.or(""),
+                      "decision": x.metric.decision.or(""),
+                      "language": x.metric.language.or(""),
+                      "source": x.metric.source.or(""),
+                      "count": x.value.index(1).number().round()
+                    }).filter(r -> r.count > 0).sort_by(r -> 0 - r.count).slice(0, 50)
 
         - processors:
             - mapping: |

@@ -128,12 +128,13 @@ It is exposed through the Omni service exposer (`omni-kube-service-exposer.sider
 |---|---|
 | `GET /` | the page (`usage/index.html`: totals, per-day columns by environment, cost and token mix by model, tables) |
 | `GET /api/v1/summary` | today (since 00:00 UTC), 7d and 30d: total and per environment |
-| `GET /api/v1/daily?days=30` | cost, tokens and sessions per UTC day and environment (2-90 days, today included) |
-| `GET /api/v1/breakdown?window=7d` | tokens and cost per environment and model (`today`, `7d`, `30d`) |
+| `GET /api/v1/daily?days=30` | cost, tokens, sessions, commits and pull requests per UTC day and environment (2-90 days, today included) |
+| `GET /api/v1/breakdown?window=7d` | tokens, cost and lines changed per environment and model (`today`, `7d`, `30d`) |
+| `GET /api/v1/decisions?window=7d` | edit tool decisions per environment, tool, decision, language and source (top 50) |
 | `GET /healthz` | `ok` |
 
 A failed Prometheus query answers `502`. Query parameters are clamped numbers or picked from a list, never PromQL text.
-Only series Prometheus holds are shown: sessions, lines, commits, pull requests and active time have no `model` label, so
-they are per environment only. The page script is plain JavaScript with no external assets; the numbers are `increase()` over
+Only series Prometheus holds are shown. Tokens, cost and lines have a `model` label; sessions, commits, pull requests and active
+time do not, so they are per environment only (and so is cost per commit). The page script is plain JavaScript with no external assets; the numbers are `increase()` over
 the window, so the very first export of a new model or environment is not counted.
 From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`.
