@@ -1,0 +1,10 @@
+---
+# Trivy VEX repositories used while building the image; the names are the directories in the cache, so they must match
+# k8s/infra/security-system/trivy-operator/vex/repository.yaml. The URLs differ: here the sources, there the in-cluster mirror.
+repositories:
+  - name: default
+    url: https://github.com/aquasecurity/vexhub
+    enabled: true
+  - name: homelab-vexhub
+    url: http://127.0.0.1:8080/homelab
+    enabled: true
