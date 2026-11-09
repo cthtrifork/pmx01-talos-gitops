@@ -1,0 +1,4 @@
+# The context is the repository root; only these paths are needed.
+*
+!images/vex-cache/repository.yaml
+!vex

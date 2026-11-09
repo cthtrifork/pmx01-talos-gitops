@@ -97,10 +97,10 @@ spec:
           ignore-status:
             - will_not_fix
             - not_affected
-          # VEX hub: statements from vendors/projects that a CVE is not exploitable. The scan jobs refresh the repository
-          # into their ephemeral cache when they start (needs egress to github.com).
+          # VEX hub: statements from vendors/projects that a CVE is not exploitable. Read from the vex-cache volume, never updated.
           vex:
             - repo
+          skip-vex-repo-update: true
         scan:
           offline: true
           disable-telemetry: true
@@ -217,6 +217,10 @@ spec:
         - name: repository-config
           mountPath: /.trivy/vex/repository.yaml
           subPath: repository.yaml
+        # the containers of a scan pod raced to download the VEX repositories into the shared empty cache ("directory not empty")
+        - name: vex-cache
+          mountPath: /tmp/trivy/.cache/vex
+          readOnly: true
         - name: ignore-file
           mountPath: /etc/trivy/.trivyignore.yaml
           subPath: .trivyignore.yaml
@@ -230,6 +234,11 @@ spec:
         - name: repository-config
           configMap:
             name: vex-repository-config
+        # built by .github/workflows/build-vex-cache.yaml; via zot's polled ghcr-private (ghcr-cache would keep the first copy of latest)
+        - name: vex-cache
+          image:
+            reference: zot.lan:5000/ghcr-private/cthtrifork/talos-gitops/vex-cache:latest
+            pullPolicy: Always
         - name: ignore-file
           configMap:
             name: trivy-ignorefile

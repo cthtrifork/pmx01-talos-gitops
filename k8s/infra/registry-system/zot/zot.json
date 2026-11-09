@@ -51,9 +51,28 @@
           "repositories": ["ghcr-cache/**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
+          "keepUntagged": {
+            "mostRecentlyPushedCount": 1,
+            "mostRecentlyPulledCount": 1
+          },
           "keepTags": [
             {
-              "pulledWithin": "168h"
+              "pulledWithin": "168h",
+              "mostRecentlyPushedCount": 1
+            }
+          ]
+        },
+        {
+          "repositories": ["ghcr-private/cthtrifork/talos-gitops/vex-cache"],
+          "deleteReferrers": true,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "patterns": ["latest"]
+            },
+            {
+              "mostRecentlyPushedCount": 1,
+              "pushedWithin": "48h"
             }
           ]
         },
@@ -64,6 +83,10 @@
           ],
           "deleteReferrers": true,
           "deleteUntagged": true,
+          "keepUntagged": {
+            "mostRecentlyPushedCount": 1,
+            "mostRecentlyPulledCount": 1
+          },
           "keepTags": [
             {
               "patterns": ["latest"]
@@ -80,6 +103,10 @@
           "repositories": ["**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
+          "keepUntagged": {
+            "mostRecentlyPushedCount": 1,
+            "mostRecentlyPulledCount": 1
+          },
           "keepTags": [
             {
               "patterns": ["latest"]
@@ -125,8 +152,8 @@
           ],
           "onDemand": true,
           "tlsVerify": true,
-          "maxRetries": 3,
-          "retryDelay": "5m"
+          "maxRetries": 1,
+          "retryDelay": "5s"
         },
         {
           "urls": ["https://ghcr.io"],
@@ -139,8 +166,8 @@
           ],
           "onDemand": true,
           "tlsVerify": true,
-          "maxRetries": 3,
-          "retryDelay": "5m"
+          "maxRetries": 1,
+          "retryDelay": "5s"
         },
         {
           "urls": ["https://ghcr.io"],
@@ -152,8 +179,8 @@
           ],
           "onDemand": true,
           "tlsVerify": true,
-          "maxRetries": 3,
-          "retryDelay": "5m"
+          "maxRetries": 1,
+          "retryDelay": "5s"
         },
         {
           "urls": ["https://gcr.io"],
@@ -165,8 +192,8 @@
           ],
           "onDemand": true,
           "tlsVerify": true,
-          "maxRetries": 3,
-          "retryDelay": "5m"
+          "maxRetries": 1,
+          "retryDelay": "5s"
         },
         {
           "urls": ["https://quay.io"],
@@ -178,8 +205,8 @@
           ],
           "onDemand": true,
           "tlsVerify": true,
-          "maxRetries": 3,
-          "retryDelay": "5m"
+          "maxRetries": 1,
+          "retryDelay": "5s"
         },
         {
           "urls": ["https://registry.k8s.io"],
@@ -191,8 +218,8 @@
           ],
           "onDemand": true,
           "tlsVerify": true,
-          "maxRetries": 3,
-          "retryDelay": "5m"
+          "maxRetries": 1,
+          "retryDelay": "5s"
         },
         {
           "urls": ["https://us-docker.pkg.dev"],
@@ -204,8 +231,8 @@
           ],
           "onDemand": true,
           "tlsVerify": true,
-          "maxRetries": 3,
-          "retryDelay": "5m"
+          "maxRetries": 1,
+          "retryDelay": "5s"
         }
       ]
     }

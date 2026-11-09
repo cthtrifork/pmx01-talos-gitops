@@ -1,0 +1,9 @@
+---
+# build-time sources; the names must match trivy-operator/vex/repository.yaml (the cache directories)
+repositories:
+  - name: default
+    url: https://github.com/aquasecurity/vexhub
+    enabled: true
+  - name: homelab-vexhub
+    url: http://127.0.0.1:8080/homelab
+    enabled: true
