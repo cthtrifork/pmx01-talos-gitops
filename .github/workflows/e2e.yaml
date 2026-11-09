@@ -139,11 +139,11 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      # The workloads (app-controllers, app) are not reconciled here; they are built and
+      # The workloads (app-controllers, app, virtualmachines) are not reconciled here; they are built and
       # schema-checked by the first steps.
       - name: Suspend Kustomizations that are not tested here
         run: |
-          for ks in app-controllers app; do
+          for ks in app-controllers app gitops-virtualmachines; do
             flux suspend kustomization "${ks}"
           done
       - name: Wait for the bootstrap Kustomization
