@@ -1,6 +1,7 @@
 # Read-only cluster access for the Claude Code pod. Built-in `view` covers workloads, services,
 # events, logs and so on, and deliberately does NOT include Secrets. The extra role adds the CRDs
-# this cluster uses, plus nodes, storage and cluster-wide RBAC objects (to audit Polaris RBAC findings). Nothing here has a write verb, pods/exec or Secrets.
+# this cluster uses, plus nodes, storage and cluster-wide RBAC objects (to audit Polaris RBAC findings). The only write verb is `patch` on the
+# trivy-operator Deployment (rollout restart). Nothing here has pods/exec or Secrets.
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -92,6 +93,37 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: claude-extra-view
+subjects:
+  - kind: ServiceAccount
+    name: claude
+    namespace: claude-system
+---
+# `kubectl rollout restart` patches the pod template. The operator reads its scanJob.* settings at start and the chart does
+# not roll it when they change. Add a name here only for a Deployment that needs this; patch can change images and volumes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: claude-restart-trivy-operator
+  namespace: security-system
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    resourceNames:
+      - trivy-operator
+    verbs:
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: claude-restart-trivy-operator
+  namespace: security-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: claude-restart-trivy-operator
 subjects:
   - kind: ServiceAccount
     name: claude

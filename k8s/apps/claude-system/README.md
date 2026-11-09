@@ -6,7 +6,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 
 | File | What |
 |---|---|
-| `rbac.yaml` | ServiceAccount `claude`; built-in `view` (no Secrets) plus read-only access to nodes, storage, CRDs and the CRD groups in use (including MetalLB and the trivy-operator reports). No write verbs, no `pods/exec` |
+| `rbac.yaml` | ServiceAccount `claude`; built-in `view` (no Secrets) plus read-only access to nodes, storage, CRDs and the CRD groups in use (including MetalLB and the trivy-operator reports). The only write verb is `patch` on the `trivy-operator` Deployment (`kubectl rollout restart`); no `pods/exec` |
 | `networkpolicy.yaml` | Cilium default deny, then DNS, the Kubernetes API and TCP 443 to the hosts Claude Code needs |
 | `github-app.yaml` | CronJob that mints a one-hour GitHub App installation token into `claude-github-token` (scripts in `github-app/`) |
 | `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
