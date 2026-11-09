@@ -26,6 +26,7 @@ spec:
       labels:
         app.kubernetes.io/instance: trivy-operator
         app.kubernetes.io/name: trivy-operator
+        config-revision: "1"
         prometheus-scrape: "true"
     spec:
       automountServiceAccountToken: true

@@ -180,6 +180,7 @@ spec:
         configmap.reloader.stakater.com/reload: trivy-operator,trivy-operator-config,trivy-operator-trivy-config
       podLabels:
         prometheus-scrape: "true"
+        config-revision: "1" # bump to roll the operator after a scanJob.* change that reloader did not see
       replicas: 2
       scanJobsInSameNamespace: true
       # every report (SbomReport included) is POSTed here; sbom-hook uploads the SBOMs to Dependency-Track
