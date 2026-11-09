@@ -156,6 +156,13 @@ jobs:
             flux reconcile kustomization "${ks}" --timeout=8m
           done
 
+      - name: Dry-run apps against the API server
+        timeout-minutes: 3
+        run: |
+          kustomize build k8s/apps --load-restrictor=LoadRestrictionsNone > "${RUNNER_TEMP}/apps.yaml"
+          yq 'select(.kind == "Namespace")' "${RUNNER_TEMP}/apps.yaml" | kubectl apply -f -
+          kubectl apply --dry-run=server -f "${RUNNER_TEMP}/apps.yaml"
+
       - name: List deployed resources
         timeout-minutes: 2
         if: always()
