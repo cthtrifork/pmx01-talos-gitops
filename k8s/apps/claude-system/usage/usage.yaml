@@ -1,0 +1,97 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: claude-usage
+  namespace: claude-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: claude-usage
+  template:
+    metadata:
+      labels:
+        app: claude-usage
+        prometheus-scrape: "true"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: connect
+          image: mirror.gcr.io/redpandadata/connect:4.117.0@sha256:b6df7ca0c506578c8cc8b0cd223c117366bbeac84365f95944d339f0165b551c # renovate: datasource=docker depName=docker.io/redpandadata/connect versioning=docker
+          args:
+            - -c
+            - /etc/connect/redpanda-connect.yaml
+            - --disable-telemetry
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: metrics, containerPort: 4195 }
+          readinessProbe:
+            httpGet: { path: /ready, port: metrics }
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: config
+              mountPath: /etc/connect
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: claude-usage-connect-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: claude-usage
+  namespace: claude-system
+  annotations:
+    omni-kube-service-exposer.sidero.dev/label: "Claude usage"
+    omni-kube-service-exposer.sidero.dev/port: "50091"
+    omni-kube-service-exposer.sidero.dev/prefix: claude-usage
+spec:
+  type: ClusterIP
+  selector:
+    app: claude-usage
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: metrics
+      port: 4195
+      targetPort: metrics
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/monitoring.coreos.com/podmonitor_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: claude-usage
+  namespace: claude-system
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: claude-usage
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics

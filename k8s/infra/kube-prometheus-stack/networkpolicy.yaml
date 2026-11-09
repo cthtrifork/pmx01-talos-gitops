@@ -23,7 +23,9 @@ spec:
       toPorts:
         - ports:
             # zot, the Prometheus config-reloader and the operator-managed exporters, Dependency-Track management,
-            # Prometheus itself, the Harper Pad sync and database metrics, the AdGuard exporter
+            # Prometheus itself, the Harper Pad sync and database metrics, the AdGuard exporter, the Claude usage API
+            # (Redpanda Connect, 4195)
+            - { port: "4195", protocol: TCP }
             - { port: "5000", protocol: TCP }
             - { port: "8080", protocol: TCP }
             - { port: "9000", protocol: TCP }
@@ -68,7 +70,7 @@ spec:
 # Prometheus: scrapes the pods and nodes of the cluster on the metrics ports of the ServiceMonitors and PodMonitors
 # (the API server on 6443, kubelet 10250, node exporter 9100, CoreDNS 9153, Cilium 9962 and 9963, Hubble 9965).
 # Ingress: the Omni service exposer (host network: arrives as host or remote-node), the LAN (the Claude VM pushes OTLP through
-# prometheus-otlp-lb) and claude-rc (OTLP and queries).
+# prometheus-otlp-lb), claude-rc (OTLP and queries) and the Claude usage API for queries.
 # Prometheus scraping itself is the prometheus-scrape policy above.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -95,6 +97,9 @@ spec:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: claude-system
             k8s:app: claude-rc
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: claude-system
+            k8s:app: claude-usage
       toPorts:
         - ports:
             - { port: "9090", protocol: TCP }
@@ -103,6 +108,7 @@ spec:
         - cluster
       toPorts:
         - ports:
+            - { port: "4195", protocol: TCP }
             - { port: "5000", protocol: TCP }
             - { port: "6443", protocol: TCP }
             - { port: "8080", protocol: TCP }
