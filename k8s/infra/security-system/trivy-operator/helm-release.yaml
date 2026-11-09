@@ -238,10 +238,10 @@ spec:
         - name: repository-config
           configMap:
             name: vex-repository-config
-        # built by .github/workflows/build-vex-cache.yaml; via zot's polled ghcr-private (ghcr-cache would keep the first copy of latest)
+        # built by .github/workflows/build-vex-cache.yaml; pulled through zot's ghcr-cache like every ghcr.io image
         - name: vex-cache
           image:
-            reference: zot.lan:5000/ghcr-private/cthtrifork/talos-gitops/vex-cache:latest
+            reference: ghcr.io/cthtrifork/talos-gitops/vex-cache:latest
             pullPolicy: Always
         - name: ignore-file
           configMap:
