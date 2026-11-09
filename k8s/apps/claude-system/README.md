@@ -12,6 +12,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
 | `claude-md/CLAUDE.md` | The only `CLAUDE.md` (user-level and repo notes together), generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `claude-md/skills/<name>/SKILL.md` | Task-specific runbooks split out of `CLAUDE.md`, generated into the `claude-skills` ConfigMap and mounted at `/etc/claude-skills` (items map each key to `<name>/SKILL.md`); each is symlinked into `~/.claude/skills/` at pod start |
+| `otel/` | Usage telemetry: `collector.yaml` (Redpanda Connect), `redpanda-connect.yaml` (its pipeline), `certificate.yaml`, `token-job.yaml`; see [Usage telemetry](#usage-telemetry) |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
 | `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
 
@@ -94,3 +95,29 @@ kubectl auth can-i create pods/exec -A --as=$SA                   # no
 Anything the pod reads from the cluster (logs, events, annotations) is input Claude acts on, so keep
 the App installed only on the repositories Claude needs and its permissions minimal; the token is not narrowed beyond that. The `claude` ServiceAccount cannot read Secrets through the
 API, but the GitHub token and your claude.ai login are in this pod, so treat the pod as holding both.
+
+## Usage telemetry
+
+Claude Code exports OpenTelemetry metrics (tokens, cost, sessions, lines of code, commits, pull requests, active time) from
+`claude-rc` and from the Claude VM ([homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)) to `otel/collector.yaml`,
+a Redpanda Connect pod. Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`).
+
+- **Address:** `https://otel.portableinfo.cloud` (443). Create the Cloudflare A record `otel` -> `192.168.1.243` (the MetalLB
+  address of `claude-otel-lb`, not proxied; the name only needs to exist for the DNS-01 challenge). LAN only, no ingress.
+  The certificate is Let's Encrypt, so clients need no extra CA.
+- **Auth:** a bearer token. `otel/token-job.yaml` creates the Secret `claude-otel-token` (`token`, and `headers` =
+  `Authorization=Bearer <token>`) once; nothing is in Git. `claude-rc` reads `headers`. For the VM:
+  `kubectl -n claude-system get secret claude-otel-token -o jsonpath='{.data.token}' | base64 -d`, then on the VM
+  `claude-vm-seed-otel` (see its docs). Rotate: delete the Secret and the Job, Flux recreates both and Reloader restarts the pods;
+  re-seed the VM and restart `claude-rc`.
+- **Why JSON:** the `otlp_http` input of Redpanda Connect needs an Enterprise licence. The open-source `http_server` input
+  receives `OTEL_EXPORTER_OTLP_PROTOCOL=http/json` instead of `http/protobuf`, with delta temporality (every datapoint is added
+  to a counter).
+- **Where to look:** Prometheus has `claude_code_tokens_total{environment,model,type}`, `claude_code_cost_microusd_total`,
+  `claude_code_sessions_total`, `claude_code_lines_of_code_total`, `claude_code_commits_total`,
+  `claude_code_pull_requests_total` and `claude_code_active_time_ms_total` (e.g. USD per day:
+  `sum by (environment,model)(increase(claude_code_cost_microusd_total[1d]))/1e6`). The running totals since the pod started
+  are a table at `kubectl -n claude-system port-forward svc/claude-otel 8080:80` (`/`, JSON at `/usage`).
+- Only `environment`, `model` and `type` are kept as labels. `user.email`, `user.id` and `session.id` are dropped.
+- The first export only arrives after the Secret exists: restart `claude-rc` once (`kubectl -n claude-system rollout restart
+  deploy/claude-rc`) after the Job ran.

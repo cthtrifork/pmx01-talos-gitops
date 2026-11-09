@@ -69,6 +69,20 @@ spec:
       toPorts:
         - ports:
             - { port: "4195", protocol: TCP }
+    # Usage collector (OpenTelemetry metrics out, the usage table in): through the service address the pod is the
+    # destination, through the LB address of otel.portableinfo.cloud (443) it is the name
+    - toEndpoints:
+        - matchLabels:
+            k8s:app: claude-otel
+      toPorts:
+        - ports:
+            - { port: "4318", protocol: TCP }
+            - { port: "8080", protocol: TCP }
+    - toFQDNs:
+        - matchName: otel.portableinfo.cloud
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }
     # Kubernetes API (read-only through the ServiceAccount's RBAC)
     - toEntities:
         - kube-apiserver
@@ -158,3 +172,59 @@ spec:
       toPorts:
         - ports:
             - { port: "443", protocol: TCP }
+---
+# The token Job only needs DNS and the Kubernetes API (to create one Secret).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claude-otel-token-egress
+  namespace: claude-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: claude-otel-token
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toEntities:
+        - kube-apiserver
+---
+# The usage collector sends nothing out. In: OTLP on 4318 from claude-rc and the LAN (the Claude VM, through the MetalLB
+# address: arrives from the LAN range or, via another node, as host or remote-node), the usage table from claude-rc.
+# Prometheus reaches 4195 through the prometheus-scrape policy (kube-prometheus-stack).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claude-otel
+  namespace: claude-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: claude-otel
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:app: claude-rc
+      toPorts:
+        - ports:
+            - { port: "4318", protocol: TCP }
+            - { port: "8080", protocol: TCP }
+    - fromCIDR:
+        - 192.168.1.0/24
+      toPorts:
+        - ports:
+            - { port: "4318", protocol: TCP }
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "4318", protocol: TCP }

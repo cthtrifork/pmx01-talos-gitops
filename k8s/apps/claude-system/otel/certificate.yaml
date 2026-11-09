@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cert-manager.io/certificate_v1.json
+# Publicly trusted (Let's Encrypt, DNS-01 through Cloudflare), so the Claude VM needs no extra CA. The name only has to
+# exist in Cloudflare for the challenge; its A record may point at a private address.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: claude-otel-tls
+  namespace: claude-system
+spec:
+  secretName: claude-otel-tls
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+  dnsNames:
+    - otel.portableinfo.cloud

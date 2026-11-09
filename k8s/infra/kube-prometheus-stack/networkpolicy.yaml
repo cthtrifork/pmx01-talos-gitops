@@ -23,7 +23,9 @@ spec:
       toPorts:
         - ports:
             # zot, the Prometheus config-reloader and the operator-managed exporters, Dependency-Track management,
-            # Prometheus itself, the Harper Pad sync and database metrics, the AdGuard exporter
+            # Prometheus itself, the Harper Pad sync and database metrics, the AdGuard exporter, the Claude usage collector
+            # (Redpanda Connect, 4195)
+            - { port: "4195", protocol: TCP }
             - { port: "5000", protocol: TCP }
             - { port: "8080", protocol: TCP }
             - { port: "9000", protocol: TCP }
@@ -97,6 +99,7 @@ spec:
         - cluster
       toPorts:
         - ports:
+            - { port: "4195", protocol: TCP }
             - { port: "5000", protocol: TCP }
             - { port: "6443", protocol: TCP }
             - { port: "8080", protocol: TCP }

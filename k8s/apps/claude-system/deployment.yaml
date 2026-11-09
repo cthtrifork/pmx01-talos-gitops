@@ -93,6 +93,27 @@ spec:
               value: "1" # the binary is baked into the image
             - name: DISABLE_TELEMETRY
               value: "1" # no telemetry (Datadog) or error reporting: those hosts are not in the egress allowlist
+            # OpenTelemetry metrics to the usage collector (otel/). Independent of DISABLE_TELEMETRY above, which only
+            # covers Datadog and error reporting. JSON because the collector (Redpanda Connect, open-source inputs)
+            # cannot decode protobuf; delta temporality because it adds every datapoint to its counters.
+            - name: CLAUDE_CODE_ENABLE_TELEMETRY
+              value: "1"
+            - name: OTEL_METRICS_EXPORTER
+              value: otlp
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/json
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: https://otel.portableinfo.cloud
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: delta
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: environment=claude-rc
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              valueFrom:
+                secretKeyRef:
+                  name: claude-otel-token # created by otel/token-job.yaml
+                  key: headers
+                  optional: true # the pod starts before the Job has run; restart it once the Secret exists
             - name: CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY
               value: "1" # no "How is Claude doing?" survey in a headless pod
             - name: CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL
