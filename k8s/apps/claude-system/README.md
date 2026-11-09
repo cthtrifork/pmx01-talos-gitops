@@ -12,7 +12,6 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
 | `claude-md/CLAUDE.md` | The only `CLAUDE.md` (user-level and repo notes together), generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `claude-md/skills/<name>/SKILL.md` | Task-specific runbooks split out of `CLAUDE.md`, generated into the `claude-skills` ConfigMap and mounted at `/etc/claude-skills` (items map each key to `<name>/SKILL.md`); each is symlinked into `~/.claude/skills/` at pod start |
-| `otel/` | Usage telemetry in: `collector.yaml` (Redpanda Connect), `redpanda-connect.yaml` (its pipeline), `certificate.yaml`; see [Usage telemetry](#usage-telemetry) |
 | `usage/` | Usage page and JSON API out: `usage.yaml` (a second Redpanda Connect), `redpanda-connect.yaml` (PromQL behind each endpoint), `index.html` (the page) |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
 | `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
@@ -100,28 +99,28 @@ API, but the GitHub token and your claude.ai login are in this pod, so treat the
 ## Usage telemetry
 
 Claude Code exports OpenTelemetry metrics (tokens, cost, sessions, lines of code, commits, pull requests, active time) from
-`claude-rc` and from the Claude VM ([homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)) to `otel/collector.yaml`,
-a Redpanda Connect pod. Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`).
+`claude-rc` and from the Claude VM ([homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)) straight into the
+cluster Prometheus, through its OTLP receiver (`enableOTLPReceiver` in `k8s/infra/kube-prometheus-stack/helm-release.yaml`).
+Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`), which is promoted to a label.
 
-- **Address:** `https://otel.portableinfo.cloud` (443). Create the Cloudflare A record `otel` -> `192.168.1.243` (the MetalLB
-  address of `claude-otel-lb`, not proxied; the name only needs to exist for the DNS-01 challenge). LAN only, no ingress.
-  The certificate is Let's Encrypt, so clients need no extra CA.
-- **Auth:** none. The collector is only reachable from claude-rc, the LAN range and Prometheus (`claude-otel` CiliumNetworkPolicy),
-  and it only accepts metrics (it can be made to count fake usage, nothing else). The TLS is for the Claude VM's egress gateway,
-  which only forwards HTTPS by name on 443. Add a token later with `http_server` checks on the `Authorization` header if the
-  network is ever shared.
-- **Why JSON:** the `otlp_http` input of Redpanda Connect needs an Enterprise licence. The open-source `http_server` input
-  receives `OTEL_EXPORTER_OTLP_PROTOCOL=http/json` instead of `http/protobuf`, with delta temporality (every datapoint is added
-  to a counter).
-- **Where to look:** Prometheus has `claude_code_tokens_total{environment,model,type}`, `claude_code_cost_microusd_total{environment,model}`,
-  and `claude_code_sessions_total`, `claude_code_lines_of_code_total{type}`, `claude_code_commits_total`,
-  `claude_code_pull_requests_total` and `claude_code_active_time_ms_total` (all with `environment`). Example, USD per day:
-  `sum by (environment,model)(increase(claude_code_cost_microusd_total[1d]))/1e6`. The usage page below reads the same series.
-- Only `environment`, `model` and `type` are kept as labels. `user.email`, `user.id` and `session.id` are dropped.
+- **Receiver:** `http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090/api/v1/otlp/v1/metrics` for `claude-rc`;
+  `http://otel.portableinfo.cloud/api/v1/otlp/v1/metrics` for the VM. Create the Cloudflare A record `otel` -> `192.168.1.243`
+  (DNS only): that is the MetalLB address of `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards
+  HTTP by `Host`. LAN only, no ingress, no authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off).
+- **Delta counters:** Claude Code sends delta temporality; `otlp-deltatocumulative` adds them up in memory, so a Prometheus restart
+  starts the counters at 0 (`increase()` copes with that).
+- **Names:** `otlp.translationStrategy: UnderscoreEscapingWithoutSuffixes` gives `claude_code_token_usage{environment,model,type}`,
+  `claude_code_cost_usage{environment,model}` (USD), and `claude_code_session_count`, `claude_code_lines_of_code_count{type}`,
+  `claude_code_commit_count`, `claude_code_pull_request_count`, `claude_code_active_time_total` (seconds), all with `environment`.
+  Example, USD per day: `sum by (environment,model)(increase(claude_code_cost_usage[1d]))`.
+- **Retention:** 30 days on a 20Gi volume (`retentionSize` 16GiB). To afford it, histogram buckets are dropped from the apiserver,
+  kubelet and Dependency-Track scrapes (they were 104k of 193k series); `_sum` and `_count` stay, percentiles of those are gone.
+  `local-path` does not enforce the volume size; watch `NodeFilesystemAlmostFull` for the node.
+- Only `environment`, `model` and `type` are labels. `user.email`, `user.id` and `session.id` are not promoted.
 
 ### Usage page and API
 
-`usage/usage.yaml` is a second Redpanda Connect that holds no data: every request becomes PromQL against Prometheus.
+`usage/usage.yaml` is a Redpanda Connect that holds no data: every request becomes PromQL against Prometheus.
 It is exposed through the Omni service exposer (`omni-kube-service-exposer.sidero.dev/*` on `Service/claude-usage`, port
 50091, plain HTTP, LAN only, read-only, aggregates only).
 
@@ -134,7 +133,7 @@ It is exposed through the Omni service exposer (`omni-kube-service-exposer.sider
 | `GET /healthz` | `ok` |
 
 A failed Prometheus query answers `502`. Query parameters are clamped numbers or picked from a list, never PromQL text.
-Only series the collector ingests are shown: sessions, lines, commits, pull requests and active time have no `model` label, so
+Only series Prometheus holds are shown: sessions, lines, commits, pull requests and active time have no `model` label, so
 they are per environment only. The page script is plain JavaScript with no external assets; the numbers are `increase()` over
-the window, so the very first export of a new model or environment is not counted and history is limited by Prometheus retention.
+the window, so the very first export of a new model or environment is not counted.
 From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`.

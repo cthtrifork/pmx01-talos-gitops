@@ -8,8 +8,6 @@ resources:
   - pvc.yaml
   - deployment.yaml
   - github-app.yaml
-  - otel/certificate.yaml
-  - otel/collector.yaml
   - usage/usage.yaml
 configMapGenerator:
   - name: claude-token-scripts
@@ -21,14 +19,6 @@ configMapGenerator:
     files:
       - github-app/sign-jwt.sh
       - github-app/refresh-token.sh
-  - name: claude-otel-connect-config
-    namespace: claude-system
-    options:
-      annotations:
-        # Redpanda Connect interpolations, not Flux variables: skip postBuild envsubst
-        kustomize.toolkit.fluxcd.io/substitute: disabled
-    files:
-      - otel/redpanda-connect.yaml
   - name: claude-usage-connect-config
     namespace: claude-system
     options:

@@ -69,25 +69,13 @@ spec:
       toPorts:
         - ports:
             - { port: "4195", protocol: TCP }
-    # Usage collector (OpenTelemetry metrics out): through the service address the pod is the destination, through the
-    # LB address of otel.portableinfo.cloud (443) it is the name
-    - toEndpoints:
-        - matchLabels:
-            k8s:app: claude-otel
-      toPorts:
-        - ports:
-            - { port: "4318", protocol: TCP }
+    # Usage API (the page and /api/v1)
     - toEndpoints:
         - matchLabels:
             k8s:app: claude-usage
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
-    - toFQDNs:
-        - matchName: otel.portableinfo.cloud
-      toPorts:
-        - ports:
-            - { port: "443", protocol: TCP }
     # Kubernetes API (read-only through the ServiceAccount's RBAC)
     - toEntities:
         - kube-apiserver
@@ -177,36 +165,6 @@ spec:
       toPorts:
         - ports:
             - { port: "443", protocol: TCP }
----
-# The usage collector sends nothing out. The Claude VM arrives through the MetalLB address, from the LAN range or, via
-# another node, as host or remote-node.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: claude-otel
-  namespace: claude-system
-spec:
-  endpointSelector:
-    matchLabels:
-      app: claude-otel
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            k8s:app: claude-rc
-      toPorts:
-        - ports:
-            - { port: "4318", protocol: TCP }
-    - fromCIDR:
-        - 192.168.1.0/24
-      toPorts:
-        - ports:
-            - { port: "4318", protocol: TCP }
-    - fromEntities:
-        - host
-        - remote-node
-      toPorts:
-        - ports:
-            - { port: "4318", protocol: TCP }
 ---
 # The Omni service exposer runs on the host network: it arrives as host or remote-node.
 apiVersion: cilium.io/v2

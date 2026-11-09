@@ -163,11 +163,11 @@
 
   <div class="cols">
     <section class="panel">
-      <div class="panel-head"><h2>Cost by model</h2><span class="src">claude_code_cost_microusd_total{model}</span></div>
+      <div class="panel-head"><h2>Cost by model</h2><span class="src">claude_code_cost_usage{model}</span></div>
       <div id="modelCost"></div>
     </section>
     <section class="panel">
-      <div class="panel-head"><h2>Token mix by model</h2><span class="src">claude_code_tokens_total{model,type}</span></div>
+      <div class="panel-head"><h2>Token mix by model</h2><span class="src">claude_code_token_usage{model,type}</span></div>
       <div class="legend" id="tokLegend"></div>
       <div id="tokMix"></div>
       <div class="sub" style="margin-top:8px">Cache hit = cache read ÷ (input + cache read + cache write).</div>
@@ -262,13 +262,13 @@ function renderTiles() {
   const days = PERIOD_DAYS[state.period];
   const hit = t.tokens.cacheRead / Math.max(t.tokens.input + t.tokens.cacheRead + t.tokens.cacheCreation, 1);
   const items = [
-    { k: "Cost", v: usd(t.cost_usd), s: state.period === "today" ? "since 00:00 UTC" : usd(t.cost_usd / days) + " per day", src: "cost_microusd_total", hero: true },
-    { k: "Tokens", v: compact(t.tokens.total), s: "out " + compact(t.tokens.output) + " · in " + compact(t.tokens.input), src: "tokens_total" },
-    { k: "Cache hit", v: (hit * 100).toFixed(1) + "%", s: "derived from tokens by type", src: "tokens_total{type}" },
-    { k: "Sessions", v: num(t.sessions), s: t.sessions ? usd(t.cost_usd / t.sessions) + " per session" : "no sessions", src: "sessions_total" },
-    { k: "Active time", v: t.active_hours.toFixed(1) + " h", s: "across all sessions", src: "active_time_ms_total" },
-    { k: "Lines changed", v: compact(t.lines.added + t.lines.removed), s: "+" + compact(t.lines.added) + " −" + compact(t.lines.removed), src: "lines_of_code_total{type}" },
-    { k: "Commits · PRs", v: num(t.commits) + " · " + num(t.pull_requests), s: "created by Claude", src: "commits_total, pull_requests_total" },
+    { k: "Cost", v: usd(t.cost_usd), s: state.period === "today" ? "since 00:00 UTC" : usd(t.cost_usd / days) + " per day", src: "cost_usage", hero: true },
+    { k: "Tokens", v: compact(t.tokens.total), s: "out " + compact(t.tokens.output) + " · in " + compact(t.tokens.input), src: "token_usage" },
+    { k: "Cache hit", v: (hit * 100).toFixed(1) + "%", s: "derived from tokens by type", src: "token_usage{type}" },
+    { k: "Sessions", v: num(t.sessions), s: t.sessions ? usd(t.cost_usd / t.sessions) + " per session" : "no sessions", src: "session_count" },
+    { k: "Active time", v: t.active_hours.toFixed(1) + " h", s: "across all sessions", src: "active_time_total" },
+    { k: "Lines changed", v: compact(t.lines.added + t.lines.removed), s: "+" + compact(t.lines.added) + " −" + compact(t.lines.removed), src: "lines_of_code_count{type}" },
+    { k: "Commits · PRs", v: num(t.commits) + " · " + num(t.pull_requests), s: "created by Claude", src: "commit_count, pull_request_count" },
   ];
   box.replaceChildren(...items.map((i) => { const d = el("div", { class: "tile" + (i.hero ? " hero" : "") }); d.append(el("div", { class: "k" }, i.k), el("div", { class: "v" }, i.v), el("div", { class: "s" }, i.s), el("span", { class: "src" }, "claude_code_" + i.src)); return d; }));
 }
@@ -282,7 +282,7 @@ function renderDaily() {
   const val = (d, e) => (d.environments[e] ? d.environments[e][key] : 0);
   const fmt = m === "cost" ? usd : m === "tokens" ? compact : num;
   $("envLegend").replaceChildren(...envs.map((e) => { const s = el("span"); const i = el("i"); i.style.background = css(envVar(e)); s.append(i, e); return s; }));
-  $("dailySrc").textContent = { cost: "claude_code_cost_microusd_total{environment}", tokens: "claude_code_tokens_total{environment}", sessions: "claude_code_sessions_total{environment}" }[m];
+  $("dailySrc").textContent = { cost: "claude_code_cost_usage{environment}", tokens: "claude_code_token_usage{environment}", sessions: "claude_code_session_count{environment}" }[m];
   const t = $("dailyTable"); t.replaceChildren();
   const totalsPerDay = ds.map((d) => sum(envs.map((e) => val(d, e))));
   if (!ds.length || !envs.length || Math.max(0, ...totalsPerDay) === 0) {

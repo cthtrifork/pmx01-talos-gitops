@@ -93,16 +93,16 @@ spec:
               value: "1" # the binary is baked into the image
             - name: DISABLE_TELEMETRY
               value: "1" # no telemetry (Datadog) or error reporting: those hosts are not in the egress allowlist
-            # OpenTelemetry metrics to the usage collector (otel/): http/json and delta, see otel/redpanda-connect.yaml.
-            # Separate from DISABLE_TELEMETRY above, which covers Datadog and error reporting.
+            # OpenTelemetry metrics straight into Prometheus (its OTLP receiver). Separate from DISABLE_TELEMETRY above,
+            # which covers Datadog and error reporting.
             - name: CLAUDE_CODE_ENABLE_TELEMETRY
               value: "1"
             - name: OTEL_METRICS_EXPORTER
               value: otlp
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
-              value: http/json
+              value: http/protobuf
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: https://otel.portableinfo.cloud
+              value: http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090/api/v1/otlp
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: delta
             - name: OTEL_RESOURCE_ATTRIBUTES

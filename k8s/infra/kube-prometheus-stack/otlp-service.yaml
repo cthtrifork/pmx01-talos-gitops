@@ -1,0 +1,21 @@
+# OTLP from the Claude VM: the Claude VM's egress gateway forwards plain HTTP by Host on port 80.
+# The Service reaches the whole Prometheus HTTP API (the admin API is off); the OTLP receiver is /api/v1/otlp/v1/metrics.
+# 192.168.1.243 is free in the MetalLB pool; the Cloudflare A record otel.portableinfo.cloud points at it.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-otlp-lb
+  namespace: kube-prometheus-stack-system
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.1.243
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http-web
+      port: 80
+      targetPort: http-web
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: prometheus
+    operator.prometheus.io/name: kube-prom-prometheus
