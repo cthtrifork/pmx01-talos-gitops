@@ -1,24 +1,20 @@
 name: Build VEX cache image
 
 # images/vex-cache holds the Trivy VEX repositories (the Trivy VEX hub and vex/) as a ready-made cache. The trivy-operator
-# scan jobs mount it as a read-only image volume. It is rebuilt every 6 hours (the cached manifests stay valid for 7 days),
-# and on every change of vex/. The scan jobs use the floating tag latest; every build also gets an immutable UTC timestamp
-# tag (for example 20261109-1523) to tell builds apart and to pin the volume to a known-good one. Pull request: built, not pushed.
+# scan jobs mount it as a read-only image volume. The scan jobs use the floating tag latest; every build also gets an
+# immutable UTC timestamp tag (for example 20261109-1523) to tell builds apart and to pin the volume to a known-good one.
+#   - Pull request: built when vex/ or the image changed, not pushed (dry run).
+#   - Push to main: built and pushed when vex/ or the image changed.
+#   - Manual run, and every 6 hours: always built and pushed. The schedule is not optional: the Trivy VEX hub changes
+#     upstream without a commit here, and the cached manifests are only valid for 7 days.
 
 on:
   pull_request:
     branches:
       - main
-    paths:
-      - images/vex-cache/**
-      - vex/**
-      - .github/workflows/build-vex-cache.yaml
   push:
     branches:
       - main
-    paths:
-      - images/vex-cache/**
-      - vex/**
   schedule:
     - cron: '23 */6 * * *'
   workflow_dispatch:
@@ -31,8 +27,42 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect VEX changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.plan.outputs.build }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Get changed files
+        id: changed
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+        uses: step-security/changed-files@2e07db73e5ccdb319b9a6c7766bd46d39d304bad # v47.0.5
+        with:
+          files: |
+            vex/**
+            images/vex-cache/**
+            .github/workflows/build-vex-cache.yaml
+
+      - name: Decide whether to build
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          ANY_CHANGED: ${{ steps.changed.outputs.any_changed }}
+        run: |
+          if [[ "$EVENT" == "schedule" || "$EVENT" == "workflow_dispatch" || "$ANY_CHANGED" == "true" ]]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-publish:
     name: Build and publish (vex-cache)
+    needs: [changes]
+    if: ${{ needs.changes.outputs.build == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
