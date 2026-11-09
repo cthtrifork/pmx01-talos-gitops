@@ -175,6 +175,9 @@ spec:
     serviceMonitor:
       enabled: true
     operator:
+      # the operator reads these at start and the chart's checksum/config does not cover the scanJob.* keys
+      annotations:
+        configmap.reloader.stakater.com/reload: trivy-operator,trivy-operator-config,trivy-operator-trivy-config
       podLabels:
         prometheus-scrape: "true"
       replicas: 2
