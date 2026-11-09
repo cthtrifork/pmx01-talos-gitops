@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Claude usage</title>
 <style>
-  /* Layout: one column of panels under a filter bar. Totals first, then per-day, then the two splits the data allows
-     (model and token type), then the tables. Utility sans only; colour is reserved for the two environments and the four
-     token types, everything else is ink and grey. */
   :root {
     color-scheme: light;
     --page: #f4f4f1;
@@ -223,7 +220,6 @@ async function get(path) {
   return r.json();
 }
 
-// ---- tooltip -----------------------------------------------------------------------------------------------------
 const tip = $("tip");
 function showTip(ev, title, lines) {
   tip.replaceChildren(el("b", {}, title));
@@ -239,7 +235,6 @@ function showTip(ev, title, lines) {
 }
 const hideTip = () => { tip.hidden = true; };
 
-// ---- derived views ---------------------------------------------------------------------------------------------------
 const windowData = () => state.summary && state.summary.windows[state.period];
 function totals() {
   const w = windowData(); if (!w) return null;

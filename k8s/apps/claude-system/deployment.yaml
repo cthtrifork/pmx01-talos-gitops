@@ -93,9 +93,8 @@ spec:
               value: "1" # the binary is baked into the image
             - name: DISABLE_TELEMETRY
               value: "1" # no telemetry (Datadog) or error reporting: those hosts are not in the egress allowlist
-            # OpenTelemetry metrics to the usage collector (otel/). Independent of DISABLE_TELEMETRY above, which only
-            # covers Datadog and error reporting. JSON because the collector (Redpanda Connect, open-source inputs)
-            # cannot decode protobuf; delta temporality because it adds every datapoint to its counters.
+            # OpenTelemetry metrics to the usage collector (otel/): http/json and delta, see otel/redpanda-connect.yaml.
+            # Separate from DISABLE_TELEMETRY above, which covers Datadog and error reporting.
             - name: CLAUDE_CODE_ENABLE_TELEMETRY
               value: "1"
             - name: OTEL_METRICS_EXPORTER

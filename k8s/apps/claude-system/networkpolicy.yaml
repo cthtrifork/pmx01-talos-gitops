@@ -77,7 +77,6 @@ spec:
       toPorts:
         - ports:
             - { port: "4318", protocol: TCP }
-    # Usage API (read-only GETs of the page and /api/v1)
     - toEndpoints:
         - matchLabels:
             k8s:app: claude-usage
@@ -179,9 +178,8 @@ spec:
         - ports:
             - { port: "443", protocol: TCP }
 ---
-# The usage collector sends nothing out. In: OTLP on 4318 from claude-rc and the LAN (the Claude VM, through the MetalLB
-# address: arrives from the LAN range or, via another node, as host or remote-node).
-# Prometheus reaches 4195 through the prometheus-scrape policy (kube-prometheus-stack).
+# The usage collector sends nothing out. The Claude VM arrives through the MetalLB address, from the LAN range or, via
+# another node, as host or remote-node.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -210,8 +208,7 @@ spec:
         - ports:
             - { port: "4318", protocol: TCP }
 ---
-# The usage API only talks to Prometheus. In: the Omni service exposer (host network: arrives as host or remote-node) and
-# claude-rc on 8080; Prometheus scrapes 4195 through the prometheus-scrape policy (kube-prometheus-stack).
+# The Omni service exposer runs on the host network: it arrives as host or remote-node.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

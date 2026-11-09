@@ -25,7 +25,7 @@ configMapGenerator:
     namespace: claude-system
     options:
       annotations:
-        # Redpanda Connect interpolations (${! }), not Flux variables: skip postBuild envsubst
+        # Redpanda Connect interpolations, not Flux variables: skip postBuild envsubst
         kustomize.toolkit.fluxcd.io/substitute: disabled
     files:
       - otel/redpanda-connect.yaml
@@ -33,7 +33,7 @@ configMapGenerator:
     namespace: claude-system
     options:
       annotations:
-        # Redpanda Connect interpolations (${! } and ${PROM_URL:...}) and a web page, not Flux variables: skip postBuild envsubst
+        # Redpanda Connect interpolations and a web page, not Flux variables: skip postBuild envsubst
         kustomize.toolkit.fluxcd.io/substitute: disabled
     files:
       - usage/redpanda-connect.yaml

@@ -1,7 +1,7 @@
 # Claude Code usage from OpenTelemetry metrics (Redpanda Connect, open-source inputs only: otlp_http needs an Enterprise
 # licence). Claude Code POSTs OTLP/HTTP **JSON** (OTEL_EXPORTER_OTLP_PROTOCOL=http/json) to :4318/v1/metrics (TLS, no
 # authentication: LAN only, restricted by the network policies); the datapoints become Prometheus counters on
-# :4195/metrics (claude_code_*), which Prometheus scrapes and the usage page (../usage) reads back.
+# :4195/metrics (claude_code_*).
 # Claude Code exports delta temporality, so every datapoint is an increment. Labels are only environment, model and type:
 # user.email, user.id and session.id are dropped on purpose (personal data, unbounded cardinality).
 # Not a Flux template (configMapGenerator disables postBuild envsubst), hence the plain ${! } interpolations.
@@ -22,7 +22,7 @@ input:
     path: /v1/metrics
     allowed_verbs:
       - POST
-    cert_file: /etc/tls/tls.crt # cert-manager Secret claude-otel-tls
+    cert_file: /etc/tls/tls.crt
     key_file: /etc/tls/tls.key
     sync_response:
       headers:
@@ -30,7 +30,6 @@ input:
 
 pipeline:
   processors:
-    # one message per datapoint
     - mapping: |
         map attrs {
           root = this.or([]).map_each(kv -> {kv.key: kv.value.values().index(0)}).fold({}, t -> t.tally.merge(t.value))
@@ -44,7 +43,6 @@ pipeline:
         })).flatten()).flatten()).flatten()
     - unarchive:
         format: json_array
-    # series name, integer value and the label values
     - mapping: |
         let series = match this.name {
           "claude_code.token.usage" => "claude_code_tokens_total"
@@ -125,7 +123,6 @@ pipeline:
                 name: claude_code_pull_requests_total
                 labels: { environment: '${! json("environment") }' }
                 value: '${! json("value") }'
-    # the whole request is answered once, with an empty export response
     - archive:
         format: json_array
     - mapping: 'root = {}'
