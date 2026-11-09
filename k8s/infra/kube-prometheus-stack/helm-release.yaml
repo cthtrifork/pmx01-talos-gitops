@@ -161,8 +161,16 @@ spec:
             prometheus-scrape: "true"
         replicas: 1
         enableRemoteWriteReceiver: true
+        # OTLP from Claude Code (claude-rc and the Claude VM) on /api/v1/otlp/v1/metrics. Claude Code sends delta
+        # counters, which otlp-deltatocumulative turns into cumulative ones (kept in memory: a restart starts them at 0).
+        enableOTLPReceiver: true
         enableFeatures:
           - exemplar-storage
+          - otlp-deltatocumulative
+        otlp:
+          translationStrategy: UnderscoreEscapingWithoutSuffixes # claude_code.token.usage -> claude_code_token_usage
+          promoteResourceAttributes:
+            - environment
         retention: 30d
         retentionSize: 16GiB
         scrapeInterval: 1m
