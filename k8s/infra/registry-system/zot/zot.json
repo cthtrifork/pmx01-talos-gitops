@@ -54,6 +54,9 @@
           "keepTags": [
             {
               "pulledWithin": "168h"
+            },
+            {
+              "mostRecentlyPushedCount": 1
             }
           ]
         },
@@ -67,6 +70,9 @@
           "keepTags": [
             {
               "patterns": ["latest"]
+            },
+            {
+              "mostRecentlyPushedCount": 1
             },
             {
               "mostRecentlyPushedCount": 2,
@@ -83,6 +89,9 @@
           "keepTags": [
             {
               "patterns": ["latest"]
+            },
+            {
+              "mostRecentlyPushedCount": 1
             },
             {
               "mostRecentlyPushedCount": 3,
