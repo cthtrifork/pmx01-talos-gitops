@@ -27,6 +27,14 @@ spec:
   values:
     fullnameOverride: kube-prom
     nameOverride: prom
+    # Histogram buckets were 104k of 193k series. _sum and _count stay, so averages remain; percentiles of these are gone.
+    kubeApiServer:
+      serviceMonitor:
+        metricRelabelings:
+          - action: drop
+            sourceLabels:
+              - __name__
+            regex: .+_bucket
     kubeProxy:
       enabled: false
     kubeControllerManager:
@@ -97,6 +105,16 @@ spec:
       namespace: kube-system
       serviceMonitor:
         enabled: true
+        metricRelabelings:
+          - action: drop
+            sourceLabels:
+              - __name__
+            regex: .+_bucket
+        probesMetricRelabelings:
+          - action: drop
+            sourceLabels:
+              - __name__
+            regex: .+_bucket
         kubelet: true
     prometheus-node-exporter:
       image:
@@ -143,10 +161,18 @@ spec:
             prometheus-scrape: "true"
         replicas: 1
         enableRemoteWriteReceiver: true
+        # OTLP from Claude Code (claude-rc and the Claude VM) on /api/v1/otlp/v1/metrics. Claude Code sends delta
+        # counters, which otlp-deltatocumulative turns into cumulative ones (kept in memory: a restart starts them at 0).
+        enableOTLPReceiver: true
         enableFeatures:
           - exemplar-storage
-        retention: 24h
-        retentionSize: 1GiB
+          - otlp-deltatocumulative
+        otlp:
+          translationStrategy: UnderscoreEscapingWithoutSuffixes # claude_code.token.usage -> claude_code_token_usage
+          promoteResourceAttributes:
+            - environment
+        retention: 30d
+        retentionSize: 16GiB
         scrapeInterval: 1m
         scrapeTimeout: 1m
         resources:
@@ -167,7 +193,7 @@ spec:
                 storageClassName: local-path
                 resources:
                   requests:
-                    storage: 5Gi
+                    storage: 20Gi
 
     kubernetesServiceMonitors:
       enabled: true

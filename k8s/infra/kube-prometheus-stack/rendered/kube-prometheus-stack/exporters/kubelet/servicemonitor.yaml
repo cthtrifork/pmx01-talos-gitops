@@ -25,10 +25,9 @@ spec:
     honorTimestamps: true
     metricRelabelings:
     - action: drop
-      regex: (csi_operations|storage_operation_duration)_seconds_bucket;(0.25|2.5|15|25|120|600)(\.0)?
+      regex: .+_bucket
       sourceLabels:
       - __name__
-      - le
     port: https-metrics
     relabelings:
     - action: replace
@@ -108,6 +107,11 @@ spec:
       type: Bearer
     honorLabels: true
     honorTimestamps: true
+    metricRelabelings:
+    - action: drop
+      regex: .+_bucket
+      sourceLabels:
+      - __name__
     path: /metrics/probes
     port: https-metrics
     relabelings:
