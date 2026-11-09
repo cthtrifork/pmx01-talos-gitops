@@ -2,7 +2,8 @@ name: Build VEX cache image
 
 # images/vex-cache holds the Trivy VEX repositories (the Trivy VEX hub and vex/) as a ready-made cache. The trivy-operator
 # scan jobs mount it as a read-only image volume. It is rebuilt every 6 hours (the cached manifests stay valid for 7 days),
-# and on every change of vex/. Unlike the release images it floats on one tag, latest. Pull request: built, not pushed.
+# and on every change of vex/. The scan jobs use the floating tag latest; every build also gets an immutable UTC timestamp
+# tag (for example 20261109-1523) to tell builds apart and to pin the volume to a known-good one. Pull request: built, not pushed.
 
 on:
   pull_request:
@@ -45,6 +46,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Compute build tag
+        id: prep
+        run: echo "BUILD_TAG=$(date -u +'%Y%m%d-%H%M')" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
@@ -65,7 +70,9 @@ jobs:
           file: ./images/vex-cache/Dockerfile
           platforms: linux/amd64
           push: ${{ env.PUBLISH == 'true' }}
-          tags: ${{ env.IMAGE }}:latest
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.prep.outputs.BUILD_TAG }}
           no-cache: true
           sbom: false
           provenance: false # keep a plain image manifest: it is mounted as a volume, not run
@@ -84,10 +91,11 @@ jobs:
         if: ${{ always() }}
         env:
           DIGEST: ${{ steps.build-push.outputs.digest }}
+          BUILD_TAG: ${{ steps.prep.outputs.BUILD_TAG }}
         run: |
           {
             echo "### vex-cache"
-            echo "- Reference: \`${IMAGE}:latest\`"
+            echo "- Reference: \`${IMAGE}:latest\`, \`${IMAGE}:${BUILD_TAG}\`"
             echo "- Digest: \`${DIGEST:-n/a}\`"
             echo "- Published: ${PUBLISH}"
           } >> "$GITHUB_STEP_SUMMARY"
