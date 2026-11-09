@@ -125,15 +125,6 @@ jobs:
           token: ${{ github.token }}
           version: 'latest'
 
-      # Kustomizations with spec.decryption fail until the secret exists. Bootstrap has no encrypted
-      # files, so a throwaway age key is enough for it.
-      - name: Create a throwaway SOPS key
-        run: |
-          sudo apt-get install -y --no-install-recommends age
-          age-keygen -o "${RUNNER_TEMP}/age.agekey"
-          kubectl create secret generic sops-age -n flux-system --from-file=age.agekey="${RUNNER_TEMP}/age.agekey"
-          rm "${RUNNER_TEMP}/age.agekey"
-
       - name: Wait for successful reconciliation
         timeout-minutes: 8
         run: |
@@ -148,11 +139,11 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      # The workloads (app-controllers, app, virtualmachines) are not reconciled here; they are built and
+      # The workloads (app-controllers, app) are not reconciled here; they are built and
       # schema-checked by the first steps.
       - name: Suspend Kustomizations that are not tested here
         run: |
-          for ks in app-controllers app gitops-virtualmachines; do
+          for ks in app-controllers app; do
             flux suspend kustomization "${ks}"
           done
       - name: Wait for the bootstrap Kustomization
@@ -162,6 +153,7 @@ jobs:
 
       # kind is not the real cluster, so on the live Kustomizations only (never in git):
       # - SOPS: drop decryption and delete the encrypted Secrets (the key is not available)
+      # - infra-post: do not wait for its Certificates, ClusterIssuer and CNPG cluster (no ACME or storage in kind)
       # - HelmReleases in gitops-infra: suspend them, they are slow and the cilium release would upgrade the
       #   cilium this job installed. The CRD providers are in gitops-infra-controllers, which runs for real.
       # The manifests of every release are still applied and dry-run against the API server.
@@ -175,7 +167,7 @@ jobs:
             {"target":{"kind":"HelmRelease"},"patch":"- op: add\n  path: /spec/suspend\n  value: true\n"}]}}
           EOF
           cat > "${RUNNER_TEMP}/post.json" <<'EOF'
-          {"spec":{"decryption":null,"patches":[
+          {"spec":{"decryption":null,"wait":false,"patches":[
             {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"}]}}
           EOF
           kubectl patch kustomization gitops-infra -n flux-system --type merge --patch-file "${RUNNER_TEMP}/infra.json"
