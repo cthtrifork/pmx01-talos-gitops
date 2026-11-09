@@ -1,58 +1,55 @@
----
-# Source: dependency-track/templates/api-server/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: dependency-track-api-server
+    app.kubernetes.io/part-of: dependency-track
+    app.kubernetes.io/version: 5.2.1
+    dependencytrack.io/role: web
+    helm.sh/chart: dependency-track-2.9.0
   name: dependency-track-api-server
   namespace: security-system
-  labels:
-    helm.sh/chart: dependency-track-2.9.0
-    app.kubernetes.io/part-of: dependency-track
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: dependency-track
-    app.kubernetes.io/name: dependency-track-api-server
-    app.kubernetes.io/component: api-server
-    dependencytrack.io/role: web
-    app.kubernetes.io/version: 5.2.1
 spec:
-  type: ClusterIP
   ports:
-    - name: web
-      port: 8080
-      targetPort: web
-      protocol: TCP
-      appProtocol: http
+  - appProtocol: http
+    name: web
+    port: 8080
+    protocol: TCP
+    targetPort: web
   selector:
+    app.kubernetes.io/component: api-server
     app.kubernetes.io/instance: dependency-track
     app.kubernetes.io/name: dependency-track-api-server
-    app.kubernetes.io/component: api-server
     dependencytrack.io/role: web
+  type: ClusterIP
 ---
-# Source: dependency-track/templates/api-server/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/instance: dependency-track
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: dependency-track-api-server
+    app.kubernetes.io/part-of: dependency-track
+    app.kubernetes.io/version: 5.2.1
+    helm.sh/chart: dependency-track-2.9.0
   name: dependency-track-api-server-metrics
   namespace: security-system
-  labels:
-    helm.sh/chart: dependency-track-2.9.0
-    app.kubernetes.io/part-of: dependency-track
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/instance: dependency-track
-    app.kubernetes.io/name: dependency-track-api-server
-    app.kubernetes.io/component: api-server
-    app.kubernetes.io/version: 5.2.1
 spec:
-  type: ClusterIP
   clusterIP: None
-  publishNotReadyAddresses: true
   ports:
-    - name: management
-      port: 9000
-      targetPort: management
-      protocol: TCP
-      appProtocol: http
+  - appProtocol: http
+    name: management
+    port: 9000
+    protocol: TCP
+    targetPort: management
+  publishNotReadyAddresses: true
   selector:
+    app.kubernetes.io/component: api-server
     app.kubernetes.io/instance: dependency-track
     app.kubernetes.io/name: dependency-track-api-server
-    app.kubernetes.io/component: api-server
+  type: ClusterIP

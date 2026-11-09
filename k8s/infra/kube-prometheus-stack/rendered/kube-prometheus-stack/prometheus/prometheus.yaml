@@ -63,8 +63,8 @@ spec:
     requests:
       cpu: 100m
       memory: 512Mi
-  retention: 24h
-  retentionSize: 1GiB
+  retention: 30d
+  retentionSize: 16GiB
   routePrefix: /
   ruleNamespaceSelector: {}
   ruleSelector:
@@ -92,7 +92,7 @@ spec:
       spec:
         resources:
           requests:
-            storage: 5Gi
+            storage: 20Gi
         storageClassName: local-path
   tsdb:
     outOfOrderTimeWindow: 0s
