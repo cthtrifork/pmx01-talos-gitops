@@ -8,6 +8,7 @@ resources:
   - pvc.yaml
   - deployment.yaml
   - github-app.yaml
+  - usage/usage.yaml
 configMapGenerator:
   - name: claude-token-scripts
     namespace: claude-system
@@ -18,6 +19,15 @@ configMapGenerator:
     files:
       - github-app/sign-jwt.sh
       - github-app/refresh-token.sh
+  - name: claude-usage-connect-config
+    namespace: claude-system
+    options:
+      annotations:
+        # Redpanda Connect interpolations and a web page, not Flux variables: skip postBuild envsubst
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+    files:
+      - usage/redpanda-connect.yaml
+      - usage/index.html
   - name: claude-md
     namespace: claude-system
     options:

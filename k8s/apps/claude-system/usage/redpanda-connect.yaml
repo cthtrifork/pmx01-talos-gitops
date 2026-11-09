@@ -1,0 +1,225 @@
+# Usage page and read-only JSON API over the Claude Code metrics in Prometheus (pushed there as OTLP by Claude Code). Every request is answered by fixed PromQL queries; query parameters are only used as clamped
+# numbers or picked from a list, never put into a query as text.
+# Claude Code exports delta counters, which Prometheus accumulates (otlp-deltatocumulative), so increase() is the usage in the window. It does not count
+# the very first export of a new series (a small undercount). Prometheus names the OTLP metrics claude_code_<name>
+# (otlp.translationStrategy UnderscoreEscapingWithoutSuffixes) and environment is promoted to a label.
+# Not a Flux template (configMapGenerator disables postBuild envsubst); ${PROM_URL:default} is Redpanda Connect's own.
+http:
+  enabled: true
+  address: 0.0.0.0:4195
+  debug_endpoints: false
+
+input:
+  http_server:
+    address: 0.0.0.0:8080
+    path: /
+    allowed_verbs:
+      - GET
+    sync_response:
+      status: '${! @status.or("200") }'
+      headers:
+        Content-Type: '${! @content_type.or("application/json") }'
+        Cache-Control: no-store
+
+processor_resources:
+  # Every series over the window @q (a duration such as 604800s), per environment, plus the total of all environments.
+  - label: window_query
+    processors:
+      - mapping: |
+          let series = [
+            {"s": "tokens", "m": "claude_code_token_usage", "by": "environment, type"},
+            {"s": "cost", "m": "claude_code_cost_usage", "by": "environment"},
+            {"s": "sessions", "m": "claude_code_session_count", "by": "environment"},
+            {"s": "lines", "m": "claude_code_lines_of_code_count", "by": "environment, type"},
+            {"s": "commits", "m": "claude_code_commit_count", "by": "environment"},
+            {"s": "prs", "m": "claude_code_pull_request_count", "by": "environment"},
+            {"s": "active", "m": "claude_code_active_time_total", "by": "environment"}
+          ]
+          let w = @q
+          meta promql = $series.map_each(x -> "label_replace(sum by (" + x.by + ")(increase(" + x.m + "[" + $w + "])),\"series\",\"" + x.s + "\",\"\",\"\")").join(" or ")
+          root = ""
+      - http:
+          url: '${PROM_URL:http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090}/api/v1/query?query=${! @promql.escape_url_query() }'
+          verb: GET
+          timeout: 10s
+      - mapping: |
+          map pick {
+            let s = this.s
+            let t = this.t
+            root = this.r.filter(x -> x.metric.series == $s && x.metric.type.or("") == $t).map_each(x -> x.value.index(1).number()).sum()
+          }
+          map summarize {
+            let r = this
+            let tin = {"r": $r, "s": "tokens", "t": "input"}.apply("pick").round()
+            let tout = {"r": $r, "s": "tokens", "t": "output"}.apply("pick").round()
+            let tcr = {"r": $r, "s": "tokens", "t": "cacheRead"}.apply("pick").round()
+            let tcc = {"r": $r, "s": "tokens", "t": "cacheCreation"}.apply("pick").round()
+            root.cost_usd = ({"r": $r, "s": "cost", "t": ""}.apply("pick") * 10000).round() / 10000
+            root.tokens = {"input": $tin, "output": $tout, "cacheRead": $tcr, "cacheCreation": $tcc, "total": $tin + $tout + $tcr + $tcc}
+            root.sessions = {"r": $r, "s": "sessions", "t": ""}.apply("pick").round()
+            root.lines = {"added": {"r": $r, "s": "lines", "t": "added"}.apply("pick").round(), "removed": {"r": $r, "s": "lines", "t": "removed"}.apply("pick").round()}
+            root.commits = {"r": $r, "s": "commits", "t": ""}.apply("pick").round()
+            root.pull_requests = {"r": $r, "s": "prs", "t": ""}.apply("pick").round()
+            root.active_hours = ({"r": $r, "s": "active", "t": ""}.apply("pick") / 360).round() / 10
+          }
+          let r = this.data.result
+          let envs = $r.map_each(x -> x.metric.environment.or("")).unique().sort()
+          root.total = $r.apply("summarize")
+          root.environments = $envs.fold({}, t -> t.tally.merge({t.value: $r.filter(x -> x.metric.environment.or("") == t.value).apply("summarize")}))
+
+pipeline:
+  processors:
+    # The Prometheus handlers are wrapped in try: a later mapping would otherwise clear the error flag and skip the catch.
+    - switch:
+        - check: '@http_server_request_path == "/" || @http_server_request_path == "/index.html"'
+          processors:
+            - mapping: |
+                meta content_type = "text/html; charset=utf-8"
+                root = file("/etc/connect/index.html")
+
+        - check: '@http_server_request_path == "/healthz"'
+          processors:
+            - mapping: |
+                meta content_type = "text/plain"
+                root = "ok"
+
+        - check: '@http_server_request_path == "/api/v1/summary"'
+          processors:
+            - try:
+                - mapping: |
+                    root.generated = now().ts_format("2006-01-02T15:04:05Z", "UTC")
+                    root.today_s = [(now().ts_unix() % 86400), 60].max()
+                - branch:
+                    request_map: |
+                      meta q = this.today_s.string() + "s"
+                      root = ""
+                    processors:
+                      - resource: window_query
+                    result_map: 'root.windows.today = this'
+                - branch:
+                    request_map: |
+                      meta q = "604800s"
+                      root = ""
+                    processors:
+                      - resource: window_query
+                    result_map: 'root.windows."7d" = this'
+                - branch:
+                    request_map: |
+                      meta q = "2592000s"
+                      root = ""
+                    processors:
+                      - resource: window_query
+                    result_map: 'root.windows."30d" = this'
+                - mapping: |
+                    root.generated = this.generated
+                    root.windows = this.windows
+
+        - check: '@http_server_request_path == "/api/v1/breakdown"'
+          processors:
+            - try:
+                - mapping: |
+                    let win = if ["today", "30d"].contains(@window.or("7d")) { @window } else { "7d" }
+                    meta q = match $win {
+                      "today" => ([(now().ts_unix() % 86400), 60].max()).string() + "s"
+                      "30d" => "2592000s"
+                      _ => "604800s"
+                    }
+                    meta promql = "label_replace(sum by (environment, model, type)(increase(claude_code_token_usage[" + @q + "])),\"series\",\"tokens\",\"\",\"\") or label_replace(sum by (environment, model)(increase(claude_code_cost_usage[" + @q + "])),\"series\",\"cost\",\"\",\"\")"
+                    root.window = $win
+                - branch:
+                    request_map: 'root = ""'
+                    processors:
+                      - http:
+                          url: '${PROM_URL:http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090}/api/v1/query?query=${! @promql.escape_url_query() }'
+                          verb: GET
+                          timeout: 10s
+                    result_map: 'root.prom = this.data.result'
+                - mapping: |
+                    map pick {
+                      let e = this.e
+                      let m = this.m
+                      let s = this.s
+                      let t = this.t
+                      root = this.r.filter(x -> x.metric.environment.or("") == $e && x.metric.model.or("") == $m && x.metric.series == $s && x.metric.type.or("") == $t).map_each(x -> x.value.index(1).number()).sum()
+                    }
+                    let r = this.prom
+                    let keys = $r.map_each(x -> x.metric.environment.or("") + "|" + x.metric.model.or("")).unique()
+                    root.window = this.window
+                    root.rows = $keys.map_each(k -> {"e": k.split("|").index(0), "m": k.split("|").index(1)}).map_each(k -> {
+                      "environment": k.e,
+                      "model": k.m,
+                      "cost_usd": ({"r": $r, "e": k.e, "m": k.m, "s": "cost", "t": ""}.apply("pick") * 10000).round() / 10000,
+                      "tokens": {
+                        "input": {"r": $r, "e": k.e, "m": k.m, "s": "tokens", "t": "input"}.apply("pick").round(),
+                        "output": {"r": $r, "e": k.e, "m": k.m, "s": "tokens", "t": "output"}.apply("pick").round(),
+                        "cacheRead": {"r": $r, "e": k.e, "m": k.m, "s": "tokens", "t": "cacheRead"}.apply("pick").round(),
+                        "cacheCreation": {"r": $r, "e": k.e, "m": k.m, "s": "tokens", "t": "cacheCreation"}.apply("pick").round()
+                      }
+                    }).sort_by(r -> 0 - r.cost_usd)
+
+        - check: '@http_server_request_path == "/api/v1/daily"'
+          processors:
+            - try:
+                - mapping: |
+                    let days = [[(@days.or("14").number().catch(14)).floor(), 2].max(), 90].min()
+                    let midnight = (now().ts_unix() - (now().ts_unix() % 86400)).int64()
+                    root.days = $days
+                    root.midnight = $midnight
+                    root.today_s = [(now().ts_unix() % 86400), 60].max()
+                    meta start = ($midnight - ($days - 2) * 86400).int64().string()
+                    meta end = $midnight.int64().string()
+                    meta promql = "label_replace(sum by (environment)(increase(claude_code_cost_usage[1d])),\"series\",\"cost\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_token_usage[1d])),\"series\",\"tokens\",\"\",\"\") or label_replace(sum by (environment)(increase(claude_code_session_count[1d])),\"series\",\"sessions\",\"\",\"\")"
+                # completed days: increase over the day before each midnight
+                - branch:
+                    request_map: 'root = ""'
+                    processors:
+                      - http:
+                          url: '${PROM_URL:http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090}/api/v1/query_range?query=${! @promql.escape_url_query() }&start=${! @start }&end=${! @end }&step=86400'
+                          verb: GET
+                          timeout: 10s
+                    result_map: 'root.prom = this.data.result'
+                - branch:
+                    request_map: |
+                      meta q = this.today_s.string() + "s"
+                      root = ""
+                    processors:
+                      - resource: window_query
+                    result_map: 'root.today = this'
+                - mapping: |
+                    let pts = this.prom.fold({}, t -> t.tally.merge({t.value.metric.series: {t.value.metric.environment.or(""): t.value.values.fold({}, u -> u.tally.merge({u.value.index(0).floor().int64().string(): u.value.index(1).number()}))}}))
+                    let envs = this.prom.map_each(x -> x.metric.environment.or("")).concat(this.today.environments.keys()).unique().sort()
+                    let start = (this.midnight - (this.days - 2) * 86400).int64()
+                    map point {
+                      let e = this.e
+                      let t = this.t
+                      root.cost_usd = ((((this.p.cost | {}).get($e) | {}).get($t) | 0) * 10000).round() / 10000
+                      root.tokens = ((this.p.tokens | {}).get($e) | {}).get($t).or(0).round()
+                      root.sessions = ((this.p.sessions | {}).get($e) | {}).get($t).or(0).round()
+                    }
+                    let done = range(0, this.days - 1).map_each(i -> ($start + i * 86400).int64()).map_each(t -> {
+                      "date": (t - 86400).ts_format("2006-01-02", "UTC"),
+                      "environments": $envs.fold({}, f -> f.tally.merge({f.value: {"p": $pts, "e": f.value, "t": t.int64().string()}.apply("point")}))
+                    })
+                    root.environments = $envs
+                    root.days = $done.append({
+                      "date": this.midnight.ts_format("2006-01-02", "UTC"),
+                      "environments": $envs.fold({}, f -> f.tally.merge({f.value: {
+                        "cost_usd": (this.today.environments.get(f.value) | {}).cost_usd | 0,
+                        "tokens": ((this.today.environments.get(f.value) | {}).tokens | {}).total | 0,
+                        "sessions": (this.today.environments.get(f.value) | {}).sessions | 0
+                      }}))
+                    })
+
+        - processors:
+            - mapping: |
+                meta status = "404"
+                root = {"error": "not found"}
+
+    - catch:
+        - mapping: |
+            meta status = "502"
+            meta content_type = "application/json"
+            root = {"error": "prometheus unavailable"}
+
+output:
+  sync_response: {}

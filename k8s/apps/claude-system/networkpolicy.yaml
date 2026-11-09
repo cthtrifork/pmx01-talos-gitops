@@ -69,6 +69,13 @@ spec:
       toPorts:
         - ports:
             - { port: "4195", protocol: TCP }
+    # Usage API (the page and /api/v1)
+    - toEndpoints:
+        - matchLabels:
+            k8s:app: claude-usage
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
     # Kubernetes API (read-only through the ServiceAccount's RBAC)
     - toEntities:
         - kube-apiserver
@@ -158,3 +165,42 @@ spec:
       toPorts:
         - ports:
             - { port: "443", protocol: TCP }
+---
+# The Omni service exposer runs on the host network: it arrives as host or remote-node.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claude-usage
+  namespace: claude-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: claude-usage
+  ingress:
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+    - fromEndpoints:
+        - matchLabels:
+            k8s:app: claude-rc
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-prometheus-stack-system
+            k8s:app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - { port: "9090", protocol: TCP }

@@ -94,3 +94,23 @@ kubectl auth can-i create pods/exec -A --as=$SA                   # no
 Anything the pod reads from the cluster (logs, events, annotations) is input Claude acts on, so keep
 the App installed only on the repositories Claude needs and its permissions minimal; the token is not narrowed beyond that. The `claude` ServiceAccount cannot read Secrets through the
 API, but the GitHub token and your claude.ai login are in this pod, so treat the pod as holding both.
+
+### Usage page and API
+
+`usage/usage.yaml` is a Redpanda Connect that holds no data: every request becomes PromQL against Prometheus.
+It is exposed through the Omni service exposer (`omni-kube-service-exposer.sidero.dev/*` on `Service/claude-usage`, port
+50091, plain HTTP, LAN only, read-only, aggregates only).
+
+| Request | Answer |
+|---|---|
+| `GET /` | the page (`usage/index.html`: totals, per-day columns by environment, cost and token mix by model, tables) |
+| `GET /api/v1/summary` | today (since 00:00 UTC), 7d and 30d: total and per environment |
+| `GET /api/v1/daily?days=30` | cost, tokens and sessions per UTC day and environment (2-90 days, today included) |
+| `GET /api/v1/breakdown?window=7d` | tokens and cost per environment and model (`today`, `7d`, `30d`) |
+| `GET /healthz` | `ok` |
+
+A failed Prometheus query answers `502`. Query parameters are clamped numbers or picked from a list, never PromQL text.
+Only series Prometheus holds are shown: sessions, lines, commits, pull requests and active time have no `model` label, so
+they are per environment only. The page script is plain JavaScript with no external assets; the numbers are `increase()` over
+the window, so the very first export of a new model or environment is not counted.
+From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`.
