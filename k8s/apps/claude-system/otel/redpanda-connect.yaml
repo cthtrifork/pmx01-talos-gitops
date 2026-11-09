@@ -1,6 +1,6 @@
 # Claude Code usage from OpenTelemetry metrics (Redpanda Connect, open-source inputs only: otlp_http needs an Enterprise
-# licence). Claude Code POSTs OTLP/HTTP **JSON** (OTEL_EXPORTER_OTLP_PROTOCOL=http/json) to :4318/v1/metrics with a bearer
-# token; the datapoints become
+# licence). Claude Code POSTs OTLP/HTTP **JSON** (OTEL_EXPORTER_OTLP_PROTOCOL=http/json) to :4318/v1/metrics (TLS, no
+# authentication: LAN only, restricted by the network policies); the datapoints become
 #   - Prometheus counters on :4195/metrics (claude_code_*), the history, scraped by Prometheus
 #   - running totals in memory, shown by :8080 (GET / as a table, GET /usage as JSON), since the pod started
 # Claude Code exports delta temporality, so every datapoint is an increment. Labels are only environment, model and type:
@@ -85,12 +85,6 @@ pipeline:
                   meta status = "404"
                   root = {"error": "not found"}
                 }
-        # OTLP: bearer token first
-        - check: '(@Authorization | "") != "Bearer " + env("OTLP_TOKEN").not_empty().string()'
-          processors:
-            - mapping: |
-                meta status = "401"
-                root = {"error": "unauthorized"}
         - processors:
             # one message per datapoint
             - mapping: |

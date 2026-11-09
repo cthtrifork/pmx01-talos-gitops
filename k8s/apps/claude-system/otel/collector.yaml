@@ -1,5 +1,5 @@
 # Usage collector for the Claude Code OpenTelemetry metrics of claude-rc and the Claude VM (homeserver-bootc). Redpanda
-# Connect with the pipeline in redpanda-connect.yaml: OTLP/HTTP JSON in on :4318 (TLS, bearer token), Prometheus
+# Connect with the pipeline in redpanda-connect.yaml: OTLP/HTTP JSON in on :4318 (TLS, no authentication), Prometheus
 # counters on :4195/metrics, a usage table on :8080. Reached on https://otel.portableinfo.cloud (the A record points at
 # the MetalLB address below, LAN only, no ingress), and by claude-rc through the same name.
 ---
@@ -19,7 +19,7 @@ spec:
         app: claude-otel
         prometheus-scrape: "true" # reachable from Prometheus on 4195, see kube-prometheus-stack/networkpolicy.yaml
       annotations:
-        reloader.stakater.com/auto: "true" # restart on a renewed certificate or a rotated token
+        reloader.stakater.com/auto: "true" # restart on a renewed certificate
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -36,12 +36,6 @@ spec:
             - -c
             - /etc/connect/redpanda-connect.yaml
             - --disable-telemetry
-          env:
-            - name: OTLP_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: claude-otel-token # created by token-job.yaml
-                  key: token
           ports:
             - { name: otlp, containerPort: 4318 }
             - { name: metrics, containerPort: 4195 }

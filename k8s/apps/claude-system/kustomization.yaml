@@ -9,7 +9,6 @@ resources:
   - deployment.yaml
   - github-app.yaml
   - otel/certificate.yaml
-  - otel/token-job.yaml
   - otel/collector.yaml
 configMapGenerator:
   - name: claude-token-scripts
