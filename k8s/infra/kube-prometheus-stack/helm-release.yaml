@@ -32,7 +32,8 @@ spec:
       serviceMonitor:
         metricRelabelings:
           - action: drop
-            sourceLabels: [__name__]
+            sourceLabels:
+              - __name__
             regex: .+_bucket
     kubeProxy:
       enabled: false
@@ -106,11 +107,13 @@ spec:
         enabled: true
         metricRelabelings:
           - action: drop
-            sourceLabels: [__name__]
+            sourceLabels:
+              - __name__
             regex: .+_bucket
         probesMetricRelabelings:
           - action: drop
-            sourceLabels: [__name__]
+            sourceLabels:
+              - __name__
             regex: .+_bucket
         kubelet: true
     prometheus-node-exporter:
