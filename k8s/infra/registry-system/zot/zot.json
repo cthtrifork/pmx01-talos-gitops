@@ -51,6 +51,10 @@
           "repositories": ["ghcr-cache/**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
+          "keepUntagged": {
+            "mostRecentlyPushedCount": 1,
+            "mostRecentlyPulledCount": 1
+          },
           "keepTags": [
             {
               "pulledWithin": "168h"
@@ -67,6 +71,10 @@
           ],
           "deleteReferrers": true,
           "deleteUntagged": true,
+          "keepUntagged": {
+            "mostRecentlyPushedCount": 1,
+            "mostRecentlyPulledCount": 1
+          },
           "keepTags": [
             {
               "patterns": ["latest"]
@@ -86,6 +94,10 @@
           "repositories": ["**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
+          "keepUntagged": {
+            "mostRecentlyPushedCount": 1,
+            "mostRecentlyPulledCount": 1
+          },
           "keepTags": [
             {
               "patterns": ["latest"]
