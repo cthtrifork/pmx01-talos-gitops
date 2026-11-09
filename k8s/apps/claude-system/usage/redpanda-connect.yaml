@@ -1,3 +1,4 @@
+---
 # Usage page and read-only JSON API over the Claude Code metrics in Prometheus (pushed there as OTLP by Claude Code). Every request is answered by fixed PromQL queries; query parameters are only used as clamped
 # numbers or picked from a list, never put into a query as text.
 # Claude Code exports delta counters, which Prometheus accumulates (otlp-deltatocumulative), so increase() is the usage in the window. It does not count
