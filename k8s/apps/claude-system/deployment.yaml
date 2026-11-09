@@ -75,10 +75,11 @@ spec:
               # User-level memory from the claude-md ConfigMap (managed in Git). A symlink, not a subPath
               # mount, so the ConfigMap does not create root-owned directories inside the PVC.
               mkdir -p "$HOME/.claude" && ln -sfn /etc/claude-md/CLAUDE.md "$HOME/.claude/CLAUDE.md"
-              # Skills from the claude-skills ConfigMap, one symlink each: ~/.claude/skills is a real directory that
-              # Claude Code also writes to, so it cannot itself be a link.
+              # Skills from the claude-skills ConfigMap, copied over on every start: ~/.claude/skills is a real directory
+              # that Claude Code also writes to, so it cannot itself be a link. The */ glob skips the ConfigMap's ..data
+              # directories; a change rolls the pod, so the copy is as current as a link would be.
               mkdir -p "$HOME/.claude/skills"
-              for s in /etc/claude-skills/*/; do ln -sfn "$${s%/}" "$HOME/.claude/skills/$(basename "$s")"; done
+              cp -rfL /etc/claude-skills/*/ "$HOME/.claude/skills/"
               until [ -s "$HOME/.claude/.credentials.json" ]; do
                 echo "not logged in: kubectl -n claude-system exec -it deploy/claude-rc -- claude"
                 sleep 30
