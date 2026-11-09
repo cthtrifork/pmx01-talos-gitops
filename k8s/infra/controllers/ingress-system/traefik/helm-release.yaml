@@ -19,9 +19,7 @@ spec:
   driftDetection:
     mode: enabled
   install:
-    # gitops-infra-controllers waits for this release only to get the Traefik CRDs. The pod needs a Cloudflare tunnel
-    # token (cloudflared sidecar), so do not wait for it. A separate CRD-only chart does not fit: the Traefik CRDs are
-    # larger than the 1 MiB limit of a Helm release Secret.
+    # the cloudflared sidecar needs a tunnel token, so gitops-infra-controllers must not wait for the pod
     disableWait: true
     strategy:
       name: RetryOnFailure

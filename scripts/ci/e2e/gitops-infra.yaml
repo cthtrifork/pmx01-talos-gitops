@@ -1,0 +1,19 @@
+---
+spec:
+  decryption: null
+  patches:
+    - target:
+        kind: Secret
+        name: github-auth
+      patch: |
+        $patch: delete
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: github-auth
+    - target:
+        kind: HelmRelease
+      patch: |
+        - op: add
+          path: /spec/suspend
+          value: true
