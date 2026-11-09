@@ -1,0 +1,14 @@
+---
+spec:
+  decryption: null
+  wait: false
+  patches:
+    - target:
+        kind: Secret
+        name: cloudflare-api-token-secret
+      patch: |
+        $patch: delete
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: cloudflare-api-token-secret

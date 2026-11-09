@@ -4,4 +4,4 @@ kind: Namespace
 metadata:
   name: traefik-system
   annotations:
-    kustomize.toolkit.fluxcd.io/prune: disabled # deleting a Namespace deletes everything in it
+    kustomize.toolkit.fluxcd.io/prune: disabled

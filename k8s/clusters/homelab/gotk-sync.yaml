@@ -7,13 +7,13 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  retryInterval: 2m # heal ordering races and transient failures without waiting for the interval
+  retryInterval: 2m
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system #gitops
   path: ../../k8s/infra/bootstrap
-  wait: true # gitops-infra applies PrometheusRules and ServiceMonitors, which need the CRDs of prometheus-operator-crds
+  wait: true
   timeout: 5m
   postBuild:
     substitute:
@@ -27,9 +27,9 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  retryInterval: 2m # heal ordering races and transient failures without waiting for the interval
+  retryInterval: 2m
   prune: true
-  wait: true # cert-manager, trust-manager, MetalLB, CloudNativePG and Traefik, which install the CRDs and webhooks that later layers use
+  wait: true
   timeout: 10m
   dependsOn:
     - name: gitops-infra-bootstrap
@@ -53,7 +53,7 @@ spec:
     secretRef:
       name: sops-age
   interval: 30m
-  retryInterval: 2m # heal ordering races and transient failures without waiting for the interval
+  retryInterval: 2m
   prune: true
   dependsOn:
     - name: gitops-infra-bootstrap
@@ -74,9 +74,9 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  retryInterval: 2m # heal ordering races and transient failures without waiting for the interval
+  retryInterval: 2m
   prune: true
-  wait: true # app-controllers and app need the issuers, the MetalLB pool and the CNPG cluster
+  wait: true
   timeout: 10m
   decryption:
     provider: sops
@@ -100,7 +100,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  retryInterval: 2m # heal ordering races and transient failures without waiting for the interval
+  retryInterval: 2m
   prune: true
   decryption:
     provider: sops
@@ -124,7 +124,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  retryInterval: 2m # heal ordering races and transient failures without waiting for the interval
+  retryInterval: 2m
   prune: true
   decryption:
     provider: sops

@@ -34,7 +34,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Fail fast: build every path Flux syncs before spending time on a cluster
       - name: Setup yq
         uses: fluxcd/pkg/actions/yq@7fb9589778fa8045a1000cb6cfcf9ddd4cd0bf65 # main
       - name: Setup kubeconform
@@ -103,14 +102,11 @@ jobs:
           --create-namespace \
           --wait
 
-      # The FluxInstance syncs refs/heads/main; point it at the branch under test instead of the already
-      # merged state. source-controller cannot fetch the synthetic refs/pull/<n>/merge commit.
       - name: Deploy flux instance
         run: |
           sed "s|ref: \"refs/heads/main\"|ref: \"${SYNC_REF}\"|" k8s/clusters/homelab/flux-instance.yaml |
             tee "${RUNNER_TEMP}/flux-instance.yaml" | grep -F "ref: "
           kubectl apply -f "${RUNNER_TEMP}/flux-instance.yaml"
-          # the flux-system Kustomization applies flux-instance.yaml from the ref and would reset the sync ref to main
           kubectl annotate fluxinstance flux -n flux-system kustomize.toolkit.fluxcd.io/reconcile=disabled
         env:
           SYNC_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.head_ref) || github.ref }}
@@ -132,54 +128,32 @@ jobs:
           flux reconcile source git flux-system --timeout="${wait}"
           flux reconcile kustomization flux-system --timeout="${wait}"
           kubectl wait --for=condition=Ready kustomization flux-system -n flux-system --timeout=5m
-          # fail if Flux deployed anything other than the commit under test
           revision="$(kubectl get gitrepository flux-system -n flux-system -o jsonpath='{.status.artifact.revision}')"
           echo "Flux synced ${revision}, expected ${EXPECTED_SHA}"
           case "${revision}" in *"${EXPECTED_SHA}") ;; *) exit 1 ;; esac
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      # The workloads (app-controllers, app, virtualmachines) are not reconciled here; they are built and
-      # schema-checked by the first steps.
-      - name: Suspend Kustomizations that are not tested here
+      - name: Suspend workload Kustomizations
         run: |
-          for ks in app-controllers app gitops-virtualmachines; do
+          for ks in app-controllers app; do
             flux suspend kustomization "${ks}"
           done
-      - name: Wait for the bootstrap Kustomization
+      - name: Reconcile bootstrap
         timeout-minutes: 6
         run: |
           flux reconcile kustomization gitops-infra-bootstrap --timeout=5m
 
-      # kind is not the real cluster, so on the live Kustomizations only (never in git):
-      # - SOPS: drop decryption and delete the encrypted Secrets (the key is not available)
-      # - infra-post: do not wait for its Certificates, ClusterIssuer and CNPG cluster (no ACME or storage in kind)
-      # - HelmReleases in gitops-infra: suspend them, they are slow and the cilium release would upgrade the
-      #   cilium this job installed. The CRD providers are in gitops-infra-controllers, which runs for real.
-      # The manifests of every release are still applied and dry-run against the API server.
-      - name: Reconcile infra and infra-post
+      - name: Patch infra Kustomizations for kind
+        run: |
+          for ks in gitops-infra gitops-infra-post; do
+            kubectl patch kustomization "${ks}" -n flux-system --type merge --patch-file "scripts/ci/e2e/${ks}.yaml"
+          done
+      - name: Reconcile infra
         timeout-minutes: 15
         run: |
-          cat > "${RUNNER_TEMP}/infra.json" <<'EOF'
-          {"spec":{"decryption":null,"patches":[
-            {"target":{"kind":"Secret","name":"github-auth"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: github-auth\n"},
-            {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"},
-            {"target":{"kind":"HelmRelease"},"patch":"- op: add\n  path: /spec/suspend\n  value: true\n"}]}}
-          EOF
-          cat > "${RUNNER_TEMP}/post.json" <<'EOF'
-          {"spec":{"decryption":null,"wait":false,"patches":[
-            {"target":{"kind":"Secret","name":"cloudflare-api-token-secret"},"patch":"$patch: delete\napiVersion: v1\nkind: Secret\nmetadata:\n  name: cloudflare-api-token-secret\n"}]}}
-          EOF
-          kubectl patch kustomization gitops-infra -n flux-system --type merge --patch-file "${RUNNER_TEMP}/infra.json"
-          kubectl patch kustomization gitops-infra-post -n flux-system --type merge --patch-file "${RUNNER_TEMP}/post.json"
-          diagnose() {
-            kubectl get kustomization "$1" -n flux-system -o jsonpath='{range .status.conditions[*]}{.type}={.status}: {.message}{"\n"}{end}'
-            kubectl logs -n flux-system deploy/kustomize-controller --since=15m | grep "\"$1\"" | tail -10 | cut -c1-400
-            flux get helmreleases -A || true
-            exit 1
-          }
           for ks in gitops-infra-controllers gitops-infra gitops-infra-post; do
-            flux reconcile kustomization "${ks}" --timeout=8m || diagnose "${ks}"
+            flux reconcile kustomization "${ks}" --timeout=8m
           done
 
       - name: List deployed resources
