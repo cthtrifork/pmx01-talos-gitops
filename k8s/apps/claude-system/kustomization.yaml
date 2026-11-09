@@ -26,3 +26,17 @@ configMapGenerator:
         kustomize.toolkit.fluxcd.io/substitute: disabled
     files:
       - claude-md/CLAUDE.md
+  - name: claude-skills
+    namespace: claude-system
+    options:
+      annotations:
+        # Markdown, not a Flux template: skip postBuild envsubst
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+    files:
+      - cluster-alerts.md=claude-md/skills/cluster-alerts/SKILL.md
+      - cilium-drops.md=claude-md/skills/cilium-drops/SKILL.md
+      - cluster-disk-usage.md=claude-md/skills/cluster-disk-usage/SKILL.md
+      - polaris-report.md=claude-md/skills/polaris-report/SKILL.md
+      - image-inspect.md=claude-md/skills/image-inspect/SKILL.md
+      - bandwidth-test.md=claude-md/skills/bandwidth-test/SKILL.md
+      - ci-k8s-reference.md=claude-md/skills/ci-k8s-reference/SKILL.md
