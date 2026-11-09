@@ -235,10 +235,12 @@ spec:
         - name: repository-config
           configMap:
             name: vex-repository-config
-        # rebuilt every 6 hours by .github/workflows/build-vex-cache.yaml, so it floats on latest instead of a digest
+        # Rebuilt every 6 hours by .github/workflows/build-vex-cache.yaml, so it floats on latest instead of a digest. Pulled
+        # from zot's ghcr-private mirror (polled every 12 hours, old dated tags expire in zot.json) instead of ghcr-cache,
+        # which would keep serving the first copy it pulled of the mutable tag. zot.lan is a node mirror (patches/12).
         - name: vex-cache
           image:
-            reference: ghcr.io/cthtrifork/talos-gitops/vex-cache:latest
+            reference: zot.lan:5000/ghcr-private/cthtrifork/talos-gitops/vex-cache:latest
             pullPolicy: Always
         - name: ignore-file
           configMap:

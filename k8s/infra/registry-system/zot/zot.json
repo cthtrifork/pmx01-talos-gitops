@@ -58,6 +58,19 @@
           ]
         },
         {
+          "repositories": ["ghcr-private/cthtrifork/talos-gitops/vex-cache"],
+          "deleteReferrers": true,
+          "deleteUntagged": true,
+          "keepTags": [
+            {
+              "patterns": ["latest"]
+            },
+            {
+              "pushedWithin": "48h"
+            }
+          ]
+        },
+        {
           "repositories": [
             "ghcr-private/cthtrifork/homeserver-bootc/**",
             "ghcr-private/cthtrifork/talos-gitops/github-actions-runner"
