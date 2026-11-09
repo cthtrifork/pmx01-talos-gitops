@@ -11,6 +11,7 @@ ENV HOME=/root
 COPY images/vex-cache/repository.yaml /root/.trivy/vex/repository.yaml
 COPY vex /src/vex
 # serve vex/ like the in-cluster mirror: a non-GitHub URL is read from <url>/.well-known/vex-repository.json
+# trivy creates 0700 directories and the scan jobs run as 65534, hence the chmod
 # the 168h update_interval (24h upstream) only matters if skip-vex-repo-update is ignored
 RUN set -eu; \
     mkdir -p /srv/homelab/.well-known; \
@@ -21,7 +22,8 @@ RUN set -eu; \
     trivy vex repo download --cache-dir /out; \
     sed -i 's#"update_interval": *"24h"#"update_interval": "168h"#' /out/vex/repositories/*/vex-repository.json; \
     test -s /out/vex/repositories/default/0.1/index.json; \
-    test -s /out/vex/repositories/homelab-vexhub/0.1/index.json
+    test -s /out/vex/repositories/homelab-vexhub/0.1/index.json; \
+    chmod -R a+rX /out
 
 FROM scratch
 COPY --from=build /out/vex/ /
