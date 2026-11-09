@@ -3,5 +3,10 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - flux-instance.yaml
-  - gotk-sync.yaml
+  - gitops-infra-bootstrap.yaml
+  - gitops-infra-controllers.yaml
+  - gitops-infra.yaml
+  - gitops-infra-post.yaml
+  - app-controllers.yaml
+  - app.yaml
   #- virtualmachines.yaml
