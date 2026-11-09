@@ -103,12 +103,26 @@ Claude Code exports OpenTelemetry metrics (tokens, cost, sessions, lines of code
 cluster Prometheus, through its OTLP receiver (`enableOTLPReceiver` in `k8s/infra/kube-prometheus-stack/helm-release.yaml`).
 Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`), which is promoted to a label.
 
-- **Receiver:** `http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090/api/v1/otlp/v1/metrics` for `claude-rc`;
-  `http://otel.portableinfo.cloud/api/v1/otlp/v1/metrics` for the VM. Create the Cloudflare A record `otel` -> `192.168.1.243`
-  (DNS only): that is the MetalLB address of `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards
-  HTTP by `Host`. LAN only, no ingress, no authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off).
-- **Delta counters:** Claude Code sends delta temporality; `otlp-deltatocumulative` adds them up in memory, so a Prometheus restart
-  starts the counters at 0 (`increase()` copes with that).
+Both senders set exactly these variables (`claude-rc` in `deployment.yaml`, the VM in homeserver-bootc `managed-settings.json`);
+only the endpoint and the environment name differ:
+
+| Variable | Value | Why |
+|---|---|---|
+| `CLAUDE_CODE_ENABLE_TELEMETRY` | `1` | switches the exporter on; independent of `DISABLE_TELEMETRY=1` (Datadog and error reporting) |
+| `OTEL_METRICS_EXPORTER` | `otlp` | |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | what Prometheus' receiver takes |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | VM: `http://otel.portableinfo.cloud/api/v1/otlp`; `claude-rc`: `http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090/api/v1/otlp` | Claude Code appends `/v1/metrics`; the pod stays inside the cluster, so its telemetry does not depend on Cloudflare DNS or the load balancer address |
+| `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | `delta` | the default is cumulative, and with `session_id` off several `claude` processes (the VM has several sessions and two users) would write the same series with different totals; deltas add up |
+| `OTEL_RESOURCE_ATTRIBUTES` | `environment=claude-rc` / `claude-vm` | promoted to a label |
+| `OTEL_METRICS_INCLUDE_SESSION_ID` | `false` | see the labels note below |
+| `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` | `false` | constant, so no use as a label |
+
+- **Receiver:** `otel.portableinfo.cloud` is a Cloudflare A record `otel` -> `192.168.1.243` (DNS only): the MetalLB address of
+  `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards HTTP by `Host`. LAN only, no ingress, no
+  authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off). `claude-rc` uses the in-cluster
+  service instead (its policy allows Prometheus on 9090).
+- **Delta counters:** `otlp-deltatocumulative` adds them up in memory, so a Prometheus restart starts the counters at 0
+  (`increase()` copes with that).
 - **Names:** `otlp.translationStrategy: UnderscoreEscapingWithoutSuffixes` gives `claude_code_token_usage{environment,model,type}`,
   `claude_code_cost_usage{environment,model}` (USD), and `claude_code_session_count`, `claude_code_lines_of_code_count{type}`,
   `claude_code_commit_count`, `claude_code_pull_request_count`, `claude_code_active_time_total` (seconds), all with `environment`.
@@ -116,7 +130,13 @@ Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`
 - **Retention:** 30 days on a 20Gi volume (`retentionSize` 16GiB). To afford it, histogram buckets are dropped from the apiserver,
   kubelet and Dependency-Track scrapes (they were 104k of 193k series); `_sum` and `_count` stay, percentiles of those are gone.
   `local-path` does not enforce the volume size; watch `NodeFilesystemAlmostFull` for the node.
-- Only `environment`, `model` and `type` are labels. `user.email`, `user.id` and `session.id` are not promoted.
+- Claude Code sends its attributes on every datapoint and Prometheus keeps them all as labels: besides `environment`, `model` and
+  `type` also `user_email`, `user_id`, `organization_id`, `terminal_type`, `effort` and `query_source`. They are kept: with one or two
+  users they cost nothing, and they allow a per-user split. `session_id` and `user_account_uuid` are switched off with
+  `OTEL_METRICS_INCLUDE_SESSION_ID=false` and `OTEL_METRICS_INCLUDE_ACCOUNT_UUID=false`, for accuracy rather than size: every session
+  would be its own cumulative series, `increase()` cannot see the first export of a series, and a session that exports once or twice
+  would count as zero (`increase(claude_code_session_count[1h])` came back empty). Series stored before that keep their `session_id`.
+  The usage API always sums by `environment`, so it is unaffected by the extra labels.
 
 ### Usage page and API
 
