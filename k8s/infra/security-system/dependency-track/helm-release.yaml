@@ -22,6 +22,20 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  # The chart's ServiceMonitor has no relabeling setting: drop the histogram buckets (9k series), keep _sum and _count.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: ServiceMonitor
+              name: dependency-track-api-server-metrics
+            patch: |
+              - op: add
+                path: /spec/endpoints/0/metricRelabelings
+                value:
+                  - action: drop
+                    sourceLabels: [__name__]
+                    regex: .+_bucket
   # https://github.com/DependencyTrack/helm-charts/blob/main/charts/dependency-track/values.yaml
   values:
     image:
