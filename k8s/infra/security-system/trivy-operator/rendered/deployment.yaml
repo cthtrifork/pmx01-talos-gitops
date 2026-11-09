@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: trivy-operator,trivy-operator-config,trivy-operator-trivy-config
   labels:
     app.kubernetes.io/instance: trivy-operator
     app.kubernetes.io/managed-by: Helm
