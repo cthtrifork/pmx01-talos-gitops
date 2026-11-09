@@ -66,6 +66,9 @@
               "patterns": ["latest"]
             },
             {
+              "mostRecentlyPushedCount": 1
+            },
+            {
               "pushedWithin": "48h"
             }
           ]

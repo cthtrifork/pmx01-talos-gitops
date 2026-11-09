@@ -98,9 +98,10 @@ spec:
             - will_not_fix
             - not_affected
           # VEX hub: statements from vendors/projects that a CVE is not exploitable. The scan jobs read the repositories from
-          # the vex-cache image volume (images/vex-cache). Only a cache older than 7 days is refreshed from the mirror (vex-hub).
+          # the read-only vex-cache image volume (images/vex-cache) and never update them: the image is rebuilt every 6 hours.
           vex:
             - repo
+          skip-vex-repo-update: true
         scan:
           offline: true
           disable-telemetry: true

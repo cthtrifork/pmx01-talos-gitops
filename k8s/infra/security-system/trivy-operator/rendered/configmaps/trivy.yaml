@@ -26,6 +26,7 @@ data:
       severity-source:
       - redhat
       - auto
+      skip-vex-repo-update: true
       vex:
       - repo
   trivy.dbRepository: zot.registry-system.svc.cluster.local:5000/ghcr-cache/aquasecurity/trivy-db
