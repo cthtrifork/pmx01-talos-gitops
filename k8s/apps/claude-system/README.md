@@ -12,7 +12,8 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `deployment.yaml` | `claude-rc`: idles until a login exists, then runs `claude remote-control`; non-root, read-only root filesystem |
 | `claude-md/CLAUDE.md` | The only `CLAUDE.md` (user-level and repo notes together), generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `claude-md/skills/<name>/SKILL.md` | Task-specific runbooks split out of `CLAUDE.md`, generated into the `claude-skills` ConfigMap and mounted at `/etc/claude-skills` (items map each key to `<name>/SKILL.md`); each is symlinked into `~/.claude/skills/` at pod start |
-| `otel/` | Usage telemetry: `collector.yaml` (Redpanda Connect), `redpanda-connect.yaml` (its pipeline), `certificate.yaml`; see [Usage telemetry](#usage-telemetry) |
+| `otel/` | Usage telemetry in: `collector.yaml` (Redpanda Connect), `redpanda-connect.yaml` (its pipeline), `certificate.yaml`; see [Usage telemetry](#usage-telemetry) |
+| `usage/` | Usage page and JSON API out: `usage.yaml` (a second Redpanda Connect), `redpanda-connect.yaml` (PromQL behind each endpoint), `index.html` (the page) |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
 | `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
 
@@ -112,9 +113,28 @@ a Redpanda Connect pod. Both send `environment=<name>` as a resource attribute (
 - **Why JSON:** the `otlp_http` input of Redpanda Connect needs an Enterprise licence. The open-source `http_server` input
   receives `OTEL_EXPORTER_OTLP_PROTOCOL=http/json` instead of `http/protobuf`, with delta temporality (every datapoint is added
   to a counter).
-- **Where to look:** Prometheus has `claude_code_tokens_total{environment,model,type}`, `claude_code_cost_microusd_total`,
-  `claude_code_sessions_total`, `claude_code_lines_of_code_total`, `claude_code_commits_total`,
-  `claude_code_pull_requests_total` and `claude_code_active_time_ms_total` (e.g. USD per day:
-  `sum by (environment,model)(increase(claude_code_cost_microusd_total[1d]))/1e6`). The running totals since the pod started
-  are a table at `kubectl -n claude-system port-forward svc/claude-otel 8080:80` (`/`, JSON at `/usage`).
+- **Where to look:** Prometheus has `claude_code_tokens_total{environment,model,type}`, `claude_code_cost_microusd_total{environment,model}`,
+  and `claude_code_sessions_total`, `claude_code_lines_of_code_total{type}`, `claude_code_commits_total`,
+  `claude_code_pull_requests_total` and `claude_code_active_time_ms_total` (all with `environment`). Example, USD per day:
+  `sum by (environment,model)(increase(claude_code_cost_microusd_total[1d]))/1e6`. The usage page below reads the same series.
 - Only `environment`, `model` and `type` are kept as labels. `user.email`, `user.id` and `session.id` are dropped.
+
+### Usage page and API
+
+`usage/usage.yaml` is a second Redpanda Connect that holds no data: every request becomes PromQL against Prometheus.
+It is exposed through the Omni service exposer (`omni-kube-service-exposer.sidero.dev/*` on `Service/claude-usage`, port
+50091, plain HTTP, LAN only, read-only, aggregates only).
+
+| Request | Answer |
+|---|---|
+| `GET /` | the page (`usage/index.html`: totals, per-day columns by environment, cost and token mix by model, tables) |
+| `GET /api/v1/summary` | today (since 00:00 UTC), 7d and 30d: total and per environment |
+| `GET /api/v1/daily?days=30` | cost, tokens and sessions per UTC day and environment (2-90 days, today included) |
+| `GET /api/v1/breakdown?window=7d` | tokens and cost per environment and model (`today`, `7d`, `30d`) |
+| `GET /healthz` | `ok` |
+
+A failed Prometheus query answers `502`. Query parameters are clamped numbers or picked from a list, never PromQL text.
+Only series the collector ingests are shown: sessions, lines, commits, pull requests and active time have no `model` label, so
+they are per environment only. The page script is plain JavaScript with no external assets; the numbers are `increase()` over
+the window, so the very first export of a new model or environment is not counted and history is limited by Prometheus retention.
+From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`.

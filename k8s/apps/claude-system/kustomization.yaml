@@ -10,6 +10,7 @@ resources:
   - github-app.yaml
   - otel/certificate.yaml
   - otel/collector.yaml
+  - usage/usage.yaml
 configMapGenerator:
   - name: claude-token-scripts
     namespace: claude-system
@@ -28,6 +29,15 @@ configMapGenerator:
         kustomize.toolkit.fluxcd.io/substitute: disabled
     files:
       - otel/redpanda-connect.yaml
+  - name: claude-usage-connect-config
+    namespace: claude-system
+    options:
+      annotations:
+        # Redpanda Connect interpolations (${! } and ${PROM_URL:...}) and a web page, not Flux variables: skip postBuild envsubst
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+    files:
+      - usage/redpanda-connect.yaml
+      - usage/index.html
   - name: claude-md
     namespace: claude-system
     options:

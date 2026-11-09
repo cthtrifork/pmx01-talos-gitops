@@ -1,6 +1,6 @@
 # Usage collector for the Claude Code OpenTelemetry metrics of claude-rc and the Claude VM (homeserver-bootc). Redpanda
 # Connect with the pipeline in redpanda-connect.yaml: OTLP/HTTP JSON in on :4318 (TLS, no authentication), Prometheus
-# counters on :4195/metrics, a usage table on :8080. Reached on https://otel.portableinfo.cloud (the A record points at
+# counters on :4195/metrics. The usage page and API (../usage) read them back from Prometheus. Reached on https://otel.portableinfo.cloud (the A record points at
 # the MetalLB address below, LAN only, no ingress), and by claude-rc through the same name.
 ---
 apiVersion: apps/v1
@@ -9,7 +9,7 @@ metadata:
   name: claude-otel
   namespace: claude-system
 spec:
-  replicas: 1 # the usage table lives in memory
+  replicas: 1
   selector:
     matchLabels:
       app: claude-otel
@@ -39,7 +39,6 @@ spec:
           ports:
             - { name: otlp, containerPort: 4318 }
             - { name: metrics, containerPort: 4195 }
-            - { name: usage, containerPort: 8080 }
           readinessProbe:
             httpGet: { path: /ready, port: metrics }
           resources:
@@ -92,23 +91,6 @@ spec:
       port: 443
       targetPort: otlp
       protocol: TCP
-  selector:
-    app: claude-otel
----
-# In-cluster: the usage table (port-forward it, or curl it from claude-rc) and the metrics.
-apiVersion: v1
-kind: Service
-metadata:
-  name: claude-otel
-  namespace: claude-system
-spec:
-  ports:
-    - name: usage
-      port: 80
-      targetPort: usage
-    - name: metrics
-      port: 4195
-      targetPort: metrics
   selector:
     app: claude-otel
 ---
