@@ -96,6 +96,28 @@ Anything the pod reads from the cluster (logs, events, annotations) is input Cla
 the App installed only on the repositories Claude needs and its permissions minimal; the token is not narrowed beyond that. The `claude` ServiceAccount cannot read Secrets through the
 API, but the GitHub token and your claude.ai login are in this pod, so treat the pod as holding both.
 
+## Usage telemetry
+
+Claude Code exports OpenTelemetry metrics (tokens, cost, sessions, lines of code, commits, pull requests, active time) from
+`claude-rc` and from the Claude VM ([homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)) straight into the
+cluster Prometheus, through its OTLP receiver (`enableOTLPReceiver` in `k8s/infra/kube-prometheus-stack/helm-release.yaml`).
+Both send `environment=<name>` as a resource attribute (`claude-rc`, `claude-vm`), which is promoted to a label.
+
+- **Receiver:** `http://kube-prom-prometheus.kube-prometheus-stack-system.svc:9090/api/v1/otlp/v1/metrics` for `claude-rc`;
+  `http://otel.portableinfo.cloud/api/v1/otlp/v1/metrics` for the VM. Create the Cloudflare A record `otel` -> `192.168.1.243`
+  (DNS only): that is the MetalLB address of `prometheus-otlp-lb`, plain HTTP on 80, because the VM's egress gateway forwards
+  HTTP by `Host`. LAN only, no ingress, no authentication; the same Service reaches the whole Prometheus HTTP API (the admin API is off).
+- **Delta counters:** Claude Code sends delta temporality; `otlp-deltatocumulative` adds them up in memory, so a Prometheus restart
+  starts the counters at 0 (`increase()` copes with that).
+- **Names:** `otlp.translationStrategy: UnderscoreEscapingWithoutSuffixes` gives `claude_code_token_usage{environment,model,type}`,
+  `claude_code_cost_usage{environment,model}` (USD), and `claude_code_session_count`, `claude_code_lines_of_code_count{type}`,
+  `claude_code_commit_count`, `claude_code_pull_request_count`, `claude_code_active_time_total` (seconds), all with `environment`.
+  Example, USD per day: `sum by (environment,model)(increase(claude_code_cost_usage[1d]))`.
+- **Retention:** 30 days on a 20Gi volume (`retentionSize` 16GiB). To afford it, histogram buckets are dropped from the apiserver,
+  kubelet and Dependency-Track scrapes (they were 104k of 193k series); `_sum` and `_count` stay, percentiles of those are gone.
+  `local-path` does not enforce the volume size; watch `NodeFilesystemAlmostFull` for the node.
+- Only `environment`, `model` and `type` are labels. `user.email`, `user.id` and `session.id` are not promoted.
+
 ### Usage page and API
 
 `usage/usage.yaml` is a Redpanda Connect that holds no data: every request becomes PromQL against Prometheus.
