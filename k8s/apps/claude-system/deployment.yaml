@@ -78,7 +78,7 @@ spec:
               # Skills from the claude-skills ConfigMap, one symlink each: ~/.claude/skills is a real directory that
               # Claude Code also writes to, so it cannot itself be a link.
               mkdir -p "$HOME/.claude/skills"
-              for s in /etc/claude-skills/*/; do ln -sfn "${s%/}" "$HOME/.claude/skills/$(basename "$s")"; done
+              for s in /etc/claude-skills/*/; do ln -sfn "$${s%/}" "$HOME/.claude/skills/$(basename "$s")"; done
               until [ -s "$HOME/.claude/.credentials.json" ]; do
                 echo "not logged in: kubectl -n claude-system exec -it deploy/claude-rc -- claude"
                 sleep 30
