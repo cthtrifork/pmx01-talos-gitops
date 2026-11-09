@@ -1,6 +1,5 @@
 ---
-# Trivy VEX repositories used while building the image; the names are the directories in the cache, so they must match
-# k8s/infra/security-system/trivy-operator/vex/repository.yaml. The URLs differ: here the sources, there the in-cluster mirror.
+# build-time sources; the names must match trivy-operator/vex/repository.yaml (the cache directories)
 repositories:
   - name: default
     url: https://github.com/aquasecurity/vexhub

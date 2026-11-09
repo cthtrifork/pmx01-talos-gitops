@@ -97,8 +97,7 @@ spec:
           ignore-status:
             - will_not_fix
             - not_affected
-          # VEX hub: statements from vendors/projects that a CVE is not exploitable. The scan jobs read the repositories from
-          # the read-only vex-cache image volume (images/vex-cache) and never update them: the image is rebuilt every 6 hours.
+          # VEX hub: statements from vendors/projects that a CVE is not exploitable. Read from the vex-cache volume, never updated.
           vex:
             - repo
           skip-vex-repo-update: true
@@ -218,8 +217,7 @@ spec:
         - name: repository-config
           mountPath: /.trivy/vex/repository.yaml
           subPath: repository.yaml
-        # The containers of one scan pod share the cache and used to download the VEX repositories into it at the same
-        # time, which failed the job ("unlinkat ... directory not empty"). Mounted over <cache-dir>/vex, read-only.
+        # the containers of a scan pod raced to download the VEX repositories into the shared empty cache ("directory not empty")
         - name: vex-cache
           mountPath: /tmp/trivy/.cache/vex
           readOnly: true
@@ -236,9 +234,7 @@ spec:
         - name: repository-config
           configMap:
             name: vex-repository-config
-        # Rebuilt every 6 hours by .github/workflows/build-vex-cache.yaml, so it floats on latest instead of a digest. Pulled
-        # from zot's ghcr-private mirror (polled every 12 hours, old dated tags expire in zot.json) instead of ghcr-cache,
-        # which would keep serving the first copy it pulled of the mutable tag. zot.lan is a node mirror (patches/12).
+        # built by .github/workflows/build-vex-cache.yaml; via zot's polled ghcr-private (ghcr-cache would keep the first copy of latest)
         - name: vex-cache
           image:
             reference: zot.lan:5000/ghcr-private/cthtrifork/talos-gitops/vex-cache:latest

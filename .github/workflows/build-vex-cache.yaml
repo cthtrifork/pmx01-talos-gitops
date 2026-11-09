@@ -1,12 +1,7 @@
 name: Build VEX cache image
 
-# images/vex-cache holds the Trivy VEX repositories (the Trivy VEX hub and vex/) as a ready-made cache. The trivy-operator
-# scan jobs mount it as a read-only image volume. The scan jobs use the floating tag latest; every build also gets an
-# immutable UTC timestamp tag (for example 20261109-1523) to tell builds apart and to pin the volume to a known-good one.
-#   - Pull request: built when vex/ or the image changed, not pushed (dry run).
-#   - Push to main: built and pushed when vex/ or the image changed.
-#   - Manual run, and every 6 hours: always built and pushed. The schedule is not optional: the Trivy VEX hub changes
-#     upstream without a commit here, and the cached manifests are only valid for 7 days.
+# Builds the Trivy VEX cache image (images/vex-cache) that the trivy-operator scan jobs mount read-only.
+# Pull request: dry run. Push to main: published when vex/ or the image changed. Manual run: always published.
 
 on:
   pull_request:
@@ -15,8 +10,6 @@ on:
   push:
     branches:
       - main
-  schedule:
-    - cron: '23 */6 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +32,7 @@ jobs:
 
       - name: Get changed files
         id: changed
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: step-security/changed-files@2e07db73e5ccdb319b9a6c7766bd46d39d304bad # v47.0.5
         with:
           files: |
@@ -53,7 +46,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           ANY_CHANGED: ${{ steps.changed.outputs.any_changed }}
         run: |
-          if [[ "$EVENT" == "schedule" || "$EVENT" == "workflow_dispatch" || "$ANY_CHANGED" == "true" ]]; then
+          if [[ "$EVENT" == "workflow_dispatch" || "$ANY_CHANGED" == "true" ]]; then
             echo "build=true" >> "$GITHUB_OUTPUT"
           else
             echo "build=false" >> "$GITHUB_OUTPUT"
@@ -91,7 +84,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # No layer cache on purpose: the layer that downloads the VEX data must run again on every build.
+      # no layer cache: the download layer must run on every build
       - name: Build image${{ env.PUBLISH == 'true' && ' and push to GHCR' || ' (no push on pull requests)' }}
         id: build-push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
