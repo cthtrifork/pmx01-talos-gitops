@@ -2,7 +2,7 @@
 # The build context is the repository root: vex/ is baked in too.
 ARG TRIVY_IMAGE=ghcr.io/aquasecurity/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
 # python: the trivy image has no httpd
-ARG PYTHON_IMAGE=python:3.14-alpine@sha256:a18b20ad69e74df6cf6d2e1b1a260d7a1ecf5380fd83b310f83ba88c461cf894
+ARG PYTHON_IMAGE=python:3.15-alpine@sha256:a0f2e268f2ce8f3709611a90054ec6a8ae31f6251f5896b8648b9bb99835e30a
 FROM ${TRIVY_IMAGE} AS trivy
 
 FROM ${PYTHON_IMAGE} AS build
