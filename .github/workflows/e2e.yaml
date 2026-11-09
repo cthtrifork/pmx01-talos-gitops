@@ -161,7 +161,7 @@ jobs:
         run: |
           kustomize build k8s/apps --load-restrictor=LoadRestrictionsNone > "${RUNNER_TEMP}/apps.yaml"
           yq 'select(.kind == "Namespace")' "${RUNNER_TEMP}/apps.yaml" | kubectl apply -f -
-          kubectl apply --dry-run=server -f "${RUNNER_TEMP}/apps.yaml"
+          yq 'select(has("sops") | not)' "${RUNNER_TEMP}/apps.yaml" | kubectl apply --dry-run=server -f -
 
       - name: List deployed resources
         timeout-minutes: 2
