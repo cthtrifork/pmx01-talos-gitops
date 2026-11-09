@@ -3,8 +3,12 @@
 # the VEX repositories into the same empty cache at the same time (that race fails the job with "unlinkat ... directory not empty").
 # Build context is the repository root, because our own VEX repository (vex/) is baked in too.
 ARG TRIVY_IMAGE=ghcr.io/aquasecurity/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
-FROM ${TRIVY_IMAGE} AS build
-USER root
+# the trivy image has no httpd applet in its busybox, so the throwaway web server below is Python
+ARG PYTHON_IMAGE=python:3.14-alpine@sha256:a18b20ad69e74df6cf6d2e1b1a260d7a1ecf5380fd83b310f83ba88c461cf894
+FROM ${TRIVY_IMAGE} AS trivy
+
+FROM ${PYTHON_IMAGE} AS build
+COPY --from=trivy /usr/local/bin/trivy /usr/local/bin/trivy
 ENV HOME=/root
 COPY images/vex-cache/repository.yaml /root/.trivy/vex/repository.yaml
 COPY vex /src/vex
@@ -16,7 +20,8 @@ RUN set -eu; \
     mkdir -p /srv/homelab/.well-known; \
     tar -C /src -czf /srv/homelab.tar.gz vex; \
     sed 's#"url": "[^"]*"#"url": "http://127.0.0.1:8080/homelab.tar.gz//vex"#' /src/vex/vex-repository.json > /srv/homelab/.well-known/vex-repository.json; \
-    busybox httpd -p 127.0.0.1:8080 -h /srv; \
+    python3 -m http.server 8080 --bind 127.0.0.1 --directory /srv >/dev/null 2>&1 & \
+    sleep 2; \
     trivy vex repo download --cache-dir /out; \
     sed -i 's#"update_interval": *"24h"#"update_interval": "168h"#' /out/vex/repositories/*/vex-repository.json; \
     test -s /out/vex/repositories/default/0.1/index.json; \
