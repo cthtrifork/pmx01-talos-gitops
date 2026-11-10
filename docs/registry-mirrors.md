@@ -1,6 +1,24 @@
 # Registry mirrors on the nodes
 
-Image pulls on a node go containerd, then Spegel, then zot, then the upstream registry.
+Image pulls on a node go containerd, then Spegel, then zot, then the upstream registry. This is how it looks once the Spegel
+values from `k8s/infra/registry-system/spegel/` are applied and the Spegel pods have restarted:
+
+```mermaid
+flowchart TB
+    subgraph node["Node (one of 3)"]
+        kubelet["kubelet<br/>pulls an image"] --> containerd["containerd<br/>hosts.toml: Spegel, then zot"]
+        spegel["Spegel<br/>node port 30020"]
+    end
+    containerd -->|"1 · asks Spegel first (200 ms)"| spegel
+    spegel -->|"hit"| peers["Spegel on the other 2 nodes"]
+    containerd -->|"2 · miss: https, CA pinned"| zot["zot<br/>192.168.1.240:5000<br/>keeps a copy of every image"]
+    zot -->|"3 · fetches on a miss,<br/>checks the tag each pull"| upstream["Upstream registries<br/>ghcr.io · quay.io · docker.io · …"]
+    containerd -.->|"fallback: only if zot fails"| upstream
+    trivy["Trivy scan jobs"] -->|"scans"| zot
+```
+
+Until the Spegel values are applied, and again after a Talos registry patch until the pods restart, containerd skips Spegel
+and goes to zot directly (step 1 is missing).
 
 - containerd reads `/etc/cri/conf.d/hosts/<registry>/hosts.toml`. Talos writes these files from `patches/11-zot-mirrors.yaml`
   (seven registries, each pointing at its zot cache over https, with the root CA pinned). Spegel's init container
