@@ -1,122 +1,106 @@
-# Rego ignore policy, applied by trivy to every finding (ignore-policy in the trivy config of helm-release.yaml).
+# Rego ignore policy, applied by trivy to every finding: the trivy-operator scans (ignore-policy in the trivy
+# config of helm-release.yaml) and the image scan on PRs (.github/workflows/scan-images.yaml).
 # https://trivy.dev/docs/latest/configuration/filtering/#by-rego
 # `input` is one vulnerability: input.VulnerabilityID, input.PkgName, input.InstalledVersion, input.Severity, ...
-# https://www.openpolicyagent.org/projects/regal/rules/style
+# Style: https://www.openpolicyagent.org/projects/regal/rules/style
 package trivy
 
-import data.lib.trivy
 import rego.v1
 
+import data.lib.trivy
+
+default ignore := false
+
+# --- Vendor status ---
+
+# https://github.com/aquasecurity/trivy-db/blob/main/pkg/types/status.go#L20
 ignore if {
-	# https://github.com/aquasecurity/trivy-db/blob/main/pkg/types/status.go#L20
 	input.Status in {5, "will_not_fix"}
 	not input.Severity in {"CRITICAL", "HIGH"}
 }
 
+# https://github.com/aquasecurity/trivy-db/blob/main/pkg/types/status.go#L16
+ignore if input.Status in {1, "not_affected"}
+
+# Undisclosed CVEs: wait for the disclosed CVE-XXX instead.
+ignore if startswith(input.VulnerabilityID, "BDSA")
+
+# --- Attack vector and preconditions (CVSS v3) ---
+
+# Requires high privileges, according to both NVD and RedHat.
 ignore if {
-	# https://github.com/aquasecurity/trivy-db/blob/main/pkg/types/status.go#L16
-	input.Status in {1, "not_affected"}
+	nvd := trivy.parse_cvss_vector_v3(nvd_v3_vector)
+	redhat := trivy.parse_cvss_vector_v3(redhat_v3_vector)
+	nvd.PrivilegesRequired == "High"
+	redhat.PrivilegesRequired == "High"
 }
 
-# Ignore undisclosed CVEs and wait for disclosed CVE-XXX instead
+# Requires user interaction, according to both NVD and RedHat.
 ignore if {
-	startswith(input.VulnerabilityID, "BDSA")
+	nvd := trivy.parse_cvss_vector_v3(nvd_v3_vector)
+	redhat := trivy.parse_cvss_vector_v3(redhat_v3_vector)
+	nvd.UserInteraction == "Required"
+	redhat.UserInteraction == "Required"
 }
 
-# Ignore a vulnerability which requires high privilege
+# Requires local or physical access to the host, in packages where that is how they are used.
 ignore if {
-	nvd_cvss_vector := trivy.parse_cvss_vector_v3(nvd_v3_vector)
-	nvd_cvss_vector.PrivilegesRequired == "High"
-
-	# Check against RedHat scores as well as NVD
-	redhat_cvss_vector := trivy.parse_cvss_vector_v3(redhat_v3_vector)
-	redhat_cvss_vector.PrivilegesRequired == "High"
+	input.PkgName in {"openssl", "golang", "bash"}
+	nvd := trivy.parse_cvss_vector_v3(nvd_v3_vector)
+	nvd.AttackVector in {"Physical", "Local"}
 }
 
-# Ignore a vulnerability which requires user interaction
+# Requires physical access to the host.
 ignore if {
-	nvd_cvss_vector := trivy.parse_cvss_vector_v3(nvd_v3_vector)
-	nvd_cvss_vector.UserInteraction == "Required"
-
-	# Check against RedHat scores as well as NVD
-	redhat_cvss_vector := trivy.parse_cvss_vector_v3(redhat_v3_vector)
-	redhat_cvss_vector.UserInteraction == "Required"
+	nvd := trivy.parse_cvss_vector_v3(nvd_v3_vector)
+	nvd.AttackVector == "Physical"
 }
 
-# Ignore a vulnerability which requires physical or local access to the host
-ignore if {
-	input.PkgName in { "openssl", "golang", "bash" }
+# --- Packages ---
 
-	# Split CVSSv3 vector
-	nvd_cvss_vector := trivy.parse_cvss_vector_v3(nvd_v3_vector)
-
-	# Evaluate Attack Vector
-	nvd_cvss_vector.AttackVector in {"Physical", "Local"}
+# OpenSSL, except critical ones and those of memory-safety (CWE-119) or information-disclosure (CWE-200) kind.
+openssl_kept_cwes := {
+	"CWE-119", # Improper Restriction of Operations within the Bounds of a Memory Buffer
+	"CWE-200", # Exposure of Sensitive Information to an Unauthorized Actor
 }
 
-# Ignore a vulnerability which requires physical access to the host
-ignore if {
-	# Split CVSSv3 vector
-	nvd_cvss_vector := trivy.parse_cvss_vector_v3(nvd_v3_vector)
-
-	# Evaluate Attack Vector
-	nvd_cvss_vector.AttackVector in {"Physical"}
-}
-
-# Ignore vulnerabilities in OpenSSL if their severity is LOW, MEDIUM, or HIGH (but not CRITICAL)
-# and they are not associated with CWE-119 or CWE-200.
 ignore if {
 	input.PkgName == "openssl"
-
-	# Evaluate CWE-ID
-	deny_cwe_ids := {
-		"CWE-119", # Improper Restriction of Operations within the Bounds of a Memory Buffer
-		"CWE-200", # Exposure of Sensitive Information to an Unauthorized Actor
-	}
-
-	count({x | x := input.CweIDs[_]; x == deny_cwe_ids[_]}) == 0
 	input.Severity != "CRITICAL"
+	count(openssl_kept_cwes & {cwe | some cwe in input.CweIDs}) == 0
 }
 
-ignore if {
+# Core linux, so highly unlikely to be exploitable in a containerized environment.
+ignore if input.PkgName == "linux-libc-dev"
+
+# --- Weaknesses mitigated by the cluster setup (never ignores CRITICAL) ---
+
+# Low risk due to enforced "proxy-only" egress at the network layer + least-privilege RBAC + NetworkPolicies.
+# CWE-115 misinterpretation of input, CWE-295 improper certificate validation, CWE-407 algorithmic complexity.
+ignore if mitigated_cwe({"CWE-115", "CWE-295", "CWE-407"})
+
+# Uncontrolled resource consumption is low risk due to enforced resource requests and limits.
+ignore if mitigated_cwe({"CWE-400", "CWE-770"})
+
+# Cross-site scripting only affects frontend components.
+# CWE-79 XSS, CWE-352 CSRF, CWE-601 open redirect, CWE-1021 clickjacking.
+ignore if mitigated_cwe({"CWE-79", "CWE-352", "CWE-601", "CWE-1021"})
+
+mitigated_cwe(cwes) if {
 	input.Severity in {"LOW", "MEDIUM", "HIGH"}
-	reason := "Low risk due to enforced 'proxy-only' egress at the network layer + least-privilege RBAC + NetworkPolicies"
 	some cwe in input.CweIDs
-	cwe in {"CWE-115", "CWE-295", "CWE-407"}
+	cwe in cwes
 }
 
-ignore if {
-	input.Severity in {"LOW", "MEDIUM", "HIGH"}
-	reason := "Uncontrolled Resource Consumption is at low risk due to enforced resource request and limits."
-	some cwe in input.CweIDs
-	cwe in {"CWE-400", "CWE-770"}
-}
+# --- Impact scoping ---
 
-ignore if {
-	input.Severity in {"LOW", "MEDIUM", "HIGH"}
-	reason := "Cross-site Scripting only affects frontend components."
-	some cwe in input.CweIDs
-	cwe in {"CWE-79", "CWE-352", "CWE-601", "CWE-1021"}
-}
-
-# core linux, so highly unlikely to be exploitable in a containerized environment
-ignore if {
-	input.PkgName == "linux-libc-dev"
-}
-
-# Scoping: availability-only (CPU/memory exhaustion, crashes) is out of scope.
-# CVEs with no CVSS v3 data are not ignored here.
+# Availability-only impact (CPU/memory exhaustion, crashes) is out of scope.
+# CVEs without CVSS v3 data are not ignored here.
 ignore if {
 	input.Severity != "CRITICAL"
 	count(parsed) > 0
 	not has_ci_impact
 }
-
-# Scoping: Local/Physical-only attack vectors are out of scope.
-# ignore if {
-# 	count(parsed) > 0
-#	 not remotely_reachable
-# }
 
 # --- Helpers ---
 
@@ -124,18 +108,13 @@ nvd_v3_vector := input.CVSS.nvd.V3Vector
 
 redhat_v3_vector := input.CVSS.redhat.V3Vector
 
-# All CVSS v3 vectors, from any source
-v3_vectors contains input.CVSS.nvd.V3Vector
-
-v3_vectors contains input.CVSS.redhat.V3Vector
-
-v3_vectors contains input.CVSS.ghsa.V3Vector
-
+# Parsed CVSS v3 vectors, from any source.
 parsed contains p if {
-	some v in v3_vectors
-	p := trivy.parse_cvss_vector_v3(v)
+	some source in {"nvd", "redhat", "ghsa"}
+	p := trivy.parse_cvss_vector_v3(input.CVSS[source].V3Vector)
 }
 
+# Confidentiality or integrity is affected, according to at least one source.
 has_ci_impact if {
 	some p in parsed
 	p.Confidentiality != "None"
@@ -144,9 +123,4 @@ has_ci_impact if {
 has_ci_impact if {
 	some p in parsed
 	p.Integrity != "None"
-}
-
-remotely_reachable if {
-	some p in parsed
-	p.AttackVector in {"Network", "Adjacent"}
 }
