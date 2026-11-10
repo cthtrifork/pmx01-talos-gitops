@@ -231,10 +231,11 @@ spec:
           fsGroup: 1001
         volumes:
           - name: ca-certs
-            secret:
-              secretName: arc-runner-cert
+            # trust-manager keeps this in step with the root CA; the leaf's ca.crt goes stale when the CA is re-issued
+            configMap:
+              name: portableinfo-ca-bundle
               items:
-                - key: ca.crt
+                - key: ca-bundle.crt
                   path: ca.crt
           - name: host-udev
             hostPath:

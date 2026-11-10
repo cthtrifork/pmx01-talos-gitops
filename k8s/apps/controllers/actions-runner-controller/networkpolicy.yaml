@@ -30,12 +30,17 @@ spec:
       toPorts:
         - ports:
             - { port: "53", protocol: ANY }
+          rules:
+            dns:
+              - matchPattern: "*"
     # Kubernetes API
     - toEntities:
         - kube-apiserver
-    # GitHub (the Actions service, its broker and the API)
-    - toEntities:
-        - world
+    # GitHub (the Actions service, its broker and the API), by DNS name: anything not listed is dropped
+    - toFQDNs:
+        - matchName: github.com
+        - matchName: api.github.com
+        - matchPattern: "*.actions.githubusercontent.com"
       toPorts:
         - ports:
             - { port: "443", protocol: TCP }
