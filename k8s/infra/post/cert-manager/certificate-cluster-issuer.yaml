@@ -19,6 +19,7 @@ spec:
   isCA: true
   commonName: portableinfo-root-ca
   secretName: portableinfo-root-ca
+  duration: 87600h # 10 years: the Talos nodes pin this CA to trust zot (patches/11-zot-mirrors.yaml)
   issuerRef:
     name: portableinfo-pmx01-root-ca-bootstrap
     kind: ClusterIssuer
