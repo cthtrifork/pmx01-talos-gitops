@@ -4,47 +4,53 @@ apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: docker.io
 endpoints:
-  - url: http://192.168.1.240:5000/v2/docker-hub-cache
+  - url: https://192.168.1.240:5000/v2/docker-hub-cache
     overridePath: true
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: mirror.gcr.io
 endpoints:
-  - url: http://192.168.1.240:5000/v2/docker-hub-cache
+  - url: https://192.168.1.240:5000/v2/docker-hub-cache
     overridePath: true
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: ghcr.io
 endpoints:
-  - url: http://192.168.1.240:5000/v2/ghcr-cache
+  - url: https://192.168.1.240:5000/v2/ghcr-cache
     overridePath: true
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: gcr.io
 endpoints:
-  - url: http://192.168.1.240:5000/v2/gcr-cache
+  - url: https://192.168.1.240:5000/v2/gcr-cache
     overridePath: true
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: registry.k8s.io
 endpoints:
-  - url: http://192.168.1.240:5000/v2/k8s-cache
+  - url: https://192.168.1.240:5000/v2/k8s-cache
     overridePath: true
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: quay.io
 endpoints:
-  - url: http://192.168.1.240:5000/v2/quay-cache
+  - url: https://192.168.1.240:5000/v2/quay-cache
     overridePath: true
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
 name: us-docker.pkg.dev
 endpoints:
-  - url: http://192.168.1.240:5000/v2/google-ar-cache
+  - url: https://192.168.1.240:5000/v2/google-ar-cache
     overridePath: true
+---
+# zot serves TLS with a certificate for its in-cluster names only, not for this address
+apiVersion: v1alpha1
+kind: RegistryTLSConfig
+name: 192.168.1.240:5000
+insecureSkipVerify: true
