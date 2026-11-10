@@ -44,6 +44,19 @@ in that directory, including Spegel's `_backup`. Spegel then drops out of the ch
   `ghcr-cache/cthtrifork/talos-gitops/vex-cache`.
 - Spegel: `spegel_mirror_requests_total` rises for the same registry (hit or miss). Without Spegel in the chain only the zot counter moves.
 - A pull that skips zot shows no zot download and the image still arrives from the internet, so a failure here does not break pulls.
+- Spegel's mirror is a NodePort, so a pull on one node can be counted on any Spegel pod. Compare the sum over the pods with the
+  pulls of the node you are testing, and look at the scan pods' `nodeName` to know which node that is.
+
+## Checking each node
+
+Patch 11 is applied per node. The init log of a new Spegel pod shows what its node had when the pod started:
+`kubectl -n registry-system logs spegel-<id> -c configuration`.
+
+- A node with the patch logs `backing up containerd host configuration` for the seven registries and for `192.168.1.240_5000_`
+  (the TLS directory), then `prepending to existing containerd mirror configuration` seven times.
+- A node without those backup lines had no Talos files when Spegel last started, or kept an older saved copy. Its pulls skip zot
+  and go from Spegel to the upstream registry. Apply the patch to that node and restart its Spegel pod.
+- The pull test only proves the node that pulled. Scan pods all ran on one node, so they say nothing about the others.
 
 ## Going back to Spegel alone
 
