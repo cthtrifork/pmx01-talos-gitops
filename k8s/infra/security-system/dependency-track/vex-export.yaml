@@ -158,7 +158,7 @@ spec:
                     "$GITHUB_API/repos/$REPO/pulls?head=$(dirname "$REPO"):$BRANCH&state=open" | jq length)
                   if [ "$open" -eq 0 ]; then
                     jq -n --arg b "$BRANCH" '{title: "feat(vex): export Dependency-Track analysis decisions", head: $b, base: "main",
-                      body: "OpenVEX documents generated from the analysis decisions (not affected, false positive, resolved) in Dependency-Track by the CronJob `dependency-track-vex-export`. Only files under `vex/` change. Merge to let Trivy hide these findings (via vex-hub); close to discard until the next run."}' |
+                      body: "OpenVEX documents generated from the analysis decisions (not affected, false positive, resolved) in Dependency-Track by the CronJob `dependency-track-vex-export`. Only files under `vex/` change. Merge to let Trivy hide these findings (the vex-cache image is rebuilt from vex/); close to discard until the next run."}' |
                       curl -fsS -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
                         -d @- "$GITHUB_API/repos/$REPO/pulls" | jq -r .html_url
                   fi

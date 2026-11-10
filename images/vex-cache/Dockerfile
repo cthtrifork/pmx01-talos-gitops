@@ -10,7 +10,7 @@ COPY --from=trivy /usr/local/bin/trivy /usr/local/bin/trivy
 ENV HOME=/root
 COPY images/vex-cache/repository.yaml /root/.trivy/vex/repository.yaml
 COPY vex /src/vex
-# serve vex/ like the in-cluster mirror: a non-GitHub URL is read from <url>/.well-known/vex-repository.json
+# serve vex/ over HTTP: Trivy reads a non-GitHub repository from <url>/.well-known/vex-repository.json
 # trivy creates 0700 directories and the scan jobs run as 65534, hence the chmod
 # the 168h update_interval (24h upstream) only matters if skip-vex-repo-update is ignored
 RUN set -eu; \

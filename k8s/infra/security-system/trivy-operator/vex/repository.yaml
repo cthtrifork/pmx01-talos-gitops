@@ -6,9 +6,9 @@
 repositories:
   # the Trivy VEX hub
   - name: default
-    url: http://vex-hub.security-system.svc.cluster.local
+    url: https://github.com/aquasecurity/vexhub
     enabled: true
   # our own statements: vex/ in this repository (see vex/README.md)
   - name: homelab-vexhub
-    url: http://vex-hub.security-system.svc.cluster.local/homelab
+    url: https://github.com/cthtrifork/talos-gitops
     enabled: true
