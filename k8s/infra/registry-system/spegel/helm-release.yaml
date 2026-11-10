@@ -28,8 +28,17 @@ spec:
   values:
     spegel:
       containerdRegistryConfigPath: /etc/cri/conf.d/hosts
-      # -- Registries for which mirror configuration will be created. Empty means all registires will be mirrored.
-      mirroredRegistries: []
+      # the Talos zot mirrors (patches/11-zot-mirrors.yaml); an empty list replaces them all with one _default mirror
+      mirroredRegistries:
+        - https://docker.io
+        - https://mirror.gcr.io
+        - https://ghcr.io
+        - https://gcr.io
+        - https://registry.k8s.io
+        - https://quay.io
+        - https://us-docker.pkg.dev
+      # keep the Talos mirror hosts after Spegel: Spegel, then zot, then the upstream registry; restart the pods after a Talos registry patch (docs/registry-mirrors.md)
+      prependExisting: true
     serviceMonitor:
       enabled: true
     grafanaDashboard:
