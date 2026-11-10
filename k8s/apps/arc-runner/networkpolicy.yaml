@@ -1,6 +1,6 @@
 # Default deny both ways for the namespace, then what a runner pod needs. A pod holds the runner and the DinD
 # container, so CI traffic leaves from the pod's own identity. Nothing connects to the runners (they poll GitHub).
-# Egress to the internet is an allowlist by DNS name (toFQDNs); anything not listed is dropped. When a job fails on
+# Egress to the internet is an allowlist by DNS name (toFQDNs) and port 443 (80 for apt); anything not listed is dropped. When a job fails on
 # connect, find the host in the drop metrics (skill cilium-drops) and add it to the list below.
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
@@ -95,10 +95,18 @@ spec:
         - matchName: download1.rpmfusion.org
         - matchName: download.copr.fedorainfracloud.org
         - matchName: repo.linrunner.de
-        # Ubuntu packages (the runner image is Ubuntu based)
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }
+    # Ubuntu packages (the runner image is Ubuntu based); apt uses plain HTTP
+    - toFQDNs:
         - matchName: archive.ubuntu.com
         - matchName: security.ubuntu.com
         - matchName: ports.ubuntu.com
+      toPorts:
+        - ports:
+            - { port: "80", protocol: TCP }
+            - { port: "443", protocol: TCP }
     # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
     - toEndpoints:
             k8s:io.kubernetes.pod.namespace: registry-system
