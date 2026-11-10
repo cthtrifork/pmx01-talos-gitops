@@ -90,9 +90,11 @@ spec:
         - matchName: codecs.fedoraproject.org
         - matchName: download1.rpmfusion.org
         - matchName: download.copr.fedorainfracloud.org
-        # COPR serves its repos from packages.redhat.com (download.copr redirects there)
+        # COPR serves its repos from packages.redhat.com, which redirects to its S3 bucket
         - matchName: packages.redhat.com
+        - matchName: copr-pulp-prod.s3.amazonaws.com
         - matchName: repo.linrunner.de
+        - matchName: repo.warpnine.de
       toPorts:
         - ports:
             - { port: "443", protocol: TCP }
