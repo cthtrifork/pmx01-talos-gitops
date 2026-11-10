@@ -34,7 +34,7 @@ spec:
       containers:
       - env:
         - name: API_BASE_URL
-          value: https://dtrackapi-portableinfo.workload.eu-central-1.omni.siderolabs.io
+          value: https://dtrack-portableinfo.workload.eu-central-1.omni.siderolabs.io
         image: mirror.gcr.io/dependencytrack/frontend:5.2.1@sha256:1c0f63b083af8e89ff4ede5e7ed5cfc4e23ab871fa140ed101e8dc56f53eb51c
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -86,6 +86,10 @@ spec:
           name: frontend-config
           readOnly: true
           subPath: config.json
+        - mountPath: /etc/nginx/templates/default.conf.template
+          name: nginx-template
+          readOnly: true
+          subPath: default.conf.template
       enableServiceLinks: false
       securityContext:
         fsGroup: 1000
@@ -98,3 +102,6 @@ spec:
       - configMap:
           name: dependency-track-frontend-config
         name: frontend-config
+      - configMap:
+          name: dependency-track-frontend-nginx
+        name: nginx-template
