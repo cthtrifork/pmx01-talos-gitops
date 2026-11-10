@@ -34,7 +34,8 @@ Talos rewrites the seven files on every change of its registry or CRI configurat
 in that directory, including Spegel's `_backup`. Spegel then drops out of the chain until its init container runs again:
 
 1. Apply the patch to the nodes.
-2. Restart Spegel, one pod at a time: `kubectl -n registry-system delete pod spegel-<id>`.
+2. Restart Spegel: `kubectl -n registry-system rollout restart ds/spegel` (one pod at a time). The PodSecurity warning it prints is only a
+   warning: Spegel needs hostPath volumes and root.
 3. Check the init log of each new pod: `kubectl -n registry-system logs spegel-<id> -c configuration` shows
    `backing up containerd host configuration` and `prepending to existing containerd mirror configuration` for the seven registries.
 
@@ -47,6 +48,29 @@ in that directory, including Spegel's `_backup`. Spegel then drops out of the ch
 - Spegel's mirror is a NodePort, so a pull on one node can be counted on any Spegel pod. Compare the sum over the pods with the
   pulls of the node you are testing, and look at the scan pods' `nodeName` to know which node that is.
 
+## Testing a miss on every node
+
+Tested on 10 Nov 2026 with a pod that pulls an image no node has. Use a different tag per node, because a node that already
+pulled a tag lets Spegel answer the others from it (a hit, which does not reach zot):
+
+```sh
+kubectl run pull-test  --restart=Never --image=mirror.gcr.io/library/busybox:1.36.1 --overrides='{"spec":{"nodeName":"talos-2ny-8tx"}}' -- true
+kubectl run pull-test2 --restart=Never --image=mirror.gcr.io/library/busybox:1.36.0 --overrides='{"spec":{"nodeName":"talos-tba-msi"}}' -- true
+kubectl run pull-test3 --restart=Never --image=mirror.gcr.io/library/busybox:1.35.0 --overrides='{"spec":{"nodeName":"talos-11a-esj"}}' -- true
+```
+
+The pods run in the namespace you are in (`kubectl -n default get pod pull-test`); delete them afterwards. What a working chain shows:
+
+- the pod's `Pulled` event within a few seconds, with no `ErrImagePull`;
+- zot's log (`kubectl -n registry-system logs zot-0`) has `Copy layer`, `pushing synced local image to local registry` and
+  `successfully synced image` for `docker-hub-cache/library/busybox`, then the tag;
+- `spegel_mirror_requests_total{registry="mirror.gcr.io",cache="miss"}` rises. The series only exists after its first request, so a
+  query that compares the first and last value of a window misses it; read the current value.
+
+`zot_repo_downloads_total` did not move for these pulls although the log shows the sync, and it also counts zot's own sync
+activity. To see who really reads a repository, count the requests for it in zot's log (`HTTP API` lines carry `path` and `clientIP`)
+or `zot_http_repo_latency_seconds_count{repo=...}`.
+
 ## Checking each node
 
 Patch 11 is applied per node. The init log of a new Spegel pod shows what its node had when the pod started:
@@ -57,6 +81,22 @@ Patch 11 is applied per node. The init log of a new Spegel pod shows what its no
 - A node without those backup lines had no Talos files when Spegel last started, or kept an older saved copy. Its pulls skip zot
   and go from Spegel to the upstream registry. Apply the patch to that node and restart its Spegel pod.
 - The pull test only proves the node that pulled. Scan pods all ran on one node, so they say nothing about the others.
+
+## Zot settings behind this path
+
+`k8s/infra/registry-system/zot/zot.json`:
+
+- one sync entry per registry, each `onDemand` with `tlsVerify`, `maxRetries: 1` and `retryDelay: 5s`, so an unreachable upstream
+  fails in seconds and zot serves the copy it has. Repository names are the cache name plus the image path, for example
+  `ghcr-cache/cthtrifork/talos-gitops/vex-cache`. `docker-hub-cache` serves both `docker.io` and `mirror.gcr.io`, and `ghcr-cache`
+  reaches private `cthtrifork` packages with the credentials in `creds.json`.
+- there is no polled sync. A `ghcr-private` entry used to poll `cthtrifork/**` every 12 hours and mirrored every tag of the bootc and
+  desktop images (40 to 77 GiB each); nothing read it, retention could not shrink it because every poll fetched removed tags again,
+  and it was removed in #706 and #707. Its retention policy only drains what is left (its tag pattern matches nothing); delete the
+  policy once the `ghcr-private/*` repositories are gone.
+- retention keeps the newest tag of every cache repository and, with `keepUntagged`, the newest and the most recently pulled untagged
+  manifest, so digest-pinned images stay available without internet. `pr/**` keeps 72 hours.
+- the zot volume is 60Gi but local-path does not enforce it: check the node disk (`NodeFilesystemAlmostFull` fires at 85%).
 
 ## Going back to Spegel alone
 
