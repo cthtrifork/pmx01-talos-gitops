@@ -52,18 +52,30 @@ jobs:
       - name: Install PyYAML
         run: pip install --quiet "pyyaml==${PYYAML_VERSION}"
       - name: Extract changed images
-        # Compares each changed file with its version on the base commit. Manual runs list every image.
-        id: extract
+        # One (old image, new image) list per changed file; manual runs treat every file as new.
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
         run: |
-          if [ -n "${BASE_SHA}" ]; then
-            mapfile -t files <<< "${CHANGED_FILES}"
-            python scripts/ci/extract-images.py --base "${BASE_SHA}" "${files[@]}" > images.json
-          else
-            python scripts/ci/extract-images.py --all > images.json
-          fi
+          [ -n "${BASE_SHA}" ] || CHANGED_FILES="$(git ls-files 'k8s/*.yaml' 'k8s/*.yml')"
+          : > old.yaml
+          while IFS= read -r file; do
+            [ -f "${file}" ] || continue
+            git show "${BASE_SHA}:${file}" > old.yaml 2> /dev/null || : > old.yaml
+            python scripts/ci/extract-images.py old.yaml "${file}"
+          done <<< "${CHANGED_FILES}" > tuples.json
+      - name: Build scan matrix
+        # Merge the tuples: one entry per new image, with the files it changed in (max 256: the matrix limit).
+        id: extract
+        run: |
+          jq -s -c '
+            add // []
+            | group_by(.ref)
+            | map({ref: .[0].ref, oldref: (map(.oldref) | max), files: (map(.file) | unique | .[:5])})
+            | .[:256]
+            | to_entries
+            | map(.value + {id: .key})
+          ' tuples.json > images.json
           jq -r '.[] | "\(.oldref) -> \(.ref)"' images.json
           echo "images=$(cat images.json)" >> "${GITHUB_OUTPUT}"
           echo "count=$(jq length images.json)" >> "${GITHUB_OUTPUT}"
