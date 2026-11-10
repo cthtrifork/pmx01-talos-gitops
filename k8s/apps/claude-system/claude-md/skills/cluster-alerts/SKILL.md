@@ -32,6 +32,6 @@ curl -s "$P/api/v1/rules?type=alert"
   `/var/mnt/local-path-provisioner` on `talos-11a-esj` (192.168.1.184), where `/workspace` also lives. Per-directory usage
   still needs `talosctl usage` (see the `cluster-disk-usage` skill); free space in `/workspace` with `df -h /workspace`.
 - The thresholds come from the baseline of this cluster (about 1 to 3 drops/s per node of VLAN and L3 noise, about 25
-  `POLICY_DENIED` per 10m from `claude-rc` to unlisted hosts, local-path disk at about 89% when the rules were added). Tune them in the file, do not silence an alert by hand.
+  `POLICY_DENIED` per 10m from `claude-rc` to unlisted hosts). Tune them in the file, do not silence an alert by hand.
 - A pending alert has not yet held for its `for:` time. No alert is not proof: it also means the rule was not loaded
   (check `/api/v1/rules`).

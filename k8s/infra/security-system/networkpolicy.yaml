@@ -170,29 +170,6 @@ spec:
         - ports:
             - { port: "8080", protocol: TCP }
 ---
-# vex-hub: serves the VEX repositories (service port 80 to 4195); the scan jobs and the operator may reach it; fetches them from GitHub.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: vex-hub
-  namespace: security-system
-spec:
-  endpointSelector:
-    matchLabels:
-      app.kubernetes.io/instance: vex-hub
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            app.kubernetes.io/managed-by: trivy-operator
-        - matchLabels:
-            app.kubernetes.io/name: trivy-operator
-      toPorts:
-        - ports:
-            - { port: "4195", protocol: TCP }
-  egress:
-    - toEntities:
-        - world
----
 # trivy-operator: calls the sbom-hook webhook and the Trivy server.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -271,12 +248,6 @@ spec:
       toPorts:
         - ports:
             - { port: "4954", protocol: TCP }
-    - toEndpoints:
-        - matchLabels:
-            app.kubernetes.io/instance: vex-hub
-      toPorts:
-        - ports:
-            - { port: "4195", protocol: TCP }
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: registry-system

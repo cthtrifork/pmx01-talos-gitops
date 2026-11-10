@@ -36,7 +36,7 @@ mounted through a generated ConfigMap: edit it there, not in the pod (pod change
 ## Working in the repo: one git worktree per task
 
 Several sessions can use `/workspace` at the same time, and `/workspace/talos-gitops` is a single shared clone: its
-checked-out branch can change under you between two commands. That once put a commit on another session's branch. So never
+checked-out branch can change under you between two commands, and a commit then lands on another session's branch. So never
 edit or commit in the shared clone; give every task its own worktree.
 
 - Create it from fresh `main`, outside the clone:
