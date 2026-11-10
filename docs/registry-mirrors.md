@@ -1,7 +1,6 @@
 # Registry mirrors on the nodes
 
-Image pulls on a node go containerd, then Spegel, then zot, then the upstream registry. This is how it looks once the Spegel
-values from `k8s/infra/registry-system/spegel/` are applied and the Spegel pods have restarted:
+Image pulls on a node go containerd, then Spegel, then zot, then the upstream registry:
 
 ```mermaid
 flowchart TB
@@ -17,8 +16,7 @@ flowchart TB
     trivy["Trivy scan jobs"] -->|"scans"| zot
 ```
 
-Until the Spegel values are applied, and again after a Talos registry patch until the pods restart, containerd skips Spegel
-and goes to zot directly (step 1 is missing).
+After a Talos registry patch and until the Spegel pods restart, containerd skips Spegel and goes to zot directly (step 1 is missing).
 
 - containerd reads `/etc/cri/conf.d/hosts/<registry>/hosts.toml`. Talos writes these files from `patches/11-zot-mirrors.yaml`
   (seven registries, each pointing at its zot cache over https, with the root CA pinned). Spegel's init container
@@ -26,7 +24,7 @@ and goes to zot directly (step 1 is missing).
 - Spegel answers from the other nodes. A miss moves on to zot (`192.168.1.240:5000`), which fetches from the internet when it
   has to and keeps a copy. Containerd goes straight to the upstream registry only when zot fails.
 - The certificate zot serves comes from `certificate-cluster-issuer` and lists `192.168.1.240`. The CA certificate in the patch
-  is the public part of `portableinfo-root-ca` (valid until 2036-11-07); replace it there if the CA is ever issued again.
+  is the public part of `portableinfo-root-ca` (valid until 2036-11-07). The patch holds a copy, so a re-issued CA needs the patch updated.
 
 ## After changing a Talos registry patch
 
@@ -50,7 +48,7 @@ in that directory, including Spegel's `_backup`. Spegel then drops out of the ch
 
 ## Testing a miss on every node
 
-Tested on 10 Nov 2026 with a pod that pulls an image no node has. Use a different tag per node, because a node that already
+Run a pod that pulls an image no node has. Use a different tag per node, because a node that already
 pulled a tag lets Spegel answer the others from it (a hit, which does not reach zot):
 
 ```sh
@@ -67,9 +65,9 @@ The pods run in the namespace you are in (`kubectl -n default get pod pull-test`
 - `spegel_mirror_requests_total{registry="mirror.gcr.io",cache="miss"}` rises. The series only exists after its first request, so a
   query that compares the first and last value of a window misses it; read the current value.
 
-`zot_repo_downloads_total` did not move for these pulls although the log shows the sync, and it also counts zot's own sync
-activity. To see who really reads a repository, count the requests for it in zot's log (`HTTP API` lines carry `path` and `clientIP`)
-or `zot_http_repo_latency_seconds_count{repo=...}`.
+`zot_repo_downloads_total` is not a reliable signal for these pulls: it does not move for them, although the log shows the sync, and it
+also counts zot's own sync activity. To see who reads a repository, count the requests for it in zot's log (`HTTP API` lines carry
+`path` and `clientIP`) or use `zot_http_repo_latency_seconds_count{repo=...}`.
 
 ## Checking each node
 
@@ -80,7 +78,7 @@ Patch 11 is applied per node. The init log of a new Spegel pod shows what its no
   (the TLS directory), then `prepending to existing containerd mirror configuration` seven times.
 - A node without those backup lines had no Talos files when Spegel last started, or kept an older saved copy. Its pulls skip zot
   and go from Spegel to the upstream registry. Apply the patch to that node and restart its Spegel pod.
-- The pull test only proves the node that pulled. Scan pods all ran on one node, so they say nothing about the others.
+- A pull test only proves the node that pulled. The scan pods run on one node, so they say nothing about the others.
 
 ## Zot settings behind this path
 
@@ -90,15 +88,15 @@ Patch 11 is applied per node. The init log of a new Spegel pod shows what its no
   fails in seconds and zot serves the copy it has. Repository names are the cache name plus the image path, for example
   `ghcr-cache/cthtrifork/talos-gitops/vex-cache`. `docker-hub-cache` serves both `docker.io` and `mirror.gcr.io`, and `ghcr-cache`
   reaches private `cthtrifork` packages with the credentials in `creds.json`.
-- there is no polled sync. A `ghcr-private` entry used to poll `cthtrifork/**` every 12 hours and mirrored every tag of the bootc and
-  desktop images (40 to 77 GiB each); nothing read it, retention could not shrink it because every poll fetched removed tags again,
-  and it was removed in #706 and #707. Its retention policy only drains what is left (its tag pattern matches nothing); delete the
-  policy once the `ghcr-private/*` repositories are gone.
+- there is no polled sync and no `ghcr-private` mirror: the nodes and the CI reach `cthtrifork` images through `ghcr-cache`. The
+  retention policy for `ghcr-private/**` matches no tag, so anything under that prefix expires; delete the policy when no such
+  repository is left. A polled sync would copy every tag of a repository again after retention removed it, so retention could not
+  keep its size down.
 - retention keeps the newest tag of every cache repository and, with `keepUntagged`, the newest and the most recently pulled untagged
   manifest, so digest-pinned images stay available without internet. `pr/**` keeps 72 hours.
 - the zot volume is 60Gi but local-path does not enforce it: check the node disk (`NodeFilesystemAlmostFull` fires at 85%).
 
-## Going back to Spegel alone
+## Using Spegel alone
 
-Revert the Spegel values (`mirroredRegistries: []`, `prependExisting: false`), then restart the Spegel pods. Spegel writes one
-`_default` mirror again and zot is used by Trivy only.
+Set the Spegel values to `mirroredRegistries: []` and `prependExisting: false`, then restart the Spegel pods. Spegel then writes one
+`_default` mirror and zot serves Trivy only.

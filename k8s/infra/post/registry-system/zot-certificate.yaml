@@ -19,6 +19,6 @@ spec:
     - 192.168.1.240 # zot-lb: the address the Talos nodes use as registry mirror
   privateKey:
     algorithm: RSA
-    size: 4096 # issued again when the key does not match, here after the root CA changed (the old certificate no longer verifies)
+    size: 4096 # changing the key spec re-issues the certificate, which is needed after the root CA is re-issued
     rotationPolicy: Always
   isCA: false
