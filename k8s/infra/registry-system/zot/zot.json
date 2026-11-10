@@ -63,10 +63,7 @@
           ]
         },
         {
-          "repositories": [
-            "ghcr-private/cthtrifork/homeserver-bootc/**",
-            "ghcr-private/cthtrifork/talos-gitops/github-actions-runner"
-          ],
+          "repositories": ["ghcr-private/**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
           "keepUntagged": {
@@ -78,10 +75,9 @@
               "patterns": ["latest"]
             },
             {
-              "mostRecentlyPushedCount": 2,
-              "mostRecentlyPulledCount": 2,
-              "pulledWithin": "168h",
-              "pushedWithin": "168h"
+              "mostRecentlyPushedCount": 1,
+              "mostRecentlyPulledCount": 1,
+              "pulledWithin": "168h"
             }
           ]
         },
@@ -143,7 +139,6 @@
         },
         {
           "urls": ["https://ghcr.io"],
-          "pollInterval": "12h",
           "content": [
             {
               "prefix": "/cthtrifork/**",
