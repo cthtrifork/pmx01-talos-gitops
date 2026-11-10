@@ -79,15 +79,26 @@ jobs:
           echo "images=$(cat images.json)" >> "${GITHUB_OUTPUT}"
           echo "count=$(jq length images.json)" >> "${GITHUB_OUTPUT}"
 
+  trivy-db:
+    name: Trivy database
+    needs: extract
+    if: needs.extract.outputs.count != '0'
+    uses: ./.github/workflows/update-trivy-db.yaml
+
   scan:
     name: Scan ${{ matrix.image.ref }}
-    needs: extract
+    needs: [extract, trivy-db]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         image: ${{ fromJson(needs.extract.outputs.images) }}
+    env:
+      # The databases come from the cache that the trivy-db job fills.
+      TRIVY_SKIP_DB_UPDATE: true
+      TRIVY_SKIP_JAVA_DB_UPDATE: true
+      TRIVY_IGNORE_STATUS: not_affected,will_not_fix
     permissions:
       contents: read
       packages: read # pull ghcr.io/cthtrifork/* images
@@ -119,8 +130,6 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           hide-progress: true
-        env:
-          TRIVY_IGNORE_STATUS: not_affected,will_not_fix
       - name: Scan old image
         if: matrix.image.oldref != ''
         continue-on-error: true
@@ -135,8 +144,6 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           hide-progress: true
-        env:
-          TRIVY_IGNORE_STATUS: not_affected,will_not_fix
       - name: Summarize
         # Image references come from the PR's manifests, so they only reach the shell through env.
         env:
@@ -185,7 +192,7 @@ jobs:
   scan-complete:
     # Stable single check to require in branch protection: the scan job is skipped when no image changed.
     name: Image scan complete
-    needs: [extract, scan]
+    needs: [extract, trivy-db, scan]
     if: always()
     runs-on: ubuntu-slim
     timeout-minutes: 5
