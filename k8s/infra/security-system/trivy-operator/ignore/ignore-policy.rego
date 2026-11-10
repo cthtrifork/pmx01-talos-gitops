@@ -56,7 +56,29 @@ ignore if {
 	nvd.AttackVector == "Physical"
 }
 
+# High attack complexity and not remotely exploitable, below CRITICAL.
+ignore if {
+	input.Severity != "CRITICAL"
+	nvd := trivy.parse_cvss_vector_v3(nvd_v3_vector)
+	nvd.AttackComplexity == "High"
+	nvd.AttackVector != "Network"
+}
+
 # --- Packages ---
+
+# Go standard library issues that only affect Windows; the cluster runs Linux.
+ignore if {
+	input.PkgName == "stdlib"
+	input.Severity != "CRITICAL"
+	contains(input.Description, "on Windows")
+}
+
+# Language packages under test, example or testdata directories are not run in production.
+# PkgPath is only set for language packages, not for OS packages.
+ignore if {
+	input.Severity != "CRITICAL"
+	regex.match(`(^|/)(testdata|tests?|examples?)/`, input.PkgPath)
+}
 
 # OpenSSL, except critical ones and those of memory-safety (CWE-119) or information-disclosure (CWE-200) kind.
 openssl_kept_cwes := {
@@ -80,7 +102,9 @@ ignore if input.PkgName == "linux-libc-dev"
 ignore if mitigated_cwe({"CWE-115", "CWE-295", "CWE-407"})
 
 # Uncontrolled resource consumption is low risk due to enforced resource requests and limits.
-ignore if mitigated_cwe({"CWE-400", "CWE-770"})
+# CWE-400/770 resource consumption, CWE-674 recursion, CWE-835 infinite loop, CWE-1333 regex DoS,
+# CWE-789 huge allocation, CWE-476 null pointer crash.
+ignore if mitigated_cwe({"CWE-400", "CWE-770", "CWE-674", "CWE-835", "CWE-1333", "CWE-789", "CWE-476"})
 
 # Cross-site scripting only affects frontend components.
 # CWE-79 XSS, CWE-352 CSRF, CWE-601 open redirect, CWE-1021 clickjacking.
