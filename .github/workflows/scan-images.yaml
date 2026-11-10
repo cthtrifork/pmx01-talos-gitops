@@ -10,7 +10,6 @@ on:
     paths:
       - "k8s/**"
       - "scripts/ci/extract-images.py"
-      - "scripts/ci/scan-images-summary.sh"
       - ".github/workflows/scan-images.yaml"
 
 concurrency:
@@ -151,7 +150,20 @@ jobs:
           OLD_REF: ${{ matrix.image.oldref }}
           ID: ${{ matrix.image.id }}
         run: |
-          ./scripts/ci/scan-images-summary.sh "${OLD_REF}" "${NEW_REF}" out/old.json out/new.json > out/comment.md
+          count() { jq "[.Results[]?.Vulnerabilities[]? | select(.Severity == \"$2\")] | length" "$1" 2> /dev/null || echo "?"; }
+          {
+            echo "### \`${OLD_REF:-new image}\` → \`${NEW_REF}\`"
+            echo
+            echo "| Severity | Old | New | |"
+            echo "|---|---:|---:|---|"
+            for severity in CRITICAL HIGH; do
+              old=$(count out/old.json "${severity}") new=$(count out/new.json "${severity}") arrow="➖"
+              [ "${new}" -gt "${old}" ] 2> /dev/null && arrow="⬆️"
+              [ "${new}" -lt "${old}" ] 2> /dev/null && arrow="⬇️"
+              echo "| ${severity} | ${old} | ${new} | ${arrow} |"
+            done
+            echo
+          } > out/comment.md
           # An unzipped artifact is named after its file.
           name="$(sed -E 's/@.*$//; s/[^A-Za-z0-9._-]+/_/g' <<< "${NEW_REF}")"
           [ ! -s out/new.json ] || mv out/new.json "out/${ID}-${name}.trivy.json"
