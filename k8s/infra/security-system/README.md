@@ -12,10 +12,14 @@ Trivy filters its findings with three inputs, all generated into ConfigMaps by t
 `trivy-operator/kustomization.yaml` (fixed names, no hash suffix) from files you edit in Git, and mounted into the
 trivy server and the scan jobs:
 
-- `trivy-operator/vex/repository.yaml` (`vex-repository-config`): the VEX repositories, by default the Trivy VEX hub
-  (`github.com/aquasecurity/vexhub`), read through the in-cluster mirror `vex-hub/` (Redpanda Connect: fetches the
-  hub every 6 hours and serves the manifest and tarball from memory). The scan jobs refresh it into their cache at
-  start; they no longer need egress to `github.com`, but fail until the mirror's first refresh has succeeded. VEX statements mark CVEs as not exploitable in a product.
+- `trivy-operator/vex/repository.yaml` (`vex-repository-config`): the VEX repositories Trivy loads, the Trivy VEX hub
+  (`default`) and our `vex/` directory (`homelab-vexhub`). The data is in the `vex-cache` image (`images/vex-cache`, built
+  by `.github/workflows/build-vex-cache.yaml` from the hub and `vex/`), which the scan jobs mount read-only at
+  `<cache-dir>/vex`. `skip-vex-repo-update` keeps Trivy from downloading anything at scan time, so the URLs in the file
+  are not fetched. The image is rebuilt when `vex/` changes on `main` and when the workflow is run by hand; the Trivy VEX hub
+  part only changes when it runs. VEX statements mark CVEs as not exploitable in a product.
+- `vex-hub/` (Redpanda Connect) serves the hub and `vex/` over HTTP inside the cluster, fetching them from GitHub every 6
+  hours. The URLs in `repository.yaml` point at it; nothing in the cluster fetches from it.
 - `trivy-operator/ignore/trivyignore.yaml` (`trivy-ignorefile`): accepted findings, with an expiry.
 - `trivy-operator/ignore/ignore-policy.rego` (`trivy-ignorepolicy`): a Rego policy, `ignore` is false by default.
 
@@ -27,13 +31,15 @@ A change takes effect for the next scan job; reports are regenerated after `scan
 zot's certificate comes from `certificate-cluster-issuer`. trust-manager's `portableinfo-ca-bundle` Bundle
 (`k8s/infra/post/trust-manager`) puts the root CA in a ConfigMap of that name (key `ca-bundle.crt`) in every namespace; the
 trivy server, the scan jobs and the operator mount it as `/etc/ssl/certs/zot-ca.crt` (Go reads extra files there), so no
-`dbRepositoryInsecure` is needed.
+`dbRepositoryInsecure` is needed. Reloader restarts the trivy server and the operator when the bundle changes (they read
+it at start); a scan job reads it when it starts.
 
 ## Network policies
 
-No policy in the repo or the cluster restricts `security-system` (the existing ones cover claude-system, harper-pad,
-flux-system and the Prometheus operator). If a default-deny is added later, allow the trivy server and scan jobs to zot
-(5000) and `github.com` (443), and clients to `trivy-service` (4954).
+`networkpolicy.yaml` denies all traffic in both directions for the namespace and then allows, per workload, what Hubble showed
+it needs (one policy each for Dependency-Track, `sbom-hook`, `vex-hub`, the trivy operator, the trivy server, the scan jobs and
+the Dependency-Track jobs). The scan jobs may reach the trivy server (4954), zot (5000), `vex-hub` (4195) and the internet;
+clients reach `trivy-service` (4954).
 
 ## The Dependency-Track KEK
 
@@ -84,7 +90,7 @@ would do and exits 0, while `sbom-hook` logs `DRY RUN: would upload ...` instead
 `dependency-track/vex-export.yaml` is a daily CronJob that turns the analysis decisions made in Dependency-Track (state
 *not affected*, *false positive* or *resolved* on a finding) into OpenVEX documents in `vex/pkg/oci/<registry>/<repository>/`
 of this repository, regenerates `vex/index.json` and opens a pull request from the branch `dependency-track/vex-export`.
-Merge it and Trivy hides those findings (through `vex-hub/`). It only changes files under `vex/`, never pushes to `main`,
+Merge it and the `vex-cache` image is rebuilt from `vex/`; the next scan job hides those findings. It only changes files under `vex/`, never pushes to `main`,
 and only deletes documents whose author is `Dependency-Track`. Findings on components without a PURL are skipped.
 
 It needs the Secret `dependency-track-vex-github` (key `token`), seeded by hand: a fine-grained personal access token (or

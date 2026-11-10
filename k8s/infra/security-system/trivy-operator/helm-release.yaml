@@ -58,7 +58,7 @@ spec:
                 template:
                   metadata:
                     labels:
-                      config-revision: "1" # rolls the server once for the new CA; bump to roll it by hand
+                      config-revision: "1" # bump to roll the server by hand
   # https://github.com/aquasecurity/trivy-operator/blob/main/deploy/helm/values.yaml
   values:
     image:
@@ -237,7 +237,7 @@ spec:
         - name: repository-config
           mountPath: /.trivy/vex/repository.yaml
           subPath: repository.yaml
-        # the containers of a scan pod raced to download the VEX repositories into the shared empty cache ("directory not empty")
+        # the containers of a scan pod share one cache directory, so none of them downloads the VEX repositories into it
         - name: vex-cache
           mountPath: /tmp/trivy/.cache/vex
           readOnly: true

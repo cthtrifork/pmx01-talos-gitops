@@ -1,5 +1,5 @@
 ---
-# Serves a copy of the Trivy VEX hub to the scan jobs; see redpanda-connect.yaml. Used by trivy-operator/vex/repository.yaml.
+# Serves a copy of the Trivy VEX hub and of vex/ inside the cluster; see redpanda-connect.yaml. The URLs in trivy-operator/vex/repository.yaml point at it.
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease

@@ -2,8 +2,8 @@
 
 Our own VEX statements, following the [VEX repository specification](https://github.com/aquasecurity/vex-repo-spec)
 and the layout of the [Trivy VEX Hub](https://github.com/aquasecurity/vexhub). Trivy reads it as the repository
-`homelab-vexhub` (`k8s/infra/security-system/trivy-operator/vex/repository.yaml`), through the in-cluster mirror
-`k8s/infra/security-system/vex-hub/`, and filters the findings of every scan with it.
+`homelab-vexhub` (`k8s/infra/security-system/trivy-operator/vex/repository.yaml`), from the `vex-cache` image
+(`images/vex-cache`) that contains this directory, and filters the findings of every scan with it.
 
 ```text
 vex/
@@ -23,8 +23,8 @@ Statements marked in Dependency-Track are exported here by `k8s/infra/security-s
 2. Put all statements of a product into one document: only one document per PURL is distributed.
 3. Run `scripts/vex-index.sh` (needs `jq`) and commit `index.json` with the document.
 
-The mirror (`k8s/infra/security-system/vex-hub/`) fetches the repository every 6 hours. The scan jobs read the VEX cache image
-built from this directory and the Trivy VEX hub (`images/vex-cache`, `.github/workflows/build-vex-cache.yaml`), which is
-rebuilt when `vex/` changes on `main` or when the workflow is run by hand. A new statement reaches a scan after that build,
-plus the next report regeneration (`scannerReportTTL`).
+The scan jobs read the `vex-cache` image (`images/vex-cache`), built from this directory and the Trivy VEX hub by
+`.github/workflows/build-vex-cache.yaml`. The workflow runs when `vex/` or the image changes on `main`, and by hand; the Trivy
+VEX hub part only changes when it runs. A new statement reaches a scan after that build, plus the next report regeneration
+(`scannerReportTTL`).
 Statements mark a CVE as `not_affected`, `fixed` or `under_investigation`; Trivy only hides the first two.

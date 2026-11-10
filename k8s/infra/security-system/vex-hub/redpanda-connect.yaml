@@ -1,8 +1,8 @@
 ---
-# Mirror of two VEX repositories for the Trivy scan jobs, turned into a ConfigMap by the configMapGenerator in
+# Mirror of two VEX repositories, turned into a ConfigMap by the configMapGenerator in
 # kustomization.yaml: the Trivy VEX hub (aquasecurity/vexhub) and our own (vex/ in this repository). Every 6 hours (and
-# at start) it fetches the tarballs and manifests from GitHub into a memory cache and serves them, so the scan jobs never
-# reach github.com. For a non-GitHub URL Trivy requests <url>/.well-known/vex-repository.json, and the location in that
+# at start) it fetches the tarballs and manifests from GitHub into a memory cache and serves them inside the cluster. The URLs
+# in trivy-operator/vex/repository.yaml point at it; the scan jobs read the vex-cache image instead. For a non-GitHub URL Trivy requests <url>/.well-known/vex-repository.json, and the location in that
 # manifest is rewritten here to point at the tarball served by this mirror. The cache keys are the request paths.
 # Flux post-build substitution runs over this file, hence the $$ escapes.
 http:

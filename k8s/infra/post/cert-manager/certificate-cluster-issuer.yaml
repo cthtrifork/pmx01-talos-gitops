@@ -22,7 +22,7 @@ spec:
   duration: 87600h # 10 years: the Talos nodes pin this CA to trust zot (patches/11-zot-mirrors.yaml)
   privateKey:
     algorithm: RSA
-    size: 4096 # a key that does not match the spec makes cert-manager re-issue the CA; a changed duration alone does not
+    size: 4096 # changing the key spec re-issues the CA; changing only the duration does not
     rotationPolicy: Always
   issuerRef:
     name: portableinfo-pmx01-root-ca-bootstrap

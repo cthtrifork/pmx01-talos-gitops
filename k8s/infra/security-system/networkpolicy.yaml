@@ -170,7 +170,7 @@ spec:
         - ports:
             - { port: "8080", protocol: TCP }
 ---
-# vex-hub: serves the VEX repository (service port 80 to 4195) to the scan jobs; fetches it from GitHub.
+# vex-hub: serves the VEX repositories (service port 80 to 4195); the scan jobs and the operator may reach it; fetches them from GitHub.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

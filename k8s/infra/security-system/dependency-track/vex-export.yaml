@@ -1,5 +1,5 @@
 # Exports the analysis decisions made in Dependency-Track (not affected, false positive, resolved) as OpenVEX documents into
-# the vex/ directory of this repository, so Trivy (through vex-hub, see ../vex-hub/) hides those findings in every scan.
+# the vex/ directory of this repository, so Trivy hides those findings in every scan (the vex-cache image, images/vex-cache/, is built from vex/).
 # Daily: for each project it fetches the CycloneDX VEX, keeps the decided vulnerabilities, converts them to OpenVEX and
 # writes one document per image, vex/pkg/oci/<project name>/oci.openvex.json (the project name is <registry>/<repository>,
 # the project version, the image digest, becomes the version of the product PURL; projects whose version is
