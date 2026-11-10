@@ -109,6 +109,7 @@ spec:
             - { port: "443", protocol: TCP }
     # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
     - toEndpoints:
+        - matchLabels:
             k8s:io.kubernetes.pod.namespace: registry-system
             k8s:app.kubernetes.io/name: zot
       toPorts:
