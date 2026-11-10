@@ -46,10 +46,18 @@ spec:
             - configuration
             - --log-level=INFO
             - --containerd-registry-config-path=/etc/cri/conf.d/hosts
+            - --mirrored-registries
+            - "https://docker.io"
+            - "https://mirror.gcr.io"
+            - "https://ghcr.io"
+            - "https://gcr.io"
+            - "https://registry.k8s.io"
+            - "https://quay.io"
+            - "https://us-docker.pkg.dev"
             - --mirror-targets
             - http://$(NODE_IP):30020
             - --resolve-tags=true
-            - --prepend-existing=false
+            - --prepend-existing=true
           env:
             - name: NODE_IP
               valueFrom:
@@ -84,6 +92,14 @@ spec:
             - --registry-addr=:5000
             - --router-addr=:5001
             - --metrics-addr=:9090
+            - --mirrored-registries
+            - "https://docker.io"
+            - "https://mirror.gcr.io"
+            - "https://ghcr.io"
+            - "https://gcr.io"
+            - "https://registry.k8s.io"
+            - "https://quay.io"
+            - "https://us-docker.pkg.dev"
             - --containerd-sock=/run/containerd/containerd.sock
             - --containerd-namespace=k8s.io
             - --containerd-registry-config-path=/etc/cri/conf.d/hosts
