@@ -20,7 +20,7 @@ Cloudflare owns DNS and TLS. There is no certificate or LAN address for the API.
 ## Status
 
 Both Deployments run `ghcr.io/cthtrifork/harper-pad-sync` and `-admin`. Everything around the images follows the
-application's contract (harper-pad PR #82):
+application's contract:
 
 | | sync | admin |
 |---|---|---|

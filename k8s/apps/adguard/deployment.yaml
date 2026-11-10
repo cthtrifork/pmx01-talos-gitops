@@ -103,7 +103,7 @@ spec:
           # which is how it binds ports 53, 443 and 853 as non-root. For that to work the capability must be in the
           # container's bounding set (hence drop ALL, add NET_BIND_SERVICE) and no_new_privs must be off, i.e.
           # allowPrivilegeEscalation must stay true. With every capability dropped, or with allowPrivilegeEscalation: false,
-          # the kernel refuses to exec the binary ("operation not permitted", see #590).
+          # the kernel refuses to exec the binary ("operation not permitted").
           securityContext:
             allowPrivilegeEscalation: true
             privileged: false

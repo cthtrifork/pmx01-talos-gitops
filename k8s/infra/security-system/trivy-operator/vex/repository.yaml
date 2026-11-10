@@ -1,12 +1,14 @@
 ---
 # Trivy VEX repositories, mounted at /.trivy/vex/repository.yaml in the scan jobs (trivy reads ~/.trivy/vex/repository.yaml).
 # https://trivy.dev/docs/latest/supply-chain/vex/repo/
+# The names are the directories of the vex-cache image (images/vex-cache), mounted read-only at <cache-dir>/vex, and must match
+# images/vex-cache/repository.yaml. skip-vex-repo-update keeps Trivy from downloading, so the URLs below are not fetched.
 repositories:
-  # the Trivy VEX hub through the in-cluster mirror (vex-hub/), so the scan jobs do not download from github.com
+  # the Trivy VEX hub
   - name: default
     url: http://vex-hub.security-system.svc.cluster.local
     enabled: true
-  # our own statements: vex/ in this repository (see vex/README.md), also through the mirror
+  # our own statements: vex/ in this repository (see vex/README.md)
   - name: homelab-vexhub
     url: http://vex-hub.security-system.svc.cluster.local/homelab
     enabled: true

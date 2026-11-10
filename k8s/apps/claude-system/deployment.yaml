@@ -41,7 +41,7 @@ spec:
       # private or sticky). An emptyDir is 0777 and fsGroup makes it 2777; emptyDir.mode (sticky bit) is alpha
       # from Kubernetes 1.37. The local-path PVCs are hostPath volumes, which fsGroup does not touch (root 0777),
       # so /tmp is a claude-owned 0700 subdirectory of the workspace PVC, made by the init container below
-      # (the restricted PSA rules out a root one). Wiped on every pod start, like the emptyDir it replaces.
+      # (the restricted PSA rules out a root one). Wiped on every pod start, like an emptyDir.
       initContainers:
         - name: private-tmp
           image: ghcr.io/cthtrifork/talos-gitops/claude-runner:v0.11.0@sha256:266fc9268cd3b61a8fd450567b76eee671503f670b8faff771fbb43f6fb52080
