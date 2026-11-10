@@ -40,18 +40,13 @@ spec:
     - toFQDNs:
         # Essential runner operations, action downloads, OIDC tokens, job logs, summaries and artifacts
         - matchName: github.com
-        - matchPattern: "*.github.com"
-        - matchPattern: "*.githubusercontent.com"
-        - matchName: api.github.com
-        - matchName: codeload.github.com
-        - matchPattern: "*.actions.githubusercontent.com"
-        - matchName: results-receiver.actions.githubusercontent.com
+        - matchPattern: "**.github.com"
+        - matchPattern: "**.githubusercontent.com"
         - matchPattern: "*.blob.core.windows.net"
         # Runner updates, release assets, Git LFS, raw files (install scripts, schemas)
         - matchName: github-cloud.s3.amazonaws.com
         # GitHub Packages and ghcr.io (image pulls and pushes, trivy-db, the blob redirects)
         - matchName: ghcr.io
-        - matchPattern: "*.pkg.github.com"
 
         # Container registries (base images, DinD, buildx, crane, oras)
         - matchName: quay.io
