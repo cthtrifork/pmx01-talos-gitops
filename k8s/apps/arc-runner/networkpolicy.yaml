@@ -88,12 +88,12 @@ spec:
         - matchName: storage.googleapis.com
         # Homebrew (the runner image's Brewfile); the bottles come from ghcr.io
         - matchName: formulae.brew.sh
-        # Fedora and RPM Fusion repositories (homeserver-bootc image builds). The mirror list redirects to
-        # third-party mirrors that cannot be named here; builds that hit one of them need the host added.
-        - matchPattern: "*.fedoraproject.org"
-        - matchName: download.copr.fedorainfracloud.org
-        - matchName: mirrors.rpmfusion.org
+        # Fedora and RPM Fusion repositories (homeserver-bootc image builds). The builds pin the repos to these
+        # hosts (build_files/pin-repos.sh in homeserver-bootc), so the metalink mirrors need no entry.
+        - matchName: mirrors.dotsrc.org
+        - matchName: codecs.fedoraproject.org
         - matchName: download1.rpmfusion.org
+        - matchName: download.copr.fedorainfracloud.org
         - matchName: repo.linrunner.de
         # Ubuntu packages (the runner image is Ubuntu based)
         - matchName: archive.ubuntu.com
