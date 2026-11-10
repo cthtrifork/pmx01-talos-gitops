@@ -1,0 +1,206 @@
+name: Scan changed images
+
+# Scans the container images a PR adds or re-tags under k8s/ with Trivy and posts one comment with the
+# CRITICAL/HIGH vulnerability delta per image. Informational: it never blocks the PR.
+# Manual runs scan every image under k8s/ (no comparison) and only write the job summary.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "k8s/**"
+      - "scripts/ci/extract-images.py"
+      - ".github/workflows/scan-images.yaml"
+
+concurrency:
+  group: scan-images-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  PYYAML_VERSION: "6.0.3" # renovate: datasource=pypi depName=PyYAML
+  TRIVY_VERSION: v0.76.2 # renovate: datasource=github-releases depName=aquasecurity/trivy
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    name: Find changed images
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      images: ${{ steps.extract.outputs.images }}
+      count: ${{ steps.extract.outputs.count }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the old manifests are read from the base commit
+          persist-credentials: false
+      - name: Get changed k8s YAML files
+        id: changed
+        if: github.event_name == 'pull_request'
+        uses: step-security/changed-files@2e07db73e5ccdb319b9a6c7766bd46d39d304bad # v47.0.5
+        with:
+          files: |
+            k8s/**/*.{yaml,yml}
+          files_ignore: |
+            k8s/**/kyverno-policies/**
+            k8s/**/policies/tests/**
+          separator: "\n"
+      - name: Install PyYAML
+        run: pip install --quiet "pyyaml==${PYYAML_VERSION}"
+      - name: Extract changed images
+        # One (old image, new image) list per changed file; manual runs treat every file as new.
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
+        run: |
+          [ -n "${BASE_SHA}" ] || CHANGED_FILES="$(git ls-files 'k8s/*.yaml' 'k8s/*.yml')"
+          : > old.yaml
+          while IFS= read -r file; do
+            [ -f "${file}" ] || continue
+            git show "${BASE_SHA}:${file}" > old.yaml 2> /dev/null || : > old.yaml
+            python scripts/ci/extract-images.py old.yaml "${file}"
+          done <<< "${CHANGED_FILES}" > tuples.json
+      - name: Build scan matrix
+        # A unique list of (old image, new image) tuples, each with the files it changed in.
+        id: extract
+        run: |
+          jq -s -c '
+            add // []
+            | group_by([.oldref, .ref])
+            | map({oldref: .[0].oldref, ref: .[0].ref, files: map(.file)})
+            | to_entries
+            | map(.value + {id: .key})
+          ' tuples.json > images.json
+          jq -r '.[] | "\(.oldref) -> \(.ref)"' images.json
+          echo "images=$(cat images.json)" >> "${GITHUB_OUTPUT}"
+          echo "count=$(jq length images.json)" >> "${GITHUB_OUTPUT}"
+
+  trivy-db:
+    name: Trivy database
+    needs: extract
+    if: needs.extract.outputs.count != '0'
+    uses: ./.github/workflows/update-trivy-db.yaml
+
+  scan:
+    name: Scan ${{ matrix.image.ref }}
+    needs: [extract, trivy-db]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(needs.extract.outputs.images) }}
+    env:
+      # The databases come from the cache that the trivy-db job fills.
+      TRIVY_SKIP_DB_UPDATE: true
+      TRIVY_SKIP_JAVA_DB_UPDATE: true
+      TRIVY_IGNORE_STATUS: not_affected,will_not_fix
+    permissions:
+      contents: read
+      packages: read # pull ghcr.io/cthtrifork/* images
+      pull-requests: write # the PR comment
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Login to ghcr.io
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: mkdir out
+      # trivy-action installs Trivy and caches its vulnerability databases per day.
+      # A failed scan (missing tag, registry down) leaves no output file; the comment then says so.
+      - name: Scan new image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: image
+          image-ref: ${{ matrix.image.ref }}
+          format: json
+          output: out/new.json
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          hide-progress: true
+      - name: Scan old image
+        if: matrix.image.oldref != ''
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: image
+          image-ref: ${{ matrix.image.oldref }}
+          format: json
+          output: out/old.json
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          hide-progress: true
+      - name: Summarize
+        # Image references come from the PR's manifests, so they only reach the shell through env.
+        env:
+          NEW_REF: ${{ matrix.image.ref }}
+          OLD_REF: ${{ matrix.image.oldref }}
+          ID: ${{ matrix.image.id }}
+        run: |
+          count() { jq "[.Results[]?.Vulnerabilities[]? | select(.Severity == \"$2\")] | length" "$1" 2> /dev/null || echo "?"; }
+          {
+            echo "### \`${OLD_REF:-new image}\` → \`${NEW_REF}\`"
+            echo
+            echo "| Severity | Old | New | |"
+            echo "|---|---:|---:|---|"
+            for severity in CRITICAL HIGH; do
+              old=$(count out/old.json "${severity}") new=$(count out/new.json "${severity}") arrow="➖"
+              [ "${new}" -gt "${old}" ] 2> /dev/null && arrow="⬆️"
+              [ "${new}" -lt "${old}" ] 2> /dev/null && arrow="⬇️"
+              echo "| ${severity} | ${old} | ${new} | ${arrow} |"
+            done
+            echo
+          } > out/comment.md
+          # An unzipped artifact is named after its file.
+          name="$(sed -E 's/@.*$//; s/[^A-Za-z0-9._-]+/_/g' <<< "${NEW_REF}")"
+          [ ! -s out/new.json ] || mv out/new.json "out/${ID}-${name}.trivy.json"
+      - name: Upload full report
+        id: upload
+        if: hashFiles('out/*.trivy.json') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: out/*.trivy.json
+          archive: false
+          retention-days: 14
+      - name: Add report link
+        if: steps.upload.outputs.artifact-url != ''
+        env:
+          URL: ${{ steps.upload.outputs.artifact-url }}
+        run: echo "[Trivy report of the new image (JSON)](${URL})" >> out/comment.md
+      - name: Job summary
+        run: cat out/comment.md >> "${GITHUB_STEP_SUMMARY}"
+      - name: Comment on the PR
+        # One comment per image, updated in place. Fork PRs get a read-only token; the job summary has the same text.
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: scan-images ${{ matrix.image.oldref }} ${{ matrix.image.ref }}
+          path: out/comment.md
+
+  scan-complete:
+    # Stable single check to require in branch protection: the scan job is skipped when no image changed.
+    name: Image scan complete
+    needs: [extract, trivy-db, scan]
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - name: Fail if a job failed or was cancelled
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: ${RESULTS}"
+          case " ${RESULTS} " in *" failure "* | *" cancelled "*) exit 1 ;; esac

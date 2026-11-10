@@ -1,0 +1,42 @@
+name: Update Trivy database cache
+
+# Downloads the Trivy vulnerability databases into the cache that aquasecurity/trivy-action restores
+# (key cache-trivy-<date>), so scan jobs can skip the download. Runs daily for PRs to reuse from the
+# default branch, and is called by scan-images.yaml so a PR never scans without a database.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_VERSION: v0.76.2 # renovate: datasource=github-releases depName=aquasecurity/trivy
+
+jobs:
+  update:
+    name: Update Trivy database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Date
+        id: date
+        run: echo "date=$(date -u +%F)" >> "${GITHUB_OUTPUT}"
+      - name: Cache databases
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.cache/trivy
+          key: cache-trivy-${{ steps.date.outputs.date }}
+      - name: Setup Trivy
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+      - name: Download databases
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          trivy image --cache-dir .cache/trivy --download-db-only
+          trivy image --cache-dir .cache/trivy --download-java-db-only
