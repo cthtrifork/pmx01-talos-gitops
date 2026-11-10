@@ -1,7 +1,7 @@
 # Default deny both ways for the namespace, then what a runner pod needs. A pod holds the runner and the DinD
 # container, so CI traffic leaves from the pod's own identity. Nothing connects to the runners (they poll GitHub).
-# Jobs reach arbitrary hosts (GitHub, registries, package mirrors), so world is open on every port; narrow it from
-# the drop metrics if the jobs get predictable.
+# Egress to the internet is an allowlist by DNS name (toFQDNs) and port 443 (80 for apt); anything not listed is dropped. When a job fails on
+# connect, find the host in the drop metrics (skill cilium-drops) and add it to the list below.
 ---
 # yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
 apiVersion: cilium.io/v2
@@ -32,9 +32,81 @@ spec:
       toPorts:
         - ports:
             - { port: "53", protocol: ANY }
-    # The internet and the LAN
-    - toEntities:
-        - world
+          rules:
+            dns:
+              - matchPattern: "*"
+    # The hosts the runner and the jobs need. Sources: GitHub's "Self-hosted runner communication" host list, the
+    # workflows of talos-gitops and homeserver-bootc, and the Containerfiles / build scripts of both.
+    - toFQDNs:
+        # Essential runner operations, action downloads, OIDC tokens, job logs, summaries and artifacts
+        - matchName: github.com
+        - matchName: api.github.com
+        - matchName: codeload.github.com
+        - matchPattern: "*.actions.githubusercontent.com"
+        - matchName: results-receiver.actions.githubusercontent.com
+        - matchPattern: "*.blob.core.windows.net"
+        # Runner updates, release assets, Git LFS, raw files (install scripts, schemas)
+        - matchName: objects.githubusercontent.com
+        - matchName: objects-origin.githubusercontent.com
+        - matchName: github-releases.githubusercontent.com
+        - matchName: github-registry-files.githubusercontent.com
+        - matchName: release-assets.githubusercontent.com
+        - matchName: raw.githubusercontent.com
+        - matchName: github-cloud.githubusercontent.com
+        - matchName: github-cloud.s3.amazonaws.com
+        # GitHub Packages and ghcr.io (image pulls and pushes, trivy-db, the blob redirects)
+        - matchName: ghcr.io
+        - matchPattern: "*.pkg.github.com"
+        - matchName: pkg-containers.githubusercontent.com
+
+        # Container registries (base images, DinD, buildx, crane, oras)
+        - matchName: quay.io
+        - matchPattern: "*.quay.io"
+        - matchName: mirror.gcr.io
+        - matchName: gcr.io
+        - matchName: registry.k8s.io
+        - matchName: index.docker.io
+        - matchName: registry-1.docker.io
+        - matchName: auth.docker.io
+        - matchName: production.cloudflare.docker.com
+        - matchName: mcr.microsoft.com
+        - matchName: registry.access.redhat.com
+        # Sigstore (cosign signing and verification, attestations)
+        - matchName: fulcio.sigstore.dev
+        - matchName: rekor.sigstore.dev
+        - matchName: tuf-repo-cdn.sigstore.dev
+
+        # Tool downloads in the workflows and the image builds
+        - matchName: get.helm.sh
+        - matchName: dl.k8s.io
+        - matchName: helm.cilium.io
+        - matchName: aka.ms
+        - matchName: packages.microsoft.com
+        - matchName: download.docker.com
+        - matchName: json.schemastore.org
+        - matchName: downloads.claude.ai
+        - matchName: storage.googleapis.com
+        # Homebrew (the runner image's Brewfile); the bottles come from ghcr.io
+        - matchName: formulae.brew.sh
+        # Fedora and RPM Fusion repositories (homeserver-bootc image builds). The builds pin the repos to these
+        # hosts (build_files/pin-repos.sh in homeserver-bootc), so the metalink mirrors need no entry.
+        - matchName: mirrors.dotsrc.org
+        - matchName: codecs.fedoraproject.org
+        - matchName: download1.rpmfusion.org
+        - matchName: download.copr.fedorainfracloud.org
+        - matchName: repo.linrunner.de
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }
+    # Ubuntu packages (the runner image is Ubuntu based); apt uses plain HTTP
+    - toFQDNs:
+        - matchName: archive.ubuntu.com
+        - matchName: security.ubuntu.com
+        - matchName: ports.ubuntu.com
+      toPorts:
+        - ports:
+            - { port: "80", protocol: TCP }
+            - { port: "443", protocol: TCP }
     # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
     - toEndpoints:
         - matchLabels:
