@@ -49,8 +49,39 @@ endpoints:
   - url: https://192.168.1.240:5000/v2/google-ar-cache
     overridePath: true
 ---
-# zot serves TLS with a certificate for its in-cluster names only, not for this address
+# zot serves TLS with a certificate from certificate-cluster-issuer (k8s/infra/post/registry-system/zot-certificate.yaml);
+# ca is the public certificate of portableinfo-root-ca, valid until 2036-11-07
 apiVersion: v1alpha1
 kind: RegistryTLSConfig
 name: 192.168.1.240:5000
-insecureSkipVerify: true
+ca: |-
+    -----BEGIN CERTIFICATE-----
+    MIIFDjCCAvagAwIBAgIUazpmhiKxB4ElLh2wV6oItaj8HpMwDQYJKoZIhvcNAQEN
+    BQAwHzEdMBsGA1UEAxMUcG9ydGFibGVpbmZvLXJvb3QtY2EwHhcNMjYxMTEwMDg1
+    NzM0WhcNMzYxMTA3MDg1NzM0WjAfMR0wGwYDVQQDExRwb3J0YWJsZWluZm8tcm9v
+    dC1jYTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBALd9yceq8M9TpShL
+    +BnB1SjQxcM1r7ZsT1oiQoAMFwUB8rWctSxZWp+0QD3mDgW33OpElKHReFJ6GFk2
+    74c8aVqI5s7IvU2PBWRD7V34cMBpzi3TXn2dRUXYiR0fsjspDheA/HN7z4j1xIzW
+    W26+b+yanfJvSQYt1UWGhddIxqtJudwBVuJRYTXyQb4HwjOrdrM2I6Oy8vBpJdVn
+    s/1924ajMIyTVAOnPOw9it0lK6sE9A/RXfeAjMvwY+9f5gQ/Whp/EYp6R4uMX2Am
+    hyXp7gOmJeWLZzY0kbL3U+8XMD65e1If6fZjMP7ZrYOSpRCi+s+vgNn/mMtKUbXs
+    pzUgP/sYAa4Y2q8SkJ9yh0ZbGnnMUNApO7oD/KfJBfkpORHvx4rUqqwhY+0V+S43
+    nXZHmI2McPHl/GfMm0QkZT9FgjY5nbThzQEBRIgeFsCY28ZqbYbnVd35DGXxGufE
+    WAlpMBaoFFiFwqD1cylXz0wjQH+kSvBXKkUpqLwBNu1bYLcxaZQDUAyQ4esb43YN
+    o8YgPTNTObTFb4uE6JUWLfRFLW9zkh7Ar20uxuJTp2bjsgRwMVl3657qCUy3jTmX
+    LIWK3RnJovoYsIpHmHb9jPE1PeyXlIBR3/Es31zhK3xbiQCbt83XAQVx6Ea3s59a
+    iDPeGtPKfAjrvvRnManDsbmfBTdXAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwICpDAP
+    BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRrUVpSh+O5fqZICzkG1gKDh6YA9DAN
+    BgkqhkiG9w0BAQ0FAAOCAgEAYschEvpPz5RKnu2FjYRl5kl+Ahjyl+iwGk6KtU7h
+    sxVxtVT7Ifm3NJiIKkWvd0HolISgNuoUoEWg6inyGwzVeC9KHd+yw5bV/p5UzLRU
+    9ebJGbIrIDmrXRO6iGjwM7/cBEoBtO5+lUCp5AmLsznZYbVteiZC4NjxstYx2JaB
+    djyE5vK2MJb4pkwnNDRtzK/xieQm0+tZCnLc/8kMdWD0dJLLx5E/FftF5Aec/RcW
+    7QlbXn+n1vxNg46lqTTv7OIggbqBftkEtoBn0RUt1rGnW/GJG0pKku2+dGoEnAEw
+    d/oUJO6GfUKWi4w/E/izEya8IDUpVz4Fp2B+rDoPCs6ysCSEG/0+zge5JdngRSac
+    eMkonXVuIb7M9EmIMujuCw0VS+bc/Vq+WotvcOhDgUUkIQfk0PrP4Y2cqMk3BDMd
+    u2//VlX7VdcarPOeA62Dj9NbwZj5uYsFrdrHDO77Yhx0L3QM9XtKW8ro+CTTg7sx
+    XoDH6luoOHfRYVjcVh+qXO3CgDAHD18BmzfrJIhfNKkeOJLQOPzsB0t4T8XM6MPi
+    GLJ9Mab6ISsocCMKDJD36HEkUxQr7C2uTo7f1cZXGfkfVbQMboZt+Hmp/qecqXJh
+    fBAJYIv0luS474PwrDHelERVvwrQT3mUnUWJkcYzKI/g7snFImB7fbTn1ZL83lM6
+    yx0=
+    -----END CERTIFICATE-----
