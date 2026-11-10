@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 8ebb3489fa7425dfe057a93071e4a18e645d1aef50a4d6ef83be6c6371cdd63
+    actions.github.com/values-hash: 6003e98cd81f5c161f624064bf5f532479f87009f737b40371eac3c4bfbce6a
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -210,12 +210,12 @@ spec:
         fsGroup: 1001
       serviceAccountName: arc-ubuntu-gha-rs-no-permission
       volumes:
-      - name: ca-certs
-        secret:
+      - configMap:
           items:
-          - key: ca.crt
+          - key: ca-bundle.crt
             path: ca.crt
-          secretName: arc-runner-cert
+          name: portableinfo-ca-bundle
+        name: ca-certs
       - hostPath:
           path: /run/udev
           type: Directory
