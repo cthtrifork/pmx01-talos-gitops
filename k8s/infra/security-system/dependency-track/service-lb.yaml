@@ -1,27 +1,5 @@
-# LAN-only access through MetalLB, as for zot-lb. Plain HTTP. Only the frontend is exposed through Omni: it proxies /api
-# to the api-server (nginx-default.conf.template), the api-server address is for LAN clients.
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: dependency-track-frontend-lb
-  namespace: security-system
-  annotations:
-    omni-kube-service-exposer.sidero.dev/label: Dependency-Track
-    omni-kube-service-exposer.sidero.dev/port: "50089"
-    omni-kube-service-exposer.sidero.dev/prefix: dtrack
-    metallb.io/loadBalancerIPs: 192.168.1.241
-spec:
-  type: LoadBalancer
-  ports:
-    - port: 8080
-      targetPort: web
-      protocol: TCP
-      name: web
-  selector:
-    app.kubernetes.io/instance: dependency-track
-    app.kubernetes.io/name: dependency-track-frontend
-    app.kubernetes.io/component: frontend
+# LAN-only access to the api-server through MetalLB, as for zot-lb, for API clients (the UI is served by the IngressRoute
+# in post/security-system/). Plain HTTP.
 ---
 apiVersion: v1
 kind: Service
