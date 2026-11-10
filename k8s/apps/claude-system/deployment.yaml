@@ -108,7 +108,7 @@ spec:
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: delta
             - name: OTEL_RESOURCE_ATTRIBUTES
-              value: environment=claude-rc
+              value: environment=claude-k8s-helper
             - name: OTEL_METRICS_INCLUDE_SESSION_ID
               value: "false" # a session_id label would start a new set of series per session
             - name: OTEL_METRICS_INCLUDE_ACCOUNT_UUID
