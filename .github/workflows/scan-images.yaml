@@ -52,26 +52,19 @@ jobs:
       - name: Install PyYAML
         run: pip install --quiet "pyyaml==${PYYAML_VERSION}"
       - name: Extract changed images
-        # extract-images.py prints the (old image, new image) tuples of one file; merge them per new image.
-        # Manual runs list every image under k8s/ instead, with nothing to compare against.
+        # Compares each changed file with its version on the base commit. Manual runs list every image.
         id: extract
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
         run: |
           if [ -n "${BASE_SHA}" ]; then
-            base=(--base "${BASE_SHA}")
             mapfile -t files <<< "${CHANGED_FILES}"
+            python scripts/ci/extract-images.py --base "${BASE_SHA}" "${files[@]}" > images.json
           else
-            base=()
-            mapfile -t files < <(git ls-files 'k8s/*.yaml' 'k8s/*.yml' ':!:k8s/**/kyverno-policies/**' ':!:k8s/**/policies/tests/**')
+            python scripts/ci/extract-images.py --all > images.json
           fi
-          for file in "${files[@]}"; do
-            [ -z "${file}" ] || python scripts/ci/extract-images.py "${base[@]}" "${file}"
-          done | jq -s -c 'add // [] | group_by(.ref)
-            | map({ref: .[0].ref, oldref: (map(.oldref) | map(select(. != "")) | first // ""), files: (map(.file) | unique | .[:5])})
-            | .[:256] | to_entries | map(.value + {id: .key})' > images.json
-          jq -r '.[] | "\(if .oldref == "" then "(new)" else .oldref end) -> \(.ref)"' images.json
+          jq -r '.[] | "\(.oldref) -> \(.ref)"' images.json
           echo "images=$(cat images.json)" >> "${GITHUB_OUTPUT}"
           echo "count=$(jq length images.json)" >> "${GITHUB_OUTPUT}"
 
