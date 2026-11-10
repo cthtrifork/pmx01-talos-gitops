@@ -18,8 +18,6 @@ trivy server and the scan jobs:
   `<cache-dir>/vex`. `skip-vex-repo-update` keeps Trivy from downloading anything at scan time, so the URLs in the file
   are not fetched. The image is rebuilt when `vex/` changes on `main` and when the workflow is run by hand; the Trivy VEX hub
   part only changes when it runs. VEX statements mark CVEs as not exploitable in a product.
-- `vex-hub/` (Redpanda Connect) serves the hub and `vex/` over HTTP inside the cluster, fetching them from GitHub every 6
-  hours. The URLs in `repository.yaml` point at it; nothing in the cluster fetches from it.
 - `trivy-operator/ignore/trivyignore.yaml` (`trivy-ignorefile`): accepted findings, with an expiry.
 - `trivy-operator/ignore/ignore-policy.rego` (`trivy-ignorepolicy`): a Rego policy, `ignore` is false by default.
 
@@ -37,8 +35,8 @@ it at start); a scan job reads it when it starts.
 ## Network policies
 
 `networkpolicy.yaml` denies all traffic in both directions for the namespace and then allows, per workload, what Hubble showed
-it needs (one policy each for Dependency-Track, `sbom-hook`, `vex-hub`, the trivy operator, the trivy server, the scan jobs and
-the Dependency-Track jobs). The scan jobs may reach the trivy server (4954), zot (5000), `vex-hub` (4195) and the internet;
+it needs (one policy each for Dependency-Track, `sbom-hook`, the trivy operator, the trivy server, the scan jobs and
+the Dependency-Track jobs). The scan jobs may reach the trivy server (4954), zot (5000) and the internet;
 clients reach `trivy-service` (4954).
 
 ## The Dependency-Track KEK
