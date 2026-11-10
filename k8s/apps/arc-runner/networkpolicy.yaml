@@ -75,6 +75,13 @@ spec:
         - matchName: json.schemastore.org
         - matchName: downloads.claude.ai
         - matchName: storage.googleapis.com
+        # npm (claude-vm: Claude Code, Playwright) and Playwright's browser CDN
+        - matchName: registry.npmjs.org
+        - matchName: cdn.playwright.dev
+        - matchName: playwright.download.prss.microsoft.com
+        # Zed editor (homeserver-gui)
+        - matchName: zed.dev
+        - matchName: cloud.zed.dev
         # Homebrew (the runner image's Brewfile); the bottles come from ghcr.io
         - matchName: formulae.brew.sh
         # Fedora and RPM Fusion repositories (homeserver-bootc image builds). The builds pin the repos to these
