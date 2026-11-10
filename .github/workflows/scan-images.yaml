@@ -80,41 +80,9 @@ jobs:
           echo "images=$(cat images.json)" >> "${GITHUB_OUTPUT}"
           echo "count=$(jq length images.json)" >> "${GITHUB_OUTPUT}"
 
-  trivy-db:
-    # Download the vulnerability databases once; the scan jobs only restore them (no registry rate limits).
-    name: Fetch Trivy database
-    needs: extract
-    if: needs.extract.outputs.count != '0'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Date
-        id: date
-        run: echo "date=$(date -u +%F)" >> "${GITHUB_OUTPUT}"
-      - name: Cache databases
-        id: cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/trivy-cache
-          key: trivy-db-${{ steps.date.outputs.date }}
-      - name: Setup Trivy
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
-        with:
-          version: ${{ env.TRIVY_VERSION }}
-      - name: Download databases
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          trivy image --cache-dir "${RUNNER_TEMP}/trivy-cache" --download-db-only
-          trivy image --cache-dir "${RUNNER_TEMP}/trivy-cache" --download-java-db-only
-
   scan:
     name: Scan ${{ matrix.image.ref }}
-    needs: [extract, trivy-db]
+    needs: extract
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -130,26 +98,47 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Date
-        id: date
-        run: echo "date=$(date -u +%F)" >> "${GITHUB_OUTPUT}"
-      - name: Restore Trivy databases
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/trivy-cache
-          key: trivy-db-${{ steps.date.outputs.date }}
-          fail-on-cache-miss: true
-      - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
-        with:
-          version: ${{ env.TRIVY_VERSION }}
       - name: Login to ghcr.io
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Scan images
+      - run: mkdir out
+      # trivy-action installs Trivy and caches its vulnerability databases per day.
+      # A failed scan (missing tag, registry down) leaves no output file; the comment then says so.
+      - name: Scan new image
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: image
+          image-ref: ${{ matrix.image.ref }}
+          format: json
+          output: out/new.json
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          hide-progress: true
+        env:
+          TRIVY_IGNORE_STATUS: not_affected,will_not_fix
+      - name: Scan old image
+        if: matrix.image.oldref != ''
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: ${{ env.TRIVY_VERSION }}
+          scan-type: image
+          image-ref: ${{ matrix.image.oldref }}
+          format: json
+          output: out/old.json
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          hide-progress: true
+        env:
+          TRIVY_IGNORE_STATUS: not_affected,will_not_fix
+      - name: Render report
         # Image references come from the PR's manifests, so they only reach the shell through env.
         env:
           NEW_REF: ${{ matrix.image.ref }}
@@ -157,18 +146,6 @@ jobs:
           FILES: ${{ join(matrix.image.files, '`, `') }}
           ID: ${{ matrix.image.id }}
         run: |
-          mkdir -p out
-          scan() { # <image> <output file>; a failed scan leaves no file and is reported in the comment
-            trivy image --quiet --format json --output "$2" \
-              --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed \
-              --ignore-status not_affected,will_not_fix \
-              --cache-dir "${RUNNER_TEMP}/trivy-cache" --skip-db-update --skip-java-db-update \
-              "$1" || echo "::warning::Trivy could not scan $1"
-          }
-          scan "${NEW_REF}" out/new.json
-          if [ -n "${OLD_REF}" ]; then
-            scan "${OLD_REF}" out/old.json
-          fi
           # The report is an unzipped artifact, so its file name is the artifact name.
           name="$(sed -E 's/@.*$//; s/[^A-Za-z0-9._-]+/_/g' <<< "${NEW_REF}")"
           echo "report=out/${ID}-${name}.md" >> "${GITHUB_ENV}"
@@ -208,7 +185,7 @@ jobs:
   scan-complete:
     # Stable single check to require in branch protection: the scan job is skipped when no image changed.
     name: Image scan complete
-    needs: [extract, trivy-db, scan]
+    needs: [extract, scan]
     if: always()
     runs-on: ubuntu-slim
     timeout-minutes: 5
