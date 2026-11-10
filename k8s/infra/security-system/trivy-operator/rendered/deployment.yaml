@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    configmap.reloader.stakater.com/reload: trivy-operator,trivy-operator-config,trivy-operator-trivy-config
+    configmap.reloader.stakater.com/reload: trivy-operator,trivy-operator-config,trivy-operator-trivy-config,portableinfo-ca-bundle
   labels:
     app.kubernetes.io/instance: trivy-operator
     app.kubernetes.io/managed-by: Helm
@@ -26,7 +26,7 @@ spec:
       labels:
         app.kubernetes.io/instance: trivy-operator
         app.kubernetes.io/name: trivy-operator
-        config-revision: "1"
+        config-revision: "2"
         prometheus-scrape: "true"
     spec:
       automountServiceAccountToken: true

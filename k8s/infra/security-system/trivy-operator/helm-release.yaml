@@ -43,6 +43,22 @@ spec:
                     port: trivy-http
                   periodSeconds: 10
                   failureThreshold: 180
+          # the server reads the CA bundle (zot's certificate) and its config at start; reloader restarts it when they change
+          - target:
+              kind: StatefulSet
+              name: trivy-server
+            patch: |
+              apiVersion: apps/v1
+              kind: StatefulSet
+              metadata:
+                name: trivy-server
+                annotations:
+                  configmap.reloader.stakater.com/reload: portableinfo-ca-bundle,trivy-operator-trivy-config
+              spec:
+                template:
+                  metadata:
+                    labels:
+                      config-revision: "1" # rolls the server once for the new CA; bump to roll it by hand
   # https://github.com/aquasecurity/trivy-operator/blob/main/deploy/helm/values.yaml
   values:
     image:
@@ -177,10 +193,10 @@ spec:
     operator:
       # the operator reads these at start and the chart's checksum/config does not cover the scanJob.* keys
       annotations:
-        configmap.reloader.stakater.com/reload: trivy-operator,trivy-operator-config,trivy-operator-trivy-config
+        configmap.reloader.stakater.com/reload: trivy-operator,trivy-operator-config,trivy-operator-trivy-config,portableinfo-ca-bundle
       podLabels:
         prometheus-scrape: "true"
-        config-revision: "1" # bump to roll the operator after a scanJob.* change that reloader did not see
+        config-revision: "2" # bump to roll the operator after a scanJob.* change that reloader did not see
       replicas: 2
       scanJobsInSameNamespace: true
       # every report (SbomReport included) is POSTed here; sbom-hook uploads the SBOMs to Dependency-Track

@@ -37,8 +37,10 @@ spec:
         - https://registry.k8s.io
         - https://quay.io
         - https://us-docker.pkg.dev
-      # keep the Talos mirror hosts after Spegel: Spegel, then zot, then the upstream registry
+      # keep the Talos mirror hosts after Spegel: Spegel, then zot, then the upstream registry; restart the pods after a Talos registry patch (docs/registry-mirrors.md)
       prependExisting: true
+    serviceMonitor:
+      enabled: true
     grafanaDashboard:
       enabled: true
       labels:

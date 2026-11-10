@@ -1,6 +1,8 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: portableinfo-ca-bundle,trivy-operator-trivy-config
   labels:
     app.kubernetes.io/instance: trivy-server
     app.kubernetes.io/name: trivy-server
@@ -21,6 +23,7 @@ spec:
       labels:
         app.kubernetes.io/instance: trivy-server
         app.kubernetes.io/name: trivy-server
+        config-revision: "1"
     spec:
       automountServiceAccountToken: false
       containers:
