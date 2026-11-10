@@ -97,7 +97,9 @@ jobs:
       # The databases come from the cache that the trivy-db job fills.
       TRIVY_SKIP_DB_UPDATE: true
       TRIVY_SKIP_JAVA_DB_UPDATE: true
-      TRIVY_IGNORE_STATUS: not_affected,will_not_fix
+      # Same values as the trivy-operator scans.
+      IGNORE_STATUS: not_affected,will_not_fix
+      SEVERITY: CRITICAL,HIGH
     permissions:
       contents: read
       packages: read # pull ghcr.io/cthtrifork/* images
@@ -126,23 +128,36 @@ jobs:
           format: json
           output: out/new.json
           scanners: vuln
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+          severity: ${{ env.SEVERITY }}
+          # The same ignore files the trivy-operator uses, so both agree on accepted findings.
+          trivyignores: k8s/infra/security-system/trivy-operator/ignore/trivyignore.yaml
+          ignore-policy: k8s/infra/security-system/trivy-operator/ignore/ignore-policy.rego
+          ignore-unfixed: false
           hide-progress: true
+        env:
+          TRIVY_IGNORE_STATUS: ${{ env.IGNORE_STATUS }}
       - name: Scan old image
         if: matrix.image.oldref != ''
         continue-on-error: true
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           version: ${{ env.TRIVY_VERSION }}
+          # Trivy and its database are already in place from the scan above.
+          skip-setup-trivy: true
+          cache: false
           scan-type: image
           image-ref: ${{ matrix.image.oldref }}
           format: json
           output: out/old.json
           scanners: vuln
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
+          severity: ${{ env.SEVERITY }}
+          # The same ignore files the trivy-operator uses, so both agree on accepted findings.
+          trivyignores: k8s/infra/security-system/trivy-operator/ignore/trivyignore.yaml
+          ignore-policy: k8s/infra/security-system/trivy-operator/ignore/ignore-policy.rego
+          ignore-unfixed: false
           hide-progress: true
+        env:
+          TRIVY_IGNORE_STATUS: ${{ env.IGNORE_STATUS }}
       - name: Summarize
         # Image references come from the PR's manifests, so they only reach the shell through env.
         env:
