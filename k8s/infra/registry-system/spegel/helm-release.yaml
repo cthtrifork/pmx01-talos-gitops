@@ -30,6 +30,8 @@ spec:
       containerdRegistryConfigPath: /etc/cri/conf.d/hosts
       # -- Registries for which mirror configuration will be created. Empty means all registires will be mirrored.
       mirroredRegistries: []
+    serviceMonitor:
+      enabled: true
     grafanaDashboard:
       enabled: true
       labels:
