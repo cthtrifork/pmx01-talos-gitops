@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Helpers for the "Scan changed images" workflow (.github/workflows/scan-images.yaml).
 
-  extract  List the images a PR adds or re-tags in the k8s/ manifests, as a JSON matrix.
-  compare  Compare two Trivy JSON reports (old image vs new image) into a small summary JSON.
-  report   Aggregate the summaries of all scanned images into one Markdown PR comment.
+Lists the images a PR adds or re-tags in the k8s/ manifests, as a JSON matrix for the scan jobs. Everything
+else (scanning, diffing, the PR comment) lives in the workflow and scripts/ci/scan-images-section.sh.
 
 Only needs PyYAML (pip install pyyaml) and git on PATH.
 """
@@ -18,14 +17,9 @@ from pathlib import Path
 import yaml
 
 SCAN_ROOT = "k8s"
-# Same exclusions as the Kyverno/policy test fixtures: they contain deliberately odd images.
+# Kyverno policy test fixtures contain deliberately odd images.
 EXCLUDE = re.compile(r"(^|/)(kyverno-policies|policies/tests)/")
 MAX_MATRIX = 256  # GitHub's hard limit on matrix jobs
-SEVERITIES = ("CRITICAL", "HIGH")
-COMMENT_LIMIT = 60000  # GitHub caps a comment at 65536 characters
-
-
-# ——— extract ———
 
 
 class Loader(yaml.SafeLoader):
@@ -126,9 +120,8 @@ def images_in(content):
     return found
 
 
-def changed_files(base):
-    out = git("diff", "--name-only", "--diff-filter=ACMR", f"{base}...HEAD", "--", SCAN_ROOT).stdout
-    return [f for f in out.splitlines() if f.endswith((".yaml", ".yml")) and not EXCLUDE.search(f)]
+def filter_files(paths):
+    return [f for f in paths if f.startswith(f"{SCAN_ROOT}/") and f.endswith((".yaml", ".yml")) and not EXCLUDE.search(f)]
 
 
 def all_files():
@@ -139,7 +132,11 @@ def all_files():
 
 def cmd_extract(args):
     # "all" (manual run) scans every image once, with nothing to compare against.
-    files = all_files() if args.all else changed_files(args.base)
+    if args.all:
+        files = all_files()
+    else:
+        # Whitespace-separated list from the changed-files action.
+        files = filter_files(os.environ.get(args.files_env, "").split())
     results = {}  # new ref -> entry
     for path in files:
         try:
@@ -192,163 +189,15 @@ def emit_output(key, value):
             f.write(line + "\n")
 
 
-# ——— compare ———
-
-
-def load_vulns(path):
-    """Return {(id, pkg): vuln} from a Trivy JSON report, or None if missing/invalid."""
-    try:
-        data = json.loads(Path(path).read_text())
-    except (FileNotFoundError, ValueError):
-        return None
-    vulns = {}
-    for result in data.get("Results") or []:
-        for v in result.get("Vulnerabilities") or []:
-            vulns[(v["VulnerabilityID"], v.get("PkgName", ""))] = v
-    return vulns
-
-
-def counts(vulns):
-    return {s: sum(1 for v in vulns.values() if v.get("Severity") == s) for s in SEVERITIES}
-
-
-def slim(v):
-    return {
-        "id": v["VulnerabilityID"],
-        "pkg": v.get("PkgName", ""),
-        "severity": v.get("Severity", ""),
-        "installed": v.get("InstalledVersion", ""),
-        "fixed": v.get("FixedVersion", ""),
-        "title": v.get("Title", ""),
-    }
-
-
-def cmd_compare(args):
-    entry = json.loads(args.entry)
-    new = load_vulns(args.new)
-    old = load_vulns(args.old) if args.old else None
-    summary = {k: entry.get(k) for k in ("id", "ref", "oldref", "files")}
-    summary["new_scanned"] = new is not None
-    summary["old_scanned"] = old is not None
-    if new is not None:
-        summary["new"] = counts(new)
-        summary["vulns"] = [slim(v) for v in new.values()]
-    if old is not None:
-        summary["old"] = counts(old)
-    if new is not None and old is not None:
-        summary["added"] = [slim(new[k]) for k in sorted(new.keys() - old.keys())]
-        summary["removed"] = [slim(old[k]) for k in sorted(old.keys() - new.keys())]
-    Path(args.out).write_text(json.dumps(summary))
-
-
-# ——— report ———
-
-MARKER = "<!-- scan-images -->"
-SEV_ORDER = {s: i for i, s in enumerate(SEVERITIES)}
-
-
-def badge(c):
-    return f"🔴 {c['CRITICAL']} critical · 🟠 {c['HIGH']} high"
-
-
-def delta(new, old):
-    out = []
-    for s in SEVERITIES:
-        d = new[s] - old[s]
-        out.append(f"{s.lower()} {d:+d}" if d else f"{s.lower()} ±0")
-    return ", ".join(out)
-
-
-def vuln_table(vulns, limit=50):
-    rows = sorted(vulns, key=lambda v: (SEV_ORDER.get(v["severity"], 9), v["id"]))
-    lines = ["| ID | Severity | Package | Installed | Fixed |", "|---|---|---|---|---|"]
-    for v in rows[:limit]:
-        vid = f"[{v['id']}](https://avd.aquasec.com/nvd/{v['id'].lower()})" if v["id"].startswith("CVE-") else v["id"]
-        lines.append(f"| {vid} | {v['severity']} | `{v['pkg']}` | {v['installed']} | {v['fixed']} |")
-    if len(rows) > limit:
-        lines.append(f"\n_… and {len(rows) - limit} more_")
-    return "\n".join(lines)
-
-
-def section(s):
-    title = f"`{s['oldref']}` → `{s['ref']}`" if s["oldref"] else f"`{s['ref']}` (new)"
-    lines = [f"### {title}", ""]
-    if s["files"]:
-        lines.append("Changed in: " + ", ".join(f"`{f}`" for f in s["files"]) + "\n")
-    if not s["new_scanned"]:
-        lines.append("⚠️ The new image could not be scanned (does the tag exist, and is the registry reachable?).\n")
-        return "\n".join(lines)
-    lines.append(f"**New:** {badge(s['new'])}")
-    if s["old_scanned"]:
-        lines.append(f"**Old:** {badge(s['old'])} ({delta(s['new'], s['old'])})")
-    elif s["oldref"]:
-        lines.append("**Old:** could not be scanned, no diff available.")
-    lines.append("")
-    if s["old_scanned"]:
-        if s.get("added"):
-            lines += [f"<details><summary>🆕 {len(s['added'])} introduced</summary>\n", vuln_table(s["added"]), "\n</details>\n"]
-        if s.get("removed"):
-            lines += [f"<details><summary>✅ {len(s['removed'])} fixed</summary>\n", vuln_table(s["removed"]), "\n</details>\n"]
-        if not s.get("added") and not s.get("removed"):
-            lines.append("No change in fixable CRITICAL/HIGH vulnerabilities.\n")
-    elif s["vulns"]:
-        lines += [f"<details><summary>{len(s['vulns'])} vulnerabilities</summary>\n", vuln_table(s["vulns"]), "\n</details>\n"]
-    else:
-        lines.append("No fixable CRITICAL/HIGH vulnerabilities.\n")
-    return "\n".join(lines)
-
-
-def cmd_report(args):
-    summaries = [json.loads(p.read_text()) for p in sorted(Path(args.dir).glob("**/summary-*.json"))]
-    # Worst regressions first: most newly introduced criticals, then highs.
-    summaries.sort(
-        key=lambda s: (
-            -sum(1 for v in s.get("added", []) if v["severity"] == "CRITICAL"),
-            -len(s.get("added", [])),
-            s["ref"],
-        )
-    )
-    head = [
-        MARKER,
-        "## Image vulnerability scan",
-        "",
-        f"{len(summaries)} new or changed image(s). Fixable CRITICAL/HIGH only; informational, does not block the PR.",
-        "",
-    ]
-    if not summaries:
-        head.append("No image changes detected.")
-    parts = [section(s) for s in summaries]
-    body = "\n".join(head) + "\n" + "\n".join(parts)
-    if len(body) > COMMENT_LIMIT:
-        body = body[:COMMENT_LIMIT].rsplit("\n", 1)[0] + "\n\n_… truncated, see the workflow run for the rest._"
-    Path(args.out).write_text(body + "\n")
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest="cmd", required=True)
-
-    p = sub.add_parser("extract")
-    p.add_argument("--base", help="base commit/ref to diff against (merge-base is used)")
-    p.add_argument("--all", action="store_true", help="scan every image under k8s/, no comparison")
-    p.set_defaults(fn=cmd_extract)
-
-    p = sub.add_parser("compare")
-    p.add_argument("--entry", required=True, help="matrix entry as JSON")
-    p.add_argument("--new", required=True)
-    p.add_argument("--old")
-    p.add_argument("--out", required=True)
-    p.set_defaults(fn=cmd_compare)
-
-    p = sub.add_parser("report")
-    p.add_argument("--dir", required=True)
-    p.add_argument("--out", required=True)
-    p.set_defaults(fn=cmd_report)
-
+    ap.add_argument("--base", help="base commit to read the old manifests from")
+    ap.add_argument("--files-env", default="CHANGED_FILES", help="env var holding the changed files")
+    ap.add_argument("--all", action="store_true", help="scan every image under k8s/, no comparison")
     args = ap.parse_args()
-    if args.cmd == "extract" and not args.all and not args.base:
-        ap.error("extract needs --base or --all")
-    args.fn(args)
+    if not args.all and not args.base:
+        ap.error("needs --base or --all")
+    cmd_extract(args)
 
 
 if __name__ == "__main__":
