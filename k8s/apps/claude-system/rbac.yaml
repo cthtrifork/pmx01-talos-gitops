@@ -64,6 +64,7 @@ rules:
       - metallb.io
       - frrk8s.metallb.io
       - aquasecurity.github.io
+      - actions.github.com
     resources:
       - "*"
     verbs:
