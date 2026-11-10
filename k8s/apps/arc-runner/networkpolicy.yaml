@@ -83,6 +83,8 @@ spec:
         - matchName: codecs.fedoraproject.org
         - matchName: download1.rpmfusion.org
         - matchName: download.copr.fedorainfracloud.org
+        # COPR serves its repos from packages.redhat.com (download.copr redirects there)
+        - matchName: packages.redhat.com
         - matchName: repo.linrunner.de
       toPorts:
         - ports:
@@ -92,6 +94,7 @@ spec:
         - matchName: archive.ubuntu.com
         - matchName: security.ubuntu.com
         - matchName: ports.ubuntu.com
+        - matchName: ppa.launchpadcontent.net
       toPorts:
         - ports:
             - { port: "80", protocol: TCP }
