@@ -64,6 +64,8 @@ spec:
             app.kubernetes.io/name: dependency-track-config
         - matchLabels:
             app.kubernetes.io/name: dependency-track-vex-export
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-frontend
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
@@ -83,7 +85,8 @@ spec:
     - toEntities:
         - world
 ---
-# Dependency-Track frontend: browser and LAN (dependency-track-frontend-lb, 192.168.1.241) and the Omni exposer.
+# Dependency-Track frontend: browser and LAN (dependency-track-frontend-lb, 192.168.1.241) and the Omni exposer. It proxies
+# /api to the api-server.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -99,6 +102,13 @@ spec:
         - host
         - remote-node
         - kube-apiserver
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: dependency-track-api-server
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }

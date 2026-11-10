@@ -13,5 +13,9 @@ configMapGenerator:
     namespace: security-system
     files:
       - config.json=frontend-config.json
+  - name: dependency-track-frontend-nginx
+    namespace: security-system
+    files:
+      - default.conf.template=nginx-default.conf.template
 generatorOptions:
   disableNameSuffixHash: true # the helm values refer to the ConfigMap by name; Reloader restarts the pod on a change

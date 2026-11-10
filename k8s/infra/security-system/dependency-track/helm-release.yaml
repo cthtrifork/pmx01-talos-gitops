@@ -84,8 +84,9 @@ spec:
       image:
         # renovate: datasource=docker depName=mirror.gcr.io/dependencytrack/frontend versioning=semver
         tag: 5.2.1@sha256:1c0f63b083af8e89ff4ede5e7ed5cfc4e23ab871fa140ed101e8dc56f53eb51c
-      # The SPA calls the API from the browser, so this is the LAN address of dependency-track-api-server-lb (service-lb.yaml).
-      apiBaseUrl: "https://dtrackapi-portableinfo.workload.eu-central-1.omni.siderolabs.io"
+      # The SPA calls the API from the browser, on its own origin: the nginx-default.conf.template mounted below proxies
+      # /api to the api-server, so the Omni workload proxy sees one hostname and there is no CORS.
+      apiBaseUrl: "https://dtrack-portableinfo.workload.eu-central-1.omni.siderolabs.io"
       # Read-only root filesystem. The image's entrypoint hooks normally write two things at start: the nginx site config
       # into /etc/nginx/conf.d (an emptyDir is enough, the template stays in the image) and API_BASE_URL etc. into
       # static/config.json. The second hook skips itself when it cannot modify the file, so config.json is mounted from a
@@ -101,10 +102,17 @@ spec:
         - name: frontend-config
           configMap:
             name: dependency-track-frontend-config
+        - name: nginx-template
+          configMap:
+            name: dependency-track-frontend-nginx
       additionalVolumeMounts:
         - name: nginx-conf
           mountPath: /etc/nginx/conf.d
         - name: frontend-config
           mountPath: /opt/owasp/dependency-track-frontend/static/config.json
           subPath: config.json
+          readOnly: true
+        - name: nginx-template
+          mountPath: /etc/nginx/templates/default.conf.template
+          subPath: default.conf.template
           readOnly: true
