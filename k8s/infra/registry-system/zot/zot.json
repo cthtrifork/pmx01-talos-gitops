@@ -66,9 +66,18 @@
           "repositories": ["ghcr-private/**"],
           "deleteReferrers": true,
           "deleteUntagged": true,
+          "keepUntagged": {
+            "mostRecentlyPushedCount": 1,
+            "mostRecentlyPulledCount": 1
+          },
           "keepTags": [
             {
-              "patterns": ["^$"]
+              "patterns": ["latest"]
+            },
+            {
+              "mostRecentlyPushedCount": 1,
+              "mostRecentlyPulledCount": 1,
+              "pulledWithin": "168h"
             }
           ]
         },
@@ -121,6 +130,19 @@
             {
               "prefix": "**",
               "destination": "/docker-hub-cache"
+            }
+          ],
+          "onDemand": true,
+          "tlsVerify": true,
+          "maxRetries": 1,
+          "retryDelay": "5s"
+        },
+        {
+          "urls": ["https://ghcr.io"],
+          "content": [
+            {
+              "prefix": "/cthtrifork/**",
+              "destination": "/ghcr-private"
             }
           ],
           "onDemand": true,
