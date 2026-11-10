@@ -15,3 +15,4 @@ for severity in CRITICAL HIGH; do
     [ "$new" -lt "$old" ] 2> /dev/null && arrow="⬇️"
     echo "| $severity | $old | $new | $arrow |"
 done
+echo
