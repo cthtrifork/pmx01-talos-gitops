@@ -97,7 +97,9 @@ jobs:
       # The databases come from the cache that the trivy-db job fills.
       TRIVY_SKIP_DB_UPDATE: true
       TRIVY_SKIP_JAVA_DB_UPDATE: true
-      TRIVY_IGNORE_STATUS: not_affected,will_not_fix
+      # Overridable with repository variables; the defaults match the trivy-operator scans.
+      IGNORE_STATUS: ${{ vars.IGNORE_STATUS || 'not_affected,will_not_fix' }}
+      SEVERITY: ${{ vars.SEVERITY || 'CRITICAL,HIGH' }}
     permissions:
       contents: read
       packages: read # pull ghcr.io/cthtrifork/* images
@@ -126,9 +128,14 @@ jobs:
           format: json
           output: out/new.json
           scanners: vuln
-          severity: CRITICAL,HIGH
+          severity: ${{ env.SEVERITY }}
+          # The same ignore files the trivy-operator uses, so both agree on accepted findings.
+          trivyignores: k8s/infra/security-system/trivy-operator/ignore/trivyignore.yaml
+          ignore-policy: k8s/infra/security-system/trivy-operator/ignore/ignore-policy.rego
           ignore-unfixed: true
           hide-progress: true
+        env:
+          TRIVY_IGNORE_STATUS: ${{ env.IGNORE_STATUS }}
       - name: Scan old image
         if: matrix.image.oldref != ''
         continue-on-error: true
@@ -140,9 +147,14 @@ jobs:
           format: json
           output: out/old.json
           scanners: vuln
-          severity: CRITICAL,HIGH
+          severity: ${{ env.SEVERITY }}
+          # The same ignore files the trivy-operator uses, so both agree on accepted findings.
+          trivyignores: k8s/infra/security-system/trivy-operator/ignore/trivyignore.yaml
+          ignore-policy: k8s/infra/security-system/trivy-operator/ignore/ignore-policy.rego
           ignore-unfixed: true
           hide-progress: true
+        env:
+          TRIVY_IGNORE_STATUS: ${{ env.IGNORE_STATUS }}
       - name: Summarize
         # Image references come from the PR's manifests, so they only reach the shell through env.
         env:
