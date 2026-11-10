@@ -11,7 +11,6 @@ on:
       - "k8s/**"
       - "scripts/ci/scan-images.py"
       - ".github/workflows/scan-images.yaml"
-      - ".github/actions/setup-trivy/**"
 
 concurrency:
   group: scan-images-${{ github.head_ref || github.ref_name }}
@@ -74,7 +73,7 @@ jobs:
           key: trivy-db-${{ steps.date.outputs.date }}
       - name: Setup Trivy
         if: steps.cache.outputs.cache-hit != 'true'
-        uses: ./.github/actions/setup-trivy
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:
           version: ${{ env.TRIVY_VERSION }}
       - name: Download databases
@@ -110,7 +109,7 @@ jobs:
           key: trivy-db-${{ steps.date.outputs.date }}
           fail-on-cache-miss: true
       - name: Setup Trivy
-        uses: ./.github/actions/setup-trivy
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:
           version: ${{ env.TRIVY_VERSION }}
       - name: Install PyYAML
