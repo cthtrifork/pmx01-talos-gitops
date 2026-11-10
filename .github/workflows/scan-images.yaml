@@ -10,7 +10,7 @@ on:
     paths:
       - "k8s/**"
       - "scripts/ci/extract-images.py"
-      - "scripts/ci/scan-images-section.sh"
+      - "scripts/ci/scan-images-summary.sh"
       - ".github/workflows/scan-images.yaml"
 
 concurrency:
@@ -65,14 +65,13 @@ jobs:
             python scripts/ci/extract-images.py old.yaml "${file}"
           done <<< "${CHANGED_FILES}" > tuples.json
       - name: Build scan matrix
-        # Merge the tuples: one entry per new image, with the files it changed in (max 256: the matrix limit).
+        # A unique list of (old image, new image) tuples, each with the files it changed in.
         id: extract
         run: |
           jq -s -c '
             add // []
-            | group_by(.ref)
-            | map({ref: .[0].ref, oldref: (map(.oldref) | max), files: (map(.file) | unique | .[:5])})
-            | .[:256]
+            | group_by([.oldref, .ref])
+            | map({oldref: .[0].oldref, ref: .[0].ref, files: map(.file)})
             | to_entries
             | map(.value + {id: .key})
           ' tuples.json > images.json
@@ -138,32 +137,32 @@ jobs:
           hide-progress: true
         env:
           TRIVY_IGNORE_STATUS: not_affected,will_not_fix
-      - name: Render report
+      - name: Summarize
         # Image references come from the PR's manifests, so they only reach the shell through env.
         env:
           NEW_REF: ${{ matrix.image.ref }}
           OLD_REF: ${{ matrix.image.oldref }}
-          FILES: ${{ join(matrix.image.files, '`, `') }}
           ID: ${{ matrix.image.id }}
         run: |
-          # The report is an unzipped artifact, so its file name is the artifact name.
+          ./scripts/ci/scan-images-summary.sh "${OLD_REF}" "${NEW_REF}" out/old.json out/new.json > out/comment.md
+          # An unzipped artifact is named after its file.
           name="$(sed -E 's/@.*$//; s/[^A-Za-z0-9._-]+/_/g' <<< "${NEW_REF}")"
-          echo "report=out/${ID}-${name}.md" >> "${GITHUB_ENV}"
-          ./scripts/ci/scan-images-section.sh "${NEW_REF}" "${OLD_REF}" "\`${FILES}\`" \
-            out/new.json out/old.json out/comment.md "out/${ID}-${name}.md"
+          [ ! -s out/new.json ] || mv out/new.json "out/${ID}-${name}.trivy.json"
       - name: Upload full report
         id: upload
+        if: hashFiles('out/*.trivy.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          path: ${{ env.report }}
+          path: out/*.trivy.json
           archive: false
           retention-days: 14
       - name: Add report link
+        if: steps.upload.outputs.artifact-url != ''
         env:
           URL: ${{ steps.upload.outputs.artifact-url }}
-        run: |
-          printf '\n[Full vulnerability report for the new image](%s) (Markdown artifact)\n' "${URL}" >> out/comment.md
-          cat out/comment.md >> "${GITHUB_STEP_SUMMARY}"
+        run: echo "[Trivy report of the new image (JSON)](${URL})" >> out/comment.md
+      - name: Job summary
+        run: cat out/comment.md >> "${GITHUB_STEP_SUMMARY}"
       - name: Comment on the PR
         # One comment per image, updated in place. Fork PRs get a read-only token; the job summary has the same text.
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
@@ -171,8 +170,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
           NEW_REF: ${{ matrix.image.ref }}
+          OLD_REF: ${{ matrix.image.oldref }}
         run: |
-          marker="<!-- scan-images: ${NEW_REF%%@*} -->"
+          marker="<!-- scan-images: ${OLD_REF} | ${NEW_REF} -->"
           { echo "${marker}"; cat out/comment.md; } > body.md
           existing="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" \
             --jq ".[] | select(.body | startswith(\"${marker}\")) | .id" | head -n1)"
