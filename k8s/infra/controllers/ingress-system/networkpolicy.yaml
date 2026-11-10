@@ -43,7 +43,7 @@ spec:
             - { port: "7844", protocol: ANY }
             - { port: "443", protocol: TCP }
             - { port: "53", protocol: ANY }
-    # Backends of the IngressRoutes: harper-pad-sync (http, 9000) and the Flux webhook receiver (notification-controller, 9292)
+    # Backends of the IngressRoutes: harper-pad-sync (http, 9000), the Flux webhook receiver (notification-controller, 9292) and Dependency-Track
     - toEndpoints:
         - matchLabels:
             k8s:io.kubernetes.pod.namespace: harper-pad
@@ -58,3 +58,14 @@ spec:
       toPorts:
         - ports:
             - { port: "9292", protocol: TCP }
+    # Dependency-Track: the frontend and the api-server (web, 8080)
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: security-system
+            k8s:app.kubernetes.io/name: dependency-track-frontend
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: security-system
+            k8s:app.kubernetes.io/name: dependency-track-api-server
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }

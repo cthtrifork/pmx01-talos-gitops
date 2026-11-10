@@ -36,8 +36,8 @@ spec:
     - toEntities:
         - kube-apiserver
 ---
-# Dependency-Track API: the UI in the browser and the LAN clients (dependency-track-api-server-lb, 192.168.1.242 is
-# world), the Omni exposer, sbom-hook. Needs the database, Trivy and the
+# Dependency-Track API: the LAN clients (dependency-track-api-server-lb, 192.168.1.242 is world), Traefik (the UI's /api
+# through the Cloudflare tunnel), sbom-hook. Needs the database, Trivy and the
 # internet (vulnerability feeds).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -64,6 +64,9 @@ spec:
             app.kubernetes.io/name: dependency-track-config
         - matchLabels:
             app.kubernetes.io/name: dependency-track-vex-export
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: traefik-system
+            k8s:app.kubernetes.io/name: traefik
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }
@@ -83,7 +86,7 @@ spec:
     - toEntities:
         - world
 ---
-# Dependency-Track frontend: browser and LAN (dependency-track-frontend-lb, 192.168.1.241) and the Omni exposer.
+# Dependency-Track frontend: Traefik only (the Cloudflare tunnel, see post/security-system/dependency-track-ingressroute.yaml).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -94,11 +97,10 @@ spec:
     matchLabels:
       app.kubernetes.io/name: dependency-track-frontend
   ingress:
-    - fromEntities:
-        - world
-        - host
-        - remote-node
-        - kube-apiserver
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: traefik-system
+            k8s:app.kubernetes.io/name: traefik
       toPorts:
         - ports:
             - { port: "8080", protocol: TCP }

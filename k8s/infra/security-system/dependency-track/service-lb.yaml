@@ -1,27 +1,5 @@
-# LAN-only access through MetalLB, as for zot-lb. The browser loads the frontend from one address and calls the
-# api-server on the other (frontend.apiBaseUrl in helm-release.yaml), so both need an address. Plain HTTP.
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: dependency-track-frontend-lb
-  namespace: security-system
-  annotations:
-    omni-kube-service-exposer.sidero.dev/label: Dependency-Track
-    omni-kube-service-exposer.sidero.dev/port: "50089"
-    omni-kube-service-exposer.sidero.dev/prefix: dtrack
-    metallb.io/loadBalancerIPs: 192.168.1.241
-spec:
-  type: LoadBalancer
-  ports:
-    - port: 8080
-      targetPort: web
-      protocol: TCP
-      name: web
-  selector:
-    app.kubernetes.io/instance: dependency-track
-    app.kubernetes.io/name: dependency-track-frontend
-    app.kubernetes.io/component: frontend
+# LAN-only access to the api-server through MetalLB, as for zot-lb, for API clients (the UI is served by the IngressRoute
+# in post/security-system/). Plain HTTP.
 ---
 apiVersion: v1
 kind: Service
@@ -29,9 +7,6 @@ metadata:
   name: dependency-track-api-server-lb
   namespace: security-system
   annotations:
-    omni-kube-service-exposer.sidero.dev/label: Dependency-Track API
-    omni-kube-service-exposer.sidero.dev/port: "50090"
-    omni-kube-service-exposer.sidero.dev/prefix: dtrackapi
     metallb.io/loadBalancerIPs: 192.168.1.242
 spec:
   type: LoadBalancer

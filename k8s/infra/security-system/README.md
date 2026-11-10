@@ -49,10 +49,13 @@ Until the Job has run, the api-server pods wait in `CreateContainerConfigError` 
 
 ## Access
 
-LAN only, through MetalLB (`dependency-track/service-lb.yaml`): the UI is at `http://192.168.1.241:8080` and the
-frontend calls the api-server at `https://dtrackapi-portableinfo.workload.eu-central-1.omni.siderolabs.io` (the Omni
-exposer address of `dependency-track-api-server-lb`; an HTTPS page, such as the Omni-exposed UI, cannot call a plain
-HTTP API: mixed content). The LAN addresses are plain HTTP and not routed through Traefik or the Cloudflare tunnel. Check the two addresses are free in the pool (`192.168.1.221-254`) before merging.
+The UI is at `https://dtrack.portableinfo.cloud`: Cloudflare (with an Access policy) -> tunnel -> Traefik
+(`post/security-system/dependency-track-ingressroute.yaml`: `/api` to the api-server, the rest to the frontend). The browser
+calls the API on the same origin, so there is no CORS and no second hostname. In the tunnel's **Public hostname** tab add
+`dtrack.portableinfo.cloud` with service `HTTP` `localhost:8000`, and put a Cloudflare Access policy on it in Zero Trust.
+
+API clients on the LAN use `http://192.168.1.242:8080` through MetalLB (`dependency-track/service-lb.yaml`, plain HTTP,
+not routed through Traefik). Check the address is free in the pool (`192.168.1.221-254`) before merging.
 
 ## KEV: turning bare CVEs into "is this exploited?"
 
