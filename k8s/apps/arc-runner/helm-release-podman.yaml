@@ -75,7 +75,7 @@ spec:
               # No DOCKER_HOST and no wait for a Docker daemon: there is none.
               # Rootless podman keeps its socket, auth file and run state in XDG_RUNTIME_DIR. The image's /run/user/1001
               # does not exist and /run is root owned here (the Docker-in-Docker pod gets a writable /run from its
-              # /var/run socket volume), so use a directory under the writable /tmp; prepare-podman creates it.
+              # /var/run socket volume), so point it at a memory-backed volume (mounted below), which also exists before the first step runs.
               - name: XDG_RUNTIME_DIR
                 value: /tmp/xdg-runtime
               - name: STORAGE_DRIVER
@@ -122,6 +122,9 @@ spec:
                 mountPath: /etc/containers/registries.conf.d/zot-mirror.conf
                 subPath: zot-mirror.conf
                 readOnly: true
+              # XDG_RUNTIME_DIR for rootless podman: socket, auth file and runroot bookkeeping, a few MB at most.
+              - name: xdg-runtime
+                mountPath: /tmp/xdg-runtime
               # Host udev database, bind-mounted into `bootc install` containers (read-only).
               - name: host-udev
                 mountPath: /run/udev
@@ -143,6 +146,10 @@ spec:
           - name: registries
             configMap:
               name: podman-registries
+          - name: xdg-runtime
+            emptyDir:
+              medium: Memory
+              sizeLimit: 256Mi # counts against the pod's memory; real use is a few MB
           - name: host-udev
             hostPath:
               path: /run/udev
