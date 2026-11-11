@@ -5,7 +5,7 @@ metadata:
     actions.github.com/cleanup-manager-role-binding: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-manager-role-name: arc-ubuntu-gha-rs-manager
     actions.github.com/cleanup-no-permission-service-account-name: arc-ubuntu-gha-rs-no-permission
-    actions.github.com/values-hash: 6003e98cd81f5c161f624064bf5f532479f87009f737b40371eac3c4bfbce6a
+    actions.github.com/values-hash: 2f26e82a6afa030985e42819b23547b14f659a27c89b045f0675ecb2e58dbe1
   labels:
     actions.github.com/scale-set-name: arc-ubuntu
     actions.github.com/scale-set-namespace: arc-runners-system
@@ -52,6 +52,9 @@ spec:
           type: RuntimeDefault
   maxRunners: 1
   minRunners: 1
+  runnerScaleSetLabels:
+  - arc-ubuntu
+  - docker
   runnerScaleSetName: arc-ubuntu
   template:
     spec:
@@ -76,10 +79,10 @@ spec:
         name: runner
         resources:
           limits:
-            memory: 16Gi
+            memory: 12Gi
           requests:
             cpu: 500m
-            memory: 4Gi
+            memory: 2Gi
         securityContext:
           privileged: true
           runAsGroup: 1001
@@ -181,10 +184,10 @@ spec:
         name: dind
         resources:
           limits:
-            memory: 5Gi
+            memory: 4Gi
           requests:
-            cpu: 200m
-            memory: 2Gi
+            cpu: 100m
+            memory: 512Mi
         restartPolicy: Always
         securityContext:
           privileged: true
