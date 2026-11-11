@@ -73,6 +73,11 @@ spec:
 
             env:
               # No DOCKER_HOST and no wait for a Docker daemon: there is none.
+              # Rootless podman keeps its socket, auth file and run state in XDG_RUNTIME_DIR. The image's /run/user/1001
+              # does not exist and /run is root owned here (the Docker-in-Docker pod gets a writable /run from its
+              # /var/run socket volume), so use a directory under the writable /tmp; prepare-podman creates it.
+              - name: XDG_RUNTIME_DIR
+                value: /tmp/xdg-runtime
               - name: STORAGE_DRIVER
                 value: overlay
 
