@@ -110,10 +110,10 @@ spec:
                 value: "123"
             resources:
               requests:
-                cpu: 50m
-                memory: 256Mi
+                cpu: 100m
+                memory: 512Mi
               limits:
-                memory: 1Gi # observed peak over 14 days: 190Mi, typically 20Mi
+                memory: 4Gi # containers started through dind count against this; observed peak over 14 days: 190Mi
             securityContext:
               privileged: true
             restartPolicy: Always
