@@ -48,6 +48,9 @@ jobs:
             k8s/**/kyverno-policies/**
             k8s/**/policies/tests/**
           separator: "\n"
+          # The default escaping turns the newline separator into a backslash + newline, so every path but the last
+          # ends in a backslash and `[ -f ]` below skips it.
+          safe_output: false
       - name: Install PyYAML
         run: pip install --quiet "pyyaml==${PYYAML_VERSION}"
       - name: Extract changed images
@@ -59,7 +62,11 @@ jobs:
           [ -n "${BASE_SHA}" ] || CHANGED_FILES="$(git ls-files 'k8s/*.yaml' 'k8s/*.yml')"
           : > old.yaml
           while IFS= read -r file; do
-            [ -f "${file}" ] || continue
+            [ -n "${file}" ] || continue
+            if [ ! -f "${file}" ]; then
+              echo "::warning::${file} is not a file in this checkout (deleted, or a mangled path), so its images are not scanned" >&2
+              continue
+            fi
             git show "${BASE_SHA}:${file}" > old.yaml 2> /dev/null || : > old.yaml
             python scripts/ci/extract-images.py old.yaml "${file}"
           done <<< "${CHANGED_FILES}" > tuples.json

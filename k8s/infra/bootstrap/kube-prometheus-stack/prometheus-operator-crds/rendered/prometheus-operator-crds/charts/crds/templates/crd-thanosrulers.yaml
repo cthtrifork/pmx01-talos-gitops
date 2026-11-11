@@ -5,7 +5,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.23.0
-    operator.prometheus.io/version: 0.95.1
+    operator.prometheus.io/version: 0.95.2
   name: thanosrulers.monitoring.coreos.com
   namespace: kube-prometheus-stack-system
 spec:
@@ -9598,6 +9598,6 @@ spec:
       subresources:
         status: {}
 # Source: prometheus-operator-crds/charts/crds/templates/crd-thanosrulers.yaml
-# https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.95.1/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml
+# https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.95.2/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml
 ---
 
