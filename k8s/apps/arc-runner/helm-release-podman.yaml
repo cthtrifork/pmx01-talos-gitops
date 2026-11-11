@@ -54,8 +54,12 @@ spec:
           - name: runner
             image: ghcr.io/cthtrifork/talos-gitops/github-actions-runner:v0.11.0@sha256:86d54c1c6df0e0c8ba46c423735639cb6d26bb74e3c1653e221fd1dfa5094055
             imagePullPolicy: IfNotPresent
+            # Create XDG_RUNTIME_DIR (0700, owned by the runner user) before the runner starts: steps such as
+            # `podman login` run before prepare-podman and fail when the directory does not exist.
             command:
-              - "/home/runner/run.sh"
+              - /bin/bash
+              - -c
+              - install -d -m 700 "$XDG_RUNTIME_DIR" && exec /home/runner/run.sh
 
             resources:
               requests:
@@ -75,7 +79,7 @@ spec:
               # No DOCKER_HOST and no wait for a Docker daemon: there is none.
               # Rootless podman keeps its socket, auth file and run state in XDG_RUNTIME_DIR. The image's /run/user/1001
               # does not exist and /run is root owned here (the Docker-in-Docker pod gets a writable /run from its
-              # /var/run socket volume), so use a directory under the writable /tmp; prepare-podman creates it.
+              # /var/run socket volume), so use a directory under the writable /tmp, created by the command below.
               - name: XDG_RUNTIME_DIR
                 value: /tmp/xdg-runtime
               - name: STORAGE_DRIVER
