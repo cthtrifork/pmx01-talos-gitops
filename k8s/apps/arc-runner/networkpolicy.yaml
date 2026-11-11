@@ -84,9 +84,11 @@ spec:
         - matchName: cloud.zed.dev
         # Homebrew (the runner image's Brewfile); the bottles come from ghcr.io
         - matchName: formulae.brew.sh
-        # Fedora and RPM Fusion repositories (homeserver-bootc image builds). The builds pin the repos to these
-        # hosts (build_files/pin-repos.sh in homeserver-bootc), so the metalink mirrors need no entry.
+        # Fedora and RPM Fusion repositories (homeserver-bootc image builds). The Containerfiles pin the repos to
+        # these hosts, so the metalink mirrors need no entry. Only the openh264 repo keeps its metalink; Cisco's
+        # repo is served from codecs.fedoraproject.org.
         - matchName: mirrors.dotsrc.org
+        - matchName: mirrors.fedoraproject.org
         - matchName: codecs.fedoraproject.org
         - matchName: download1.rpmfusion.org
         - matchName: download.copr.fedorainfracloud.org
