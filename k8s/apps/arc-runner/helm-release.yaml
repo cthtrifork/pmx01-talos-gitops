@@ -29,6 +29,10 @@ spec:
     # name of the runner scale set -> what you use in `runs-on: arc-ubuntu`
     githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
     runnerScaleSetName: arc-ubuntu
+    # runs-on: arc-ubuntu matches both scale sets; arc-ubuntu-docker selects this one (it has the Docker-in-Docker sidecar).
+    scaleSetLabels:
+      - arc-ubuntu
+      - arc-ubuntu-docker
 
     maxRunners: 1 # only 1 runner due to pvc design
     minRunners: 1 # always ready
@@ -105,10 +109,10 @@ spec:
                 value: "123"
             resources:
               requests:
-                cpu: 200m
-                memory: 2Gi
+                cpu: 100m
+                memory: 512Mi
               limits:
-                memory: 5Gi
+                memory: 4Gi # containers started through dind count against this; observed peak over 14 days: 190Mi
             securityContext:
               privileged: true
             restartPolicy: Always
@@ -143,9 +147,9 @@ spec:
             resources:
               requests:
                 cpu: 500m
-                memory: 4Gi
+                memory: 2Gi # median job 1.4Gi, p90 4Gi
               limits:
-                memory: 16Gi
+                memory: 12Gi # observed peak over 14 days: 6Gi
 
             securityContext:
               seLinuxOptions:
