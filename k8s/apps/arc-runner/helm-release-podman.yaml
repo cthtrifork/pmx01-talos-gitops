@@ -7,9 +7,10 @@
 # Select it from homeserver-bootc with the repository variable ARC_RUNNER=arc-ubuntu-podman; unset it to fall
 # back to arc-ubuntu. minRunners is 0, so it costs nothing while unused.
 #
-# The volumes are ReadWriteOnce and must not be shared with the arc-ubuntu runner: two builds on one
-# containers storage corrupt it. This scale set therefore has its own PVCs (suffix -podman), and the first run on
-# it is cold (empty dnf cache and image storage).
+# Builds run in parallel, and two builds on one containers storage corrupt it, so nothing is shared: every pod gets
+# its own generic ephemeral volumes (local-path, on the same node as before), deleted with the pod. Every build is
+# therefore cold (empty dnf cache and image storage). To soften that, registries.conf sends ghcr.io, quay.io and
+# gcr.io pulls through the in-cluster zot caches first (ConfigMap podman-registries) and falls back to the origin.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -41,38 +42,13 @@ spec:
       - arc-ubuntu-podman
       - podman # no Docker daemon on this runner; use runs-on: docker for jobs that need one
 
-    maxRunners: 1 # one build at a time: the volumes below are ReadWriteOnce
+    maxRunners: 3 # CPU and the node's local-path disk allow about 3 to 4 builds at once (see the PR)
     minRunners: 0 # experimental, so no idle pod; the first job waits for the pod to start
 
     githubConfigSecret: github-auth
     containerMode: {} # no dind, no kubernetes mode
     template:
       spec:
-        initContainers:
-          - name: data-retention
-            image: mirror.gcr.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
-            imagePullPolicy: IfNotPresent
-            command:
-              - sh
-              - -c
-              - |
-                set -e
-                find /tmp/arc-cache -type f -mtime +14 -print -delete
-                find /tmp/arc-cache -type d -empty -mtime +14 -print -delete || true
-            securityContext:
-              runAsUser: 0
-              runAsGroup: 0
-              privileged: true
-              allowPrivilegeEscalation: true
-            resources:
-              limits:
-                memory: 128Mi
-              requests:
-                cpu: 25m
-                memory: 128Mi
-            volumeMounts:
-              - name: cross-run-cache
-                mountPath: /tmp/arc-cache
         containers:
           - name: runner
             image: ghcr.io/cthtrifork/talos-gitops/github-actions-runner:v0.11.0@sha256:86d54c1c6df0e0c8ba46c423735639cb6d26bb74e3c1653e221fd1dfa5094055
@@ -135,6 +111,11 @@ spec:
               # buildah stages layers here while committing.
               - name: var-tmp
                 mountPath: /var/tmp
+              # Pulls go through zot first.
+              - name: registries
+                mountPath: /etc/containers/registries.conf.d/zot-mirror.conf
+                subPath: zot-mirror.conf
+                readOnly: true
               # Host udev database, bind-mounted into `bootc install` containers (read-only).
               - name: host-udev
                 mountPath: /run/udev
@@ -153,6 +134,9 @@ spec:
               items:
                 - key: ca-bundle.crt
                   path: ca.crt
+          - name: registries
+            configMap:
+              name: podman-registries
           - name: host-udev
             hostPath:
               path: /run/udev
@@ -171,17 +155,37 @@ spec:
             emptyDir:
               sizeLimit: 30Gi
           - name: container-storage-rootful
-            persistentVolumeClaim:
-              claimName: container-storage-rootful-podman
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 32Gi
           - name: container-rootless-storage
-            persistentVolumeClaim:
-              claimName: container-rootless-storage-podman
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 32Gi
           - name: dnf-cache
-            persistentVolumeClaim:
-              claimName: dnf-cache-podman
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 25Gi
           - name: cross-run-cache
-            persistentVolumeClaim:
-              claimName: cross-run-cache-podman
+            ephemeral:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 5Gi
     listenerTemplate:
       spec:
         securityContext:
@@ -204,55 +208,29 @@ spec:
                 cpu: 15m
                 memory: 64Mi
 ---
-# Own volumes, see the note at the top: ReadWriteOnce, node-local, size not enforced (see helm-release.yaml).
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: ConfigMap
 metadata:
-  name: container-storage-rootful-podman
+  name: podman-registries
   namespace: arc-runners-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 32Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: container-rootless-storage-podman
-  namespace: arc-runners-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 32Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: dnf-cache-podman
-  namespace: arc-runners-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 25Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: cross-run-cache-podman
-  namespace: arc-runners-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  volumeMode: Filesystem
-  resources:
-    requests:
-      storage: 5Gi
+data:
+  # Mirrors are tried in order and the origin is the fallback. The zot paths are its pull-through caches
+  # (k8s/infra/registry-system), and private images under ghcr.io/cthtrifork fall back to the origin.
+  zot-mirror.conf: |
+    [[registry]]
+    prefix = "ghcr.io"
+    location = "ghcr.io"
+    [[registry.mirror]]
+    location = "zot.registry-system.svc.cluster.local:5000/ghcr-cache"
+
+    [[registry]]
+    prefix = "quay.io"
+    location = "quay.io"
+    [[registry.mirror]]
+    location = "zot.registry-system.svc.cluster.local:5000/quay-cache"
+
+    [[registry]]
+    prefix = "gcr.io"
+    location = "gcr.io"
+    [[registry.mirror]]
+    location = "zot.registry-system.svc.cluster.local:5000/gcr-cache"
