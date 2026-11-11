@@ -306,6 +306,10 @@ spec:
                 cpu: 15m
                 memory: 64Mi
 ---
+# Persistent runner volumes. They use the default (node-local) storage class, which does not enforce
+# the requested size: all of them share the one node disk. The sizes below are only a scheduling hint, not a
+# quota, so a runaway build can fill the node regardless. The homeserver-bootc workflows therefore check free
+# space on /var/lib/containers/storage and prune old images (.github/actions/build-cleanup).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -348,7 +352,9 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: container-shared-storage # additionalimagestores
+  # Read-only additionalimagestores for rootless podman (/var/lib/shared). homeserver-bootc only creates the
+  # directory and points storage.conf at it; nothing in its workflows populates it, so it is likely empty.
+  name: container-shared-storage
   namespace: arc-runners-system
 spec:
   accessModes:
@@ -373,6 +379,8 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  # Rootless podman storage. The image build itself is rootful (sudo buildah, container-storage-rootful), but the
+  # "Run on PR" and "Trivy scan" jobs pull and scan PR images rootless, so this volume is still needed.
   name: container-rootless-storage
   namespace: arc-runners-system
 spec:
