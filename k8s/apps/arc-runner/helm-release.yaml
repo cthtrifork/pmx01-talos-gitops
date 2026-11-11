@@ -105,10 +105,10 @@ spec:
                 value: "123"
             resources:
               requests:
-                cpu: 200m
-                memory: 2Gi
+                cpu: 50m
+                memory: 256Mi
               limits:
-                memory: 5Gi
+                memory: 1Gi # observed peak over 14 days: 190Mi, typically 20Mi
             securityContext:
               privileged: true
             restartPolicy: Always
@@ -143,9 +143,9 @@ spec:
             resources:
               requests:
                 cpu: 500m
-                memory: 4Gi
+                memory: 2Gi # median job 1.4Gi, p90 4Gi
               limits:
-                memory: 16Gi
+                memory: 12Gi # observed peak over 14 days: 6Gi
 
             securityContext:
               seLinuxOptions:

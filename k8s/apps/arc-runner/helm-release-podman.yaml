@@ -79,10 +79,10 @@ spec:
 
             resources:
               requests:
-                cpu: "1"
-                memory: 4Gi
+                cpu: 500m
+                memory: 2Gi # median job 1.4Gi, p90 4Gi
               limits:
-                memory: 16Gi # no CPU limit: dnf, buildah and rechunk burst
+                memory: 12Gi # observed peak over 14 days on arc-ubuntu: 6Gi. No CPU limit: dnf, buildah and rechunk burst
 
             securityContext:
               seLinuxOptions:
