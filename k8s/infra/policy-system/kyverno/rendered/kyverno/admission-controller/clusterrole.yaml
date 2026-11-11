@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-admission-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 aggregationRule:
   clusterRoleSelectors:
@@ -33,8 +33,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-admission-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 rules:
   - apiGroups:
@@ -77,10 +77,6 @@ rules:
   - apiGroups:
       - kyverno.io
     resources:
-      - policies
-      - policies/status
-      - clusterpolicies
-      - clusterpolicies/status
       - updaterequests
       - updaterequests/status
       - globalcontextentries
@@ -94,17 +90,32 @@ rules:
       - update
       - watch
       - deletecollection
+  # Read-only: kyverno-init's startup inventory and the admission controller's
+  # kyverno_legacy_policies_total gauge list the legacy kyverno.io kinds. Nothing in this
+  # pod creates, updates, or deletes them (kyverno-init only patches their status, below).
   - apiGroups:
       - kyverno.io
     resources:
+      - clusterpolicies
+      - policies
       - policyexceptions
+      - cleanuppolicies
+      - clustercleanuppolicies
     verbs:
-      - create
-      - get
+      - list
+  # kyverno-init replaces the stale Ready condition on legacy ClusterPolicy/Policy objects
+  # (see cmd/kyverno-init/legacy_status.go). Status only: spec stays read-only.
+  - apiGroups:
+      - kyverno.io
+    resources:
+      - clusterpolicies/status
+      - policies/status
+      - cleanuppolicies/status
+      - clustercleanuppolicies/status
+    verbs:
       - list
       - patch
       - update
-      - watch
   - apiGroups:
       - policies.kyverno.io
     resources:
@@ -221,8 +232,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-admission-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 rules:
   - apiGroups:

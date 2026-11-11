@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-background-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 aggregationRule:
   clusterRoleSelectors:
@@ -33,8 +33,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-background-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 rules:
   - apiGroups:
@@ -46,11 +46,6 @@ rules:
   - apiGroups:
       - kyverno.io
     resources:
-      - policies
-      - policies/status
-      - clusterpolicies
-      - clusterpolicies/status
-      - policyexceptions
       - updaterequests
       - updaterequests/status
       - globalcontextentries
@@ -87,6 +82,57 @@ rules:
       - policyexceptions
     verbs:
       - create
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  # Everything else the chart aggregates into the admin and view roles (see
+  # templates/rbac/). Generate rules that create a RoleBinding to those roles
+  # are rejected by the RBAC escalation check unless the background controller
+  # holds every permission they grant.
+  # Includes the legacy policies/clusterpolicies rows of admin:policies and view:policies
+  # until those roles drop them in 1.21.
+  - apiGroups:
+      - kyverno.io
+    resources:
+      - cleanuppolicies
+      - clustercleanuppolicies
+      - policies
+      - clusterpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - policies.kyverno.io
+    resources:
+      - deletingpolicies
+      - imagevalidatingpolicies
+      - namespaceddeletingpolicies
+      - namespacedimagevalidatingpolicies
+      - namespacedvalidatingpolicies
+      - validatingpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - wgpolicyk8s.io
+    resources:
+      - policyreports
+      - clusterpolicyreports
+    verbs:
+      - create
+      - delete
       - get
       - list
       - patch
@@ -182,8 +228,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-background-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 rules:
   - apiGroups:

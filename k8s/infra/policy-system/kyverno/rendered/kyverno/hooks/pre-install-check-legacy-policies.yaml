@@ -1,0 +1,154 @@
+---
+# Source: kyverno/templates/hooks/pre-install-check-legacy-policies.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kyverno-check-legacy-policies
+  namespace: policy-system
+  labels:
+    app.kubernetes.io/component: hooks
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: kyverno-hooks
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
+    helm.sh/hook-weight: "100"
+automountServiceAccountToken: false
+---
+# Source: kyverno/templates/hooks/pre-install-check-legacy-policies.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyverno:check-legacy-policies
+  labels:
+    app.kubernetes.io/component: hooks
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: kyverno-hooks
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
+    helm.sh/hook-weight: "100"
+  namespace: policy-system
+rules:
+  - apiGroups:
+      - kyverno.io
+    resources:
+      - clusterpolicies
+      - policies
+      - cleanuppolicies
+      - clustercleanuppolicies
+      - policyexceptions
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    # Scope to just the five legacy CRDs the check reads by name (it does a
+    # per-name Get, not a list), so the pre-install SA can't read other CRDs.
+    resourceNames:
+      - clusterpolicies.kyverno.io
+      - policies.kyverno.io
+      - cleanuppolicies.kyverno.io
+      - clustercleanuppolicies.kyverno.io
+      - policyexceptions.kyverno.io
+    verbs:
+      - get
+---
+# Source: kyverno/templates/hooks/pre-install-check-legacy-policies.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kyverno:check-legacy-policies
+  labels:
+    app.kubernetes.io/component: hooks
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: kyverno-hooks
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
+    helm.sh/hook-weight: "100"
+  namespace: policy-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kyverno:check-legacy-policies
+subjects:
+  - kind: ServiceAccount
+    name: kyverno-check-legacy-policies
+    namespace: policy-system
+---
+# Source: kyverno/templates/hooks/pre-install-check-legacy-policies.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kyverno-check-legacy-policies
+  namespace: policy-system
+  labels:
+    app.kubernetes.io/component: hooks
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: kyverno-hooks
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "200"
+spec:
+  backoffLimit: 0
+  # Fail the Job (and unblock the release) if the check can't finish in time,
+  # e.g. against a stalled or unreachable API server, so the hook never hangs.
+  activeDeadlineSeconds: 120
+  # Auto-delete the finished Job (and its Pod) after this many seconds. The Job
+  # omits the hook-failed delete policy so a failed run's logs stay available,
+  # but on the opt-out recovery path the hook is not rendered again, so nothing
+  # would ever clean up a failed Job. This TTL bounds that. Set to 0 or null to
+  # keep failed Jobs indefinitely.
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      serviceAccountName: kyverno-check-legacy-policies
+      automountServiceAccountToken: true
+      restartPolicy: Never
+      containers:
+        - name: kyverno-cli
+          image: "ghcr.io/kyverno/kyverno-cli:v1.20.0"
+          imagePullPolicy: IfNotPresent
+          args:
+            - check-legacy-policies
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+      nodeSelector:
+        kubernetes.io/os: linux

@@ -10,8 +10,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-cleanup-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 aggregationRule:
   clusterRoleSelectors:
@@ -33,8 +33,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-cleanup-controller
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   namespace: policy-system
 rules:
   - apiGroups:
@@ -69,7 +69,6 @@ rules:
       - cleanuppolicies
     verbs:
       - list
-      - watch
   - apiGroups:
       - policies.kyverno.io
     resources:
@@ -111,13 +110,6 @@ rules:
       - watch
       - deletecollection
   - apiGroups:
-      - kyverno.io
-    resources:
-      - clustercleanuppolicies/status
-      - cleanuppolicies/status
-    verbs:
-      - update
-  - apiGroups:
       - ''
     resources:
       - configmaps
@@ -140,3 +132,11 @@ rules:
       - subjectaccessreviews
     verbs:
       - create
+  - apiGroups:
+      - kyverno.io
+    resources:
+      - updaterequests
+    verbs:
+      - list
+      - watch
+      - delete

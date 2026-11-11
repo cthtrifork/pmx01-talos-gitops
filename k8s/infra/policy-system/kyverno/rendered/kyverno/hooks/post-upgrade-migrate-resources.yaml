@@ -11,8 +11,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   annotations:
     helm.sh/hook: post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
@@ -30,8 +30,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   annotations:
     helm.sh/hook: post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
@@ -78,8 +78,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   annotations:
     helm.sh/hook: post-upgrade
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
@@ -106,8 +106,8 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: kyverno-hooks
     app.kubernetes.io/part-of: kyverno
-    app.kubernetes.io/version: 3.9.2
-    helm.sh/chart: kyverno-3.9.2
+    app.kubernetes.io/version: 3.10.0
+    helm.sh/chart: kyverno-3.10.0
   annotations:
     helm.sh/hook: post-upgrade
     # helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded,hook-failed
@@ -126,17 +126,7 @@ spec:
           args:
             - migrate
             - --resource
-            - cleanuppolicies.kyverno.io
-            - --resource
-            - clustercleanuppolicies.kyverno.io
-            - --resource
-            - clusterpolicies.kyverno.io
-            - --resource
             - globalcontextentries.kyverno.io
-            - --resource
-            - policies.kyverno.io
-            - --resource
-            - policyexceptions.kyverno.io
             - --resource
             - updaterequests.kyverno.io
             - --resource
