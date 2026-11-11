@@ -110,6 +110,14 @@ spec:
         - ports:
             - { port: "80", protocol: TCP }
             - { port: "443", protocol: TCP }
+    # Cisco's openh264 RPMs: the fedora-cisco-openh264 repo (metadata on codecs.fedoraproject.org, allowed above) points
+    # at this host, which only serves plain HTTP
+    - toFQDNs:
+        - matchName: ciscobinary.openh264.org
+      toPorts:
+        - ports:
+            - { port: "80", protocol: TCP }
+            - { port: "443", protocol: TCP }
     # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
     - toEndpoints:
         - matchLabels:
