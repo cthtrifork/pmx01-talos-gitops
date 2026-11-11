@@ -38,9 +38,10 @@ spec:
 
     githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
     runnerScaleSetName: arc-ubuntu-podman # runs-on: arc-ubuntu-podman
+    # runs-on: arc-ubuntu matches both scale sets; arc-ubuntu-podman selects this one (no Docker daemon: use arc-ubuntu-docker for jobs that need one)
     scaleSetLabels:
+      - arc-ubuntu
       - arc-ubuntu-podman
-      - podman # no Docker daemon on this runner; use runs-on: docker for jobs that need one
 
     maxRunners: 3 # CPU and the node's local-path disk allow about 3 to 4 builds at once (see the PR)
     minRunners: 0 # experimental, so no idle pod; the first job waits for the pod to start

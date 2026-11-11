@@ -29,11 +29,10 @@ spec:
     # name of the runner scale set -> what you use in `runs-on: arc-ubuntu`
     githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
     runnerScaleSetName: arc-ubuntu
-    # runs-on: docker selects this runner (it has the Docker-in-Docker sidecar). arc-ubuntu stays in the list so
-    # the existing runs-on: arc-ubuntu keeps matching whether or not GitHub still matches the scale set name.
+    # runs-on: arc-ubuntu matches both scale sets; arc-ubuntu-docker selects this one (it has the Docker-in-Docker sidecar).
     scaleSetLabels:
       - arc-ubuntu
-      - docker
+      - arc-ubuntu-docker
 
     maxRunners: 1 # only 1 runner due to pvc design
     minRunners: 1 # always ready
