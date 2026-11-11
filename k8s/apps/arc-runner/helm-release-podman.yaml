@@ -1,0 +1,255 @@
+---
+# Experimental second scale set for the homeserver-gui build: the same runner as helm-release.yaml, minus the
+# Docker-in-Docker sidecar. The homeserver-bootc workflows use buildah and podman only, so this proves (or
+# disproves) that nothing needs the Docker daemon, and frees the memory, the 32Gi docker-lib and the Docker
+# wait at job start.
+#
+# Select it from homeserver-bootc with the repository variable ARC_RUNNER=arc-ubuntu-podman; unset it to fall
+# back to arc-ubuntu. minRunners is 0, so it costs nothing while unused.
+#
+# The volumes are ReadWriteOnce and must not be shared with the arc-ubuntu runner: two builds on one
+# containers storage corrupt it. This scale set therefore has its own PVCs (suffix -podman), and the first run on
+# it is cold (empty dnf cache and image storage).
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: arc-runners-homeserver-bootc-podman
+  namespace: arc-runners-system
+spec:
+  interval: 30m
+  releaseName: arc-runners-podman
+  chartRef:
+    kind: OCIRepository
+    name: arc-runners-system
+  install:
+    createNamespace: false
+
+  # https://github.com/actions/actions-runner-controller/blob/master/charts/gha-runner-scale-set/values.yaml
+  values:
+    resourceMeta:
+      ephemeralRunner:
+        annotations:
+          kubernetes.io/ingress-bandwidth: "300M"
+          kubernetes.io/egress-bandwidth: "300M"
+    controllerServiceAccount:
+      name: gha-runner-scale-set-controller-gha-rs-controller
+      namespace: arc-controller-system
+
+    githubConfigUrl: https://github.com/cthtrifork/homeserver-bootc
+    runnerScaleSetName: arc-ubuntu-podman # runs-on: arc-ubuntu-podman
+
+    maxRunners: 1 # one build at a time: the volumes below are ReadWriteOnce
+    minRunners: 0 # experimental, so no idle pod; the first job waits for the pod to start
+
+    githubConfigSecret: github-auth
+    containerMode: {} # no dind, no kubernetes mode
+    template:
+      spec:
+        initContainers:
+          - name: data-retention
+            image: mirror.gcr.io/library/busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
+            imagePullPolicy: IfNotPresent
+            command:
+              - sh
+              - -c
+              - |
+                set -e
+                find /tmp/arc-cache -type f -mtime +14 -print -delete
+                find /tmp/arc-cache -type d -empty -mtime +14 -print -delete || true
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              privileged: true
+              allowPrivilegeEscalation: true
+            resources:
+              limits:
+                memory: 128Mi
+              requests:
+                cpu: 25m
+                memory: 128Mi
+            volumeMounts:
+              - name: cross-run-cache
+                mountPath: /tmp/arc-cache
+        containers:
+          - name: runner
+            image: ghcr.io/cthtrifork/talos-gitops/github-actions-runner:v0.11.0@sha256:86d54c1c6df0e0c8ba46c423735639cb6d26bb74e3c1653e221fd1dfa5094055
+            imagePullPolicy: IfNotPresent
+            command:
+              - "/home/runner/run.sh"
+
+            resources:
+              requests:
+                cpu: "1"
+                memory: 4Gi
+              limits:
+                memory: 16Gi # no CPU limit: dnf, buildah and rechunk burst
+
+            securityContext:
+              seLinuxOptions:
+                type: container_file_t
+              privileged: true
+              runAsUser: 1001
+              runAsGroup: 1001
+
+            env:
+              # No DOCKER_HOST and no wait for a Docker daemon: there is none.
+              - name: STORAGE_DRIVER
+                value: overlay
+
+              - name: BUILDAH_ISOLATION
+                value: chroot
+
+              - name: BUILDAH_LAYERS
+                value: "true"
+
+              - name: RUNNER_UPDATE_CA_CERTS
+                value: "1"
+
+            volumeMounts:
+              - name: ca-certs
+                mountPath: /usr/local/share/ca-certificates/private-ca.crt
+                subPath: ca.crt
+              # Persistent rootful Podman/Buildah storage (the image build).
+              - name: container-storage-rootful
+                mountPath: /var/lib/containers/storage
+              # Job workspace: node-local ephemeral storage.
+              - name: work
+                mountPath: /home/runner/_work
+              # Persistent rootless storage (Run on PR and Trivy pull and scan PR images rootless).
+              - name: container-rootless-storage
+                mountPath: /home/runner/.local/share/containers/storage
+              # Persistent DNF caches.
+              - name: dnf-cache
+                mountPath: /var/cache/dnf
+              - name: dnf-cache
+                mountPath: /home/runner/.cache/dnf
+              # Downloaded release binaries and the like, shared between builds.
+              - name: cross-run-cache
+                mountPath: /home/runner/.cache/tmp
+              # Scratch space. Not persistent, so leftovers cannot pile up between builds.
+              - name: tmp
+                mountPath: /tmp
+              # buildah stages layers here while committing.
+              - name: var-tmp
+                mountPath: /var/tmp
+              # Host udev database, bind-mounted into `bootc install` containers (read-only).
+              - name: host-udev
+                mountPath: /run/udev
+                readOnly: true
+              # Live host devtmpfs for `bootc install --via-loopback` (the e2e job); see helm-release.yaml.
+              - name: host-dev
+                mountPath: /host-dev
+        imagePullSecrets:
+          - name: github-auth
+        securityContext:
+          fsGroup: 1001
+        volumes:
+          - name: ca-certs
+            configMap:
+              name: portableinfo-ca-bundle
+              items:
+                - key: ca-bundle.crt
+                  path: ca.crt
+          - name: host-udev
+            hostPath:
+              path: /run/udev
+              type: Directory
+          - name: host-dev
+            hostPath:
+              path: /dev
+              type: Directory
+          - name: work
+            emptyDir:
+              sizeLimit: 32Gi
+          - name: tmp
+            emptyDir:
+              sizeLimit: 20Gi
+          - name: var-tmp
+            emptyDir:
+              sizeLimit: 30Gi
+          - name: container-storage-rootful
+            persistentVolumeClaim:
+              claimName: container-storage-rootful-podman
+          - name: container-rootless-storage
+            persistentVolumeClaim:
+              claimName: container-rootless-storage-podman
+          - name: dnf-cache
+            persistentVolumeClaim:
+              claimName: dnf-cache-podman
+          - name: cross-run-cache
+            persistentVolumeClaim:
+              claimName: cross-run-cache-podman
+    listenerTemplate:
+      spec:
+        securityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        containers:
+          - name: listener
+            securityContext:
+              runAsUser: 1000
+              runAsNonRoot: true
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+            resources:
+              limits:
+                memory: 256Mi
+              requests:
+                cpu: 15m
+                memory: 64Mi
+---
+# Own volumes, see the note at the top: ReadWriteOnce, node-local, size not enforced (see helm-release.yaml).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: container-storage-rootful-podman
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 32Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: container-rootless-storage-podman
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 32Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dnf-cache-podman
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 25Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cross-run-cache-podman
+  namespace: arc-runners-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 5Gi
