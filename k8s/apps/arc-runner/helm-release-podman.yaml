@@ -54,8 +54,13 @@ spec:
           - name: runner
             image: ghcr.io/cthtrifork/talos-gitops/github-actions-runner:v0.11.0@sha256:86d54c1c6df0e0c8ba46c423735639cb6d26bb74e3c1653e221fd1dfa5094055
             imagePullPolicy: IfNotPresent
+            # Podman rejects an XDG_RUNTIME_DIR that is not owned by its user, and a fresh emptyDir is root owned, so
+            # create a 0700 subdirectory of the volume as the runner user before the runner starts (steps such as
+            # `podman login` run before prepare-podman).
             command:
-              - "/home/runner/run.sh"
+              - /bin/bash
+              - -c
+              - install -d -m 700 "$XDG_RUNTIME_DIR" && exec /home/runner/run.sh
 
             resources:
               requests:
@@ -77,7 +82,7 @@ spec:
               # does not exist and /run is root owned here (the Docker-in-Docker pod gets a writable /run from its
               # /var/run socket volume), so point it at a memory-backed volume (mounted below), which also exists before the first step runs.
               - name: XDG_RUNTIME_DIR
-                value: /tmp/xdg-runtime
+                value: /tmp/xdg/runtime
               - name: STORAGE_DRIVER
                 value: overlay
 
@@ -124,7 +129,7 @@ spec:
                 readOnly: true
               # XDG_RUNTIME_DIR for rootless podman: socket, auth file and runroot bookkeeping, a few MB at most.
               - name: xdg-runtime
-                mountPath: /tmp/xdg-runtime
+                mountPath: /tmp/xdg
               # Host udev database, bind-mounted into `bootc install` containers (read-only).
               - name: host-udev
                 mountPath: /run/udev
