@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: prometheus-node-exporter
     app.kubernetes.io/part-of: prometheus-node-exporter
     app.kubernetes.io/version: 1.12.1
-    helm.sh/chart: prometheus-node-exporter-5.0.1
+    helm.sh/chart: prometheus-node-exporter-5.1.0
     release: kube-prometheus-stack
   name: kube-prometheus-stack-prometheus-node-exporter
   namespace: kube-prometheus-stack-system
@@ -70,7 +70,7 @@ spec:
           initialDelaySeconds: 0
           periodSeconds: 10
           successThreshold: 1
-          timeoutSeconds: 1
+          timeoutSeconds: 5
         name: node-exporter
         ports:
         - containerPort: 9100
@@ -86,7 +86,7 @@ spec:
           initialDelaySeconds: 0
           periodSeconds: 10
           successThreshold: 1
-          timeoutSeconds: 1
+          timeoutSeconds: 5
         resources:
           limits:
             memory: 128Mi
