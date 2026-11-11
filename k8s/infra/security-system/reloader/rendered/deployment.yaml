@@ -11,14 +11,14 @@ metadata:
     release: "reloader"
     app.kubernetes.io/name: reloader
     app.kubernetes.io/instance: "reloader"
-    helm.sh/chart: "reloader-2.2.19"
-    chart: "reloader-2.2.19"
+    helm.sh/chart: "reloader-2.2.20"
+    chart: "reloader-2.2.20"
     heritage: "Helm"
     app.kubernetes.io/managed-by: "Helm"
-    app.kubernetes.io/version: "v1.4.23"
+    app.kubernetes.io/version: "v1.4.24"
     group: com.stakater.platform
     provider: stakater
-    version: v1.4.23
+    version: v1.4.24
   name: reloader-reloader
   namespace: security-system
 spec:
@@ -35,14 +35,14 @@ spec:
         release: "reloader"
         app.kubernetes.io/name: reloader
         app.kubernetes.io/instance: "reloader"
-        helm.sh/chart: "reloader-2.2.19"
-        chart: "reloader-2.2.19"
+        helm.sh/chart: "reloader-2.2.20"
+        chart: "reloader-2.2.20"
         heritage: "Helm"
         app.kubernetes.io/managed-by: "Helm"
-        app.kubernetes.io/version: "v1.4.23"
+        app.kubernetes.io/version: "v1.4.24"
         group: com.stakater.platform
         provider: stakater
-        version: v1.4.23
+        version: v1.4.24
     spec:
       containers:
         - image: "ghcr.io/stakater/reloader:v1.4.24@sha256:3ab43d3eb96c59798644bf826b0444a846c0197d22ab4b6c101c4da3e1d6ef23"
