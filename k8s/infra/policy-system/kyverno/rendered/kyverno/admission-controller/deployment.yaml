@@ -92,7 +92,7 @@ spec:
               value: kyverno-svc
       containers:
         - name: kyverno
-          image: "ghcr.io/kyverno/kyverno:v1.19.2@sha256:c8c4dd09e720d2cd7fd24ca73ac28e46651001372f988e0cba3f2f612f04b955"
+          image: "ghcr.io/kyverno/kyverno:v1.20.0@sha256:9de49c5416ea536f00a205527197ac048abdf32c5a75d633cd9afff8928f359d"
           imagePullPolicy: IfNotPresent
           args:
             - --caSecretName=kyverno-svc.policy-system.svc.kyverno-tls-ca
