@@ -1,160 +1,188 @@
 ---
-# "Update the Claude VM" button. Two listeners share one in-memory flag:
-#   :8080  the page and the button (exposed through the Omni service exposer, behind Omni login)
-#   :8081  the VM's poll (MetalLB address, LAN only, needs the bearer token)
-# The VM never receives a command: the answer to its poll is only {"upgrade": true|false}. The flag lives 10 minutes
-# and is cleared when the VM claims it, so one click means at most one upgrade. A restart of the pod drops an unclaimed click.
+# "Update the Claude VM" button. One in-memory flag, two listeners:
+#
+#   :8080  ui    the page and the button       Omni service exposer (Omni login)
+#   :8081  poll  the VM asks "upgrade now?"    MetalLB, LAN only, bearer token
+#
+# ui   GET  /                  the page
+#      GET  /api/v1/status     is a click queued, when did the VM last poll
+#      POST /api/v1/upgrade    queue a click (needs the header X-Requested-With: vm-upgrade-button)
+# poll POST /api/v1/claim      {"upgrade": true} once per click, then false
+#
+# The VM never receives a command, only true or false. A click lives 10 minutes and the first claim clears it, so one click
+# is at most one upgrade. A pod restart drops an unclaimed click.
 # Not a Flux template (configMapGenerator disables postBuild envsubst); env() reads the token from the pod's environment.
 http:
   enabled: true
   address: 0.0.0.0:4195
   debug_endpoints: false
 
+# --- state: a key is "pending" (a click) or "last_poll"; each holds {"at": <unix seconds>} ---
 cache_resources:
   - label: state
     memory:
       default_ttl: 10m
       compaction_interval: 1m
 
+# --- inputs: the same reply format on both; the listener name is stored in metadata ---
 input:
   broker:
     inputs:
-      - http_server:
+      - label: ui
+        http_server:
           address: 0.0.0.0:8080
           path: /
-          allowed_verbs:
-            - GET
-            - POST
-          sync_response:
+          allowed_verbs: [GET, POST]
+          sync_response: &reply
             status: '${! @status.or("200") }'
             headers:
               Content-Type: '${! @content_type.or("application/json") }'
               Cache-Control: no-store
         processors:
           - mapping: 'meta listener = "ui"'
-      - http_server:
+
+      - label: poll
+        http_server:
           address: 0.0.0.0:8081
           path: /
-          allowed_verbs:
-            - GET
-            - POST
-          sync_response:
-            status: '${! @status.or("200") }'
-            headers:
-              Content-Type: '${! @content_type.or("application/json") }'
-              Cache-Control: no-store
+          allowed_verbs: [GET, POST]
+          sync_response: *reply
         processors:
           - mapping: 'meta listener = "poll"'
 
 pipeline:
   processors:
     - switch:
-        # --- poll listener: authenticated, one endpoint ---
-        - check: '@listener == "poll" && @http_server_request_path == "/healthz"'
+        - check: '@listener == "ui"'
           processors:
-            - mapping: |
-                meta content_type = "text/plain"
-                root = "ok"
-
-        - check: '@listener == "poll" && (env("UPGRADE_TOKEN").or("") == "" || @Authorization.or("") != "Bearer " + env("UPGRADE_TOKEN").or(""))'
-          processors:
-            - mapping: |
-                meta status = "401"
-                root = {"error": "unauthorized"}
-
-        - check: '@listener == "poll" && @http_server_verb == "POST" && @http_server_request_path == "/api/v1/claim"'
-          processors:
-            - mapping: 'root = {}'
-            - branch:
-                request_map: 'root = ""'
-                processors:
-                  - cache: { resource: state, operator: get, key: pending }
-                  - catch:
-                      - mapping: 'root = {"at": 0}'
-                result_map: 'root.pending_at = this.at'
-            # claim: clear the flag, and record that the VM polled
-            - branch:
-                request_map: 'root = ""'
-                processors:
-                  - cache: { resource: state, operator: delete, key: pending }
-                  - catch:
-                      - mapping: 'root = ""'
-            - branch:
-                request_map: 'root = ""'
-                processors:
-                  - cache:
-                      resource: state
-                      operator: set
-                      key: last_poll
-                      value: '{"at": ${! now().ts_unix() }}'
-                      ttl: 24h
-                  - catch:
-                      - mapping: 'root = ""'
-            - mapping: 'root = {"upgrade": this.pending_at > 0}'
-
+            - resource: ui_api
         - check: '@listener == "poll"'
           processors:
-            - mapping: |
-                meta status = "404"
-                root = {"error": "not found"}
-
-        # --- ui listener: the page, the status and the button ---
-        - check: '@listener == "ui" && @http_server_verb == "GET" && (@http_server_request_path == "/" || @http_server_request_path == "/index.html")'
-          processors:
-            - mapping: |
-                meta content_type = "text/html; charset=utf-8"
-                root = file("/etc/connect/index.html")
-
-        - check: '@listener == "ui" && @http_server_request_path == "/healthz"'
-          processors:
-            - mapping: |
-                meta content_type = "text/plain"
-                root = "ok"
-
-        - check: '@listener == "ui" && @http_server_verb == "GET" && @http_server_request_path == "/api/v1/status"'
-          processors:
-            - mapping: 'root = {}'
-            - branch:
-                request_map: 'root = ""'
-                processors:
-                  - cache: { resource: state, operator: get, key: pending }
-                  - catch:
-                      - mapping: 'root = {"at": 0}'
-                result_map: 'root.pending_at = this.at'
-            - branch:
-                request_map: 'root = ""'
-                processors:
-                  - cache: { resource: state, operator: get, key: last_poll }
-                  - catch:
-                      - mapping: 'root = {"at": 0}'
-                result_map: 'root.last_poll_at = this.at'
-            - mapping: |
-                root.pending = this.pending_at > 0
-                root.pending_at = this.pending_at
-                root.last_poll_at = this.last_poll_at
-                root.now = now().ts_unix()
-
-        # A POST from another site cannot set a custom header without a CORS preflight, which this server never answers.
-        - check: '@listener == "ui" && @http_server_verb == "POST" && @http_server_request_path == "/api/v1/upgrade" && metadata("X-Requested-With").or("") != "vm-upgrade-button"'
-          processors:
-            - mapping: |
-                meta status = "403"
-                root = {"error": "missing X-Requested-With header"}
-
-        - check: '@listener == "ui" && @http_server_verb == "POST" && @http_server_request_path == "/api/v1/upgrade"'
-          processors:
-            - cache:
-                resource: state
-                operator: set
-                key: pending
-                value: '{"at": ${! now().ts_unix() }}'
-                ttl: 10m
-            - mapping: 'root = {"queued": true}'
-
-        - processors:
-            - mapping: |
-                meta status = "404"
-                root = {"error": "not found"}
+            - resource: poll_api
 
 output:
   sync_response: {}
+
+processor_resources:
+  # ------------------------------------------------------------------------------------------------
+  # Flag helpers. Each takes the key in the metadata field `flag` and leaves the message body alone.
+  # ------------------------------------------------------------------------------------------------
+
+  # Reads the flag into the metadata field `flag_at`: unix seconds of the last set, or 0 when it is not set (or has expired).
+  - label: read_flag
+    branch:
+      request_map: 'root = ""'
+      processors:
+        - cache: { resource: state, operator: get, key: '${! @flag }' }
+        - catch:
+            - mapping: 'root = {"at": 0}'
+      result_map: 'meta flag_at = this.at'
+
+  # Sets the flag to now. The metadata field `flag_ttl` says how long it lives.
+  - label: set_flag
+    branch:
+      request_map: 'root = ""'
+      processors:
+        - cache:
+            resource: state
+            operator: set
+            key: '${! @flag }'
+            value: '{"at": ${! now().ts_unix() }}'
+            ttl: '${! @flag_ttl }'
+
+  # Clears the flag; clearing one that is not set is fine.
+  - label: clear_flag
+    branch:
+      request_map: 'root = ""'
+      processors:
+        - cache: { resource: state, operator: delete, key: '${! @flag }' }
+        - catch:
+            - mapping: 'root = ""'
+
+  # ------------------------------------------------------------------------------------------------
+  # Replies
+  # ------------------------------------------------------------------------------------------------
+  - label: not_found
+    mapping: |
+      meta status = "404"
+      root = {"error": "not found"}
+
+  # ------------------------------------------------------------------------------------------------
+  # The page listener
+  # ------------------------------------------------------------------------------------------------
+  - label: ui_api
+    switch:
+      - check: '@http_server_verb == "GET" && (@http_server_request_path == "/" || @http_server_request_path == "/index.html")'
+        processors:
+          - mapping: |
+              meta content_type = "text/html; charset=utf-8"
+              root = file("/etc/connect/index.html")
+
+      - check: '@http_server_request_path == "/healthz"'
+        processors:
+          - mapping: |
+              meta content_type = "text/plain"
+              root = "ok"
+
+      - check: '@http_server_verb == "GET" && @http_server_request_path == "/api/v1/status"'
+        processors:
+          - mapping: 'meta flag = "pending"'
+          - resource: read_flag
+          - mapping: 'meta pending_at = @flag_at'
+          - mapping: 'meta flag = "last_poll"'
+          - resource: read_flag
+          - mapping: |
+              root.pending = @pending_at > 0
+              root.pending_at = @pending_at
+              root.last_poll_at = @flag_at
+              root.now = now().ts_unix()
+
+      # A form on another site cannot add a custom header without a CORS preflight, which this server never answers.
+      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/upgrade" && metadata("X-Requested-With").or("") != "vm-upgrade-button"'
+        processors:
+          - mapping: |
+              meta status = "403"
+              root = {"error": "missing X-Requested-With header"}
+
+      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/upgrade"'
+        processors:
+          - mapping: |
+              meta flag = "pending"
+              meta flag_ttl = "10m"
+          - resource: set_flag
+          - mapping: 'root = {"queued": true}'
+
+      - processors:
+          - resource: not_found
+
+  # ------------------------------------------------------------------------------------------------
+  # The VM's listener. Everything but /healthz needs the bearer token; no token configured means nothing is let in.
+  # ------------------------------------------------------------------------------------------------
+  - label: poll_api
+    switch:
+      - check: '@http_server_request_path == "/healthz"'
+        processors:
+          - mapping: |
+              meta content_type = "text/plain"
+              root = "ok"
+
+      - check: '(env("UPGRADE_TOKEN").or("") == "") || (@Authorization.or("") != "Bearer " + env("UPGRADE_TOKEN").or(""))'
+        processors:
+          - mapping: |
+              meta status = "401"
+              root = {"error": "unauthorized"}
+
+      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/claim"'
+        processors:
+          - mapping: 'meta flag = "pending"'
+          - resource: read_flag
+          - mapping: 'meta upgrade = @flag_at > 0'
+          - resource: clear_flag
+          - mapping: |
+              meta flag = "last_poll"
+              meta flag_ttl = "24h"
+          - resource: set_flag
+          - mapping: 'root = {"upgrade": @upgrade}'
+
+      - processors:
+          - resource: not_found
