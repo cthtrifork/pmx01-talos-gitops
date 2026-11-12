@@ -9,6 +9,7 @@ resources:
   - deployment.yaml
   - github-app.yaml
   - usage/usage.yaml
+  - vm-upgrade/vm-upgrade.yaml
 configMapGenerator:
   - name: claude-token-scripts
     namespace: claude-system
@@ -28,6 +29,15 @@ configMapGenerator:
     files:
       - usage/redpanda-connect.yaml
       - usage/index.html
+  - name: claude-vm-upgrade-connect-config
+    namespace: claude-system
+    options:
+      annotations:
+        # Redpanda Connect interpolations and a web page, not Flux variables: skip postBuild envsubst
+        kustomize.toolkit.fluxcd.io/substitute: disabled
+    files:
+      - vm-upgrade/redpanda-connect.yaml
+      - vm-upgrade/index.html
   - name: claude-md
     namespace: claude-system
     options:

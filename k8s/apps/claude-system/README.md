@@ -13,6 +13,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `claude-md/CLAUDE.md` | The only `CLAUDE.md` (user-level and repo notes together), generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `claude-md/skills/<name>/SKILL.md` | Task-specific runbooks split out of `CLAUDE.md`, generated into the `claude-skills` ConfigMap and mounted at `/etc/claude-skills` (items map each key to `<name>/SKILL.md`); each is symlinked into `~/.claude/skills/` at pod start |
 | `usage/` | Usage page and JSON API out: `usage.yaml` (a second Redpanda Connect), `redpanda-connect.yaml` (PromQL behind each endpoint), `index.html` (the page) |
+| `vm-upgrade/` | "Update Claude VM" button: `vm-upgrade.yaml` (a third Redpanda Connect), `redpanda-connect.yaml` (the flag and its two listeners), `index.html` (the button) |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
 | `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
 
@@ -158,3 +159,73 @@ Only series Prometheus holds are shown. Tokens, cost and lines have a `model` la
 time do not, so they are per environment only (and so is cost per commit). The page script is plain JavaScript with no external assets; the numbers are `increase()` over
 the window, so the very first export of a new model or environment is not counted.
 From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`.
+
+## Update Claude VM button
+
+`vm-upgrade/` holds a Redpanda Connect with one in-memory flag and two listeners. The VM polls the flag and runs
+`bootc upgrade --apply` itself (units in [homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)); the cluster never
+connects to the VM and never sends it a command.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor You as You (browser)
+    participant Omni as Omni exposer (Omni login)
+    participant UI as Connect :8080 ui
+    participant Flag as In-memory flag (pending, last_poll)
+    participant Poll as Connect :8081 poll (MetalLB 192.168.1.244)
+    participant Timer as VM timer (every 60 s, root)
+    participant Bootc as bootc-fetch-apply-updates.service
+
+    You->>Omni: open Update Claude VM
+    Omni->>UI: GET /
+    UI-->>You: page with the button
+    You->>UI: POST /api/v1/upgrade (X-Requested-With header)
+    UI->>Flag: set pending = now (expires after 10 min)
+    UI-->>You: queued
+
+    loop every 60 s
+        Timer->>Poll: POST /api/v1/report: booted and staged deployment (NetworkPolicy: only 192.168.1.132)
+        Poll->>Flag: store vm status, set last_poll = now
+        Timer->>Timer: last upgrade under 1 h ago? then skip the claim
+        Timer->>Poll: POST /api/v1/claim
+        Poll->>Flag: read pending, then clear it
+        Poll-->>Timer: upgrade: true or false
+    end
+
+    Note over Timer,Bootc: only when upgrade is true
+    Timer->>Bootc: systemctl start --no-block
+    Bootc->>Bootc: bootc upgrade --apply (reboots only if a new image exists)
+
+    You->>UI: GET /api/v1/status (every 5 s)
+    UI-->>You: queued? last poll, running and staged version
+```
+
+| Listener | Reached through | Endpoints |
+|---|---|---|
+| `:8080` page | Omni service exposer, `Service/claude-vm-upgrade` (port 50092, behind Omni login) | `GET /` the button, `GET /api/v1/status`, `POST /api/v1/upgrade` (needs the header `X-Requested-With: vm-upgrade-button`, so a form on another site cannot post it) |
+| `:8081` poll | MetalLB `claude-vm-upgrade-lb`, 192.168.1.244, plain HTTP, only from the VM | `POST /api/v1/report`: the VM's booted and staged ostree deployment (also counts as a poll); `POST /api/v1/claim`: answers `{"upgrade": true}` once per click, then clears the flag |
+
+The flag lives 10 minutes and is cleared by the first claim, so one click is at most one upgrade; a pod restart drops an unclaimed click.
+The poll listener has no way to queue an upgrade, and the page listener has no `claim`.
+
+There is no token. The poll listener is reachable only from the VM's static address: `CiliumNetworkPolicy/claude-vm-upgrade` allows
+`192.168.1.132/32` on 8081, and the LoadBalancer Service uses `externalTrafficPolicy: Local` so Cilium sees the VM's address and not a
+node's. This is weaker than a secret: a host on the same LAN segment that spoofs 192.168.1.132 could claim a click (or poll as the VM), and
+the VM's poll is plain HTTP, so a host in the path could answer `{"upgrade": true}` (bounded by the VM's one-upgrade-per-hour limit).
+If the VM's address changes, change the `/32` in `networkpolicy.yaml`.
+
+On the VM, as root, tell the timer where to poll (the unit is skipped until the file exists):
+
+```sh
+install -d -m 0700 /etc/claude-vm/upgrade
+printf %s http://192.168.1.244 > /etc/claude-vm/upgrade/url
+```
+
+Check from the VM: `curl -s -XPOST http://192.168.1.244/api/v1/claim` answers `{"upgrade":false}` while nothing is queued (from any other address the request times out).
+The page shows when the VM last polled and what it runs (booted version and image digest, and the staged version if any), so a dead timer is visible and
+you can tell whether an update is waiting for a reboot.
+
+The report is deliberately dumb: the VM reads `rpm-ostree status --json` (local ostree data, no registry call) and sends three strings. Connect keeps
+only those fields, with plain characters and at most 64 of them, and the page shows them as text. It does not say whether a newer image exists: that
+needs a registry request, which the VM does not make for the page. A spoofed report could only change what the page displays.
