@@ -33,7 +33,9 @@ input:
         http_server:
           address: 0.0.0.0:8080
           path: /
-          allowed_verbs: [GET, POST]
+          allowed_verbs:
+            - GET
+            - POST
           sync_response: &reply
             status: '${! @status.or("200") }'
             headers:
@@ -46,7 +48,9 @@ input:
         http_server:
           address: 0.0.0.0:8081
           path: /
-          allowed_verbs: [GET, POST]
+          allowed_verbs:
+            - GET
+            - POST
           sync_response: *reply
         processors:
           - mapping: 'meta listener = "poll"'
