@@ -1,5 +1,5 @@
 ---
-# "Update the Claude VM" button (see vm-upgrade/redpanda-connect.yaml and the README). The pod only holds a flag; the VM polls it.
+# "Update VMs" buttons (see vm-upgrade/redpanda-connect.yaml and the README). The pod only holds a flag per VM; the VMs poll it.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -68,7 +68,7 @@ metadata:
   name: claude-vm-upgrade
   namespace: claude-system
   annotations:
-    omni-kube-service-exposer.sidero.dev/label: "Update Claude VM"
+    omni-kube-service-exposer.sidero.dev/label: "Update VMs"
     omni-kube-service-exposer.sidero.dev/port: "50092"
     omni-kube-service-exposer.sidero.dev/prefix: claudevmupgrade
 spec:
@@ -83,10 +83,11 @@ spec:
       port: 4195
       targetPort: metrics
 ---
-# The VM's poll (POST /api/v1/claim), plain HTTP on the LAN. Not exposed through Omni: this listener cannot queue an upgrade.
-# Only the VM's address (192.168.1.132) is let in, by the CiliumNetworkPolicy. externalTrafficPolicy Local keeps the client address:
+# The VMs' poll (POST /api/v1/vms/<vm>/report and /claim), plain HTTP on the LAN; the Cloudflare A record vm-upgrade.portableinfo.cloud
+# points at it (added by hand, DNS only) and is the URL baked into both VM images. Not exposed through Omni: this listener cannot queue an upgrade.
+# Only the VMs' addresses (192.168.1.132, 192.168.1.136) are let in, by the CiliumNetworkPolicy. externalTrafficPolicy Local keeps the client address:
 # with Cluster, traffic that lands on another node is source-NATed to that node and the policy would see the node, not the VM.
-# 192.168.1.244 is free in the MetalLB pool (192.168.1.221-254); the VM's /etc/claude-vm/upgrade/url points at it.
+# 192.168.1.244 is free in the MetalLB pool (192.168.1.221-254); the A record vm-upgrade.portableinfo.cloud points at it.
 apiVersion: v1
 kind: Service
 metadata:

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Update Claude VM</title>
+<title>Update VMs</title>
 <style>
   :root {
     color-scheme: light dark;
@@ -24,8 +24,9 @@
          padding: 24px max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); display: flex; justify-content: center; }
   main { width: 100%; max-width: 440px; }
   h1 { font-size: 20px; margin: 0 0 2px; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
   .sub { margin: 0 0 16px; color: var(--ink-2); }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
   .health { display: flex; align-items: center; gap: 10px; font-weight: 600; }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-2); flex: none; }
   .health.ok .dot { background: var(--ok); }
@@ -51,29 +52,34 @@
 </head>
 <body>
 <main>
-  <h1>Update Claude VM</h1>
-  <p class="sub">Runs <code>bootc upgrade --apply</code> on the VM.</p>
+  <h1>Update VMs</h1>
+  <p class="sub">Runs <code>bootc upgrade --apply</code> on a VM. A VM that finds no new image does not reboot.</p>
+  <div id="cards"></div>
+  <p id="error" class="hint warn" role="status"></p>
+</main>
 
-  <section class="card" aria-label="Claude VM status">
-    <div id="health" class="health"><span class="dot" aria-hidden="true"></span><span id="healthText">Checking…</span><small id="healthAgo"></small></div>
+<template id="card">
+  <section class="card">
+    <h2></h2>
+    <div class="health"><span class="dot" aria-hidden="true"></span><span class="health-text">Checking…</span><small class="health-ago"></small></div>
     <dl>
-      <dt>Running</dt><dd id="booted">…</dd>
-      <dt>Staged</dt><dd id="staged">…</dd>
+      <dt>Running</dt><dd class="booted">…</dd>
+      <dt>Staged</dt><dd class="staged">…</dd>
     </dl>
     <div class="actions">
-      <p id="confirm" class="confirm" hidden>The VM reboots if a new image exists, and running Claude sessions end.</p>
-      <button id="go" type="button" disabled>Update now</button>
-      <button id="cancel" type="button" class="link" hidden>Cancel</button>
-      <p id="hint" class="hint" role="status" aria-live="polite"></p>
+      <p class="confirm" hidden></p>
+      <button type="button" class="go" disabled>Update now</button>
+      <button type="button" class="link cancel" hidden>Cancel</button>
+      <p class="hint" role="status" aria-live="polite"></p>
     </div>
   </section>
-</main>
+</template>
+
 <script>
 (function () {
-  var STALE_AFTER = 150;   // seconds without a poll before the VM counts as not responding (the timer runs every 60 s)
-  var $ = function (id) { return document.getElementById(id); };
-  var go = $('go'), cancel = $('cancel'), confirmBox = $('confirm'), hint = $('hint');
-  var state = { pending: false, online: false }, confirming = false;
+  var STALE_AFTER = 150;   // seconds without a poll before a VM counts as not responding (the timers run every 60 s)
+  var LABELS = { 'claude-vm': 'Claude VM', 'homeserver': 'Home server' };
+  var cards = {};          // vm name -> { el, pending, online, confirming }
 
   function ago(t, now) {
     if (!t) return 'never';
@@ -81,62 +87,76 @@
     return s < 90 ? s + ' s ago' : Math.round(s / 60) + ' min ago';
   }
 
-  function render() {
-    go.hidden = false;
-    cancel.hidden = !confirming;
-    confirmBox.hidden = !confirming;
-    go.classList.toggle('danger', confirming);
-    if (state.pending) {
-      go.disabled = true; go.textContent = 'Queued, waiting for the VM';
-      hint.className = 'hint'; hint.textContent = 'The VM checks every minute; the request expires after 10 minutes.';
-    } else {
-      go.disabled = false; go.textContent = confirming ? 'Confirm update' : 'Update now';
-      if (!state.online && !confirming) { hint.className = 'hint warn'; hint.textContent = 'The VM has not polled recently: a request may expire before it is picked up.'; }
-      else if (!confirming && /^(Queued|Failed)/.test(hint.textContent) === false) { hint.className = 'hint'; hint.textContent = ''; }
+  function card(name) {
+    if (cards[name]) return cards[name];
+    var el = document.getElementById('card').content.firstElementChild.cloneNode(true);
+    el.querySelector('h2').textContent = LABELS[name] || name;
+    var c = { name: name, el: el, pending: false, online: false, confirming: false,
+              go: el.querySelector('.go'), cancel: el.querySelector('.cancel'), confirmBox: el.querySelector('.confirm'), hint: el.querySelector('.hint') };
+    c.confirmBox.textContent = (LABELS[name] || name) + ' reboots if a new image exists, and anything running on it ends.';
+    c.go.addEventListener('click', function () {
+      if (!c.confirming) { c.confirming = true; c.hint.textContent = ''; render(c); return; }
+      c.go.disabled = true;
+      fetch('api/v1/vms/' + encodeURIComponent(name) + '/upgrade', { method: 'POST', headers: { 'X-Requested-With': 'vm-upgrade-button' } })
+        .then(function (r) {
+          c.confirming = false;
+          c.hint.className = r.ok ? 'hint' : 'hint warn';
+          c.hint.textContent = r.ok ? 'Queued.' : 'Failed (' + r.status + ').';
+          refresh();
+        })
+        .catch(function () { c.confirming = false; c.hint.className = 'hint warn'; c.hint.textContent = 'Failed: could not reach the page.'; render(c); });
+    });
+    c.cancel.addEventListener('click', function () { c.confirming = false; render(c); });
+    document.getElementById('cards').appendChild(el);
+    cards[name] = c;
+    return c;
+  }
+
+  function render(c) {
+    c.cancel.hidden = !c.confirming;
+    c.confirmBox.hidden = !c.confirming;
+    c.go.classList.toggle('danger', c.confirming);
+    if (c.pending) {
+      c.go.disabled = true; c.go.textContent = 'Queued, waiting for the VM';
+      c.hint.className = 'hint'; c.hint.textContent = 'The VM checks every minute; the request expires after 10 minutes.';
+      return;
     }
+    c.go.disabled = false; c.go.textContent = c.confirming ? 'Confirm update' : 'Update now';
+    if (c.confirming) return;
+    if (!c.online) { c.hint.className = 'hint warn'; c.hint.textContent = 'The VM has not polled recently: a request may expire before it is picked up.'; }
+    else if (!/^(Queued|Failed)/.test(c.hint.textContent)) { c.hint.className = 'hint'; c.hint.textContent = ''; }
+  }
+
+  function update(c, s, now) {
+    var vm = s.vm || {}, known = !!vm.booted_version, el = c.el;
+    c.pending = s.pending;
+    c.online = s.last_poll_at > 0 && now - s.last_poll_at < STALE_AFTER;
+    el.querySelector('.health').className = 'health ' + (c.online ? 'ok' : 'stale');
+    el.querySelector('.health-text').textContent = c.online ? 'VM online' : (s.last_poll_at ? 'VM not responding' : 'VM has not reported yet');
+    el.querySelector('.health-ago').textContent = s.last_poll_at ? 'polled ' + ago(s.last_poll_at, now) : '';
+    var booted = el.querySelector('.booted'), staged = el.querySelector('.staged');
+    booted.textContent = known ? vm.booted_version : 'unknown';
+    if (known) {
+      var digest = document.createElement('span');
+      digest.className = 'mono'; digest.textContent = ' ' + (vm.booted_digest || '').slice(0, 12);
+      booted.appendChild(digest);
+    }
+    staged.textContent = !known ? 'unknown' : (vm.staged_version || 'none');
+    if (known && vm.staged_version) {
+      var note = document.createElement('span');
+      note.className = 'note'; note.textContent = 'applies on the next reboot';
+      staged.appendChild(note);
+    }
+    if (!c.pending && c.hint.textContent.indexOf('Queued') === 0) { c.hint.textContent = ''; }
+    render(c);
   }
 
   function refresh() {
     fetch('api/v1/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
-      var vm = d.vm || {}, known = !!vm.booted_version;
-      state.pending = d.pending;
-      state.online = d.last_poll_at > 0 && d.now - d.last_poll_at < STALE_AFTER;
-      $('health').className = 'health ' + (state.online ? 'ok' : 'stale');
-      $('healthText').textContent = state.online ? 'VM online' : (d.last_poll_at ? 'VM not responding' : 'VM has not reported yet');
-      $('healthAgo').textContent = d.last_poll_at ? 'polled ' + ago(d.last_poll_at, d.now) : '';
-      $('booted').textContent = '';
-      if (known) {
-        $('booted').textContent = vm.booted_version;
-        var digest = document.createElement('span');
-        digest.className = 'mono'; digest.textContent = ' ' + (vm.booted_digest || '').slice(0, 12);
-        $('booted').appendChild(digest);
-      } else { $('booted').textContent = 'unknown'; }
-      $('staged').textContent = '';
-      if (!known) { $('staged').textContent = 'unknown'; }
-      else if (vm.staged_version) {
-        $('staged').textContent = vm.staged_version;
-        var note = document.createElement('span');
-        note.className = 'note'; note.textContent = 'applies on the next reboot';
-        $('staged').appendChild(note);
-      } else { $('staged').textContent = 'none'; }
-      if (!state.pending && hint.textContent.indexOf('Queued') === 0) { hint.textContent = ''; }
-      render();
-    }).catch(function () { hint.className = 'hint warn'; hint.textContent = 'Status unavailable.'; });
+      document.getElementById('error').textContent = '';
+      Object.keys(d.vms).forEach(function (name) { update(card(name), d.vms[name], d.now); });
+    }).catch(function () { document.getElementById('error').textContent = 'Status unavailable.'; });
   }
-
-  go.addEventListener('click', function () {
-    if (!confirming) { confirming = true; hint.textContent = ''; render(); return; }
-    go.disabled = true;
-    fetch('api/v1/upgrade', { method: 'POST', headers: { 'X-Requested-With': 'vm-upgrade-button' } })
-      .then(function (r) {
-        confirming = false;
-        hint.className = r.ok ? 'hint' : 'hint warn';
-        hint.textContent = r.ok ? 'Queued.' : 'Failed (' + r.status + ').';
-        refresh();
-      })
-      .catch(function () { confirming = false; hint.className = 'hint warn'; hint.textContent = 'Failed: could not reach the page.'; render(); });
-  });
-  cancel.addEventListener('click', function () { confirming = false; render(); });
 
   refresh();
   setInterval(refresh, 5000);
