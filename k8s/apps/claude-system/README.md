@@ -13,6 +13,7 @@ claude.ai/code. No admin settings or environment key are needed. Docs: <https://
 | `claude-md/CLAUDE.md` | The only `CLAUDE.md` (user-level and repo notes together), generated into the `claude-md` ConfigMap by `kustomization.yaml` and symlinked to `~/.claude/CLAUDE.md` at pod start. Edit it in Git; the ConfigMap name hash rolls the pod |
 | `claude-md/skills/<name>/SKILL.md` | Task-specific runbooks split out of `CLAUDE.md`, generated into the `claude-skills` ConfigMap and mounted at `/etc/claude-skills` (items map each key to `<name>/SKILL.md`); each is symlinked into `~/.claude/skills/` at pod start |
 | `usage/` | Usage page and JSON API out: `usage.yaml` (a second Redpanda Connect), `redpanda-connect.yaml` (PromQL behind each endpoint), `index.html` (the page) |
+| `vm-upgrade/` | "Update Claude VM" button: `vm-upgrade.yaml` (a third Redpanda Connect), `redpanda-connect.yaml` (the flag and its two listeners), `index.html` (the button) |
 | `pvc.yaml` | 5Gi volume holding the login (`/home/claude`); delete it to sign out |
 | `../../../images/claude-runner/` | Image: Anthropic publishes none, so this wraps the `claude` binary (checksum verified) plus `kubectl`, `gh`, `crane`, the Flux MCP server and a git credential helper |
 
@@ -158,3 +159,34 @@ Only series Prometheus holds are shown. Tokens, cost and lines have a `model` la
 time do not, so they are per environment only (and so is cost per commit). The page script is plain JavaScript with no external assets; the numbers are `increase()` over
 the window, so the very first export of a new model or environment is not counted.
 From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`.
+
+## Update Claude VM button
+
+`vm-upgrade/` holds a Redpanda Connect with one in-memory flag and two listeners. The VM polls the flag and runs
+`bootc upgrade --apply` itself (units in [homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)); the cluster never
+connects to the VM and never sends it a command.
+
+| Listener | Reached through | Endpoints |
+|---|---|---|
+| `:8080` page | Omni service exposer, `Service/claude-vm-upgrade` (port 50092, behind Omni login) | `GET /` the button, `GET /api/v1/status`, `POST /api/v1/upgrade` (needs the header `X-Requested-With: vm-upgrade-button`, so a form on another site cannot post it) |
+| `:8081` poll | MetalLB `claude-vm-upgrade-lb`, 192.168.1.244, plain HTTP, LAN only | `POST /api/v1/claim` with `Authorization: Bearer <token>`: answers `{"upgrade": true}` once per click, then clears the flag |
+
+The flag lives 10 minutes and is cleared by the first claim, so one click is at most one upgrade; a pod restart drops an unclaimed click.
+The poll listener has no way to queue an upgrade, and the page listener has no `claim`. Without the token Secret the pod does not start,
+and an empty token is refused (401), so the poll endpoint is never open. The token is compared as a plain string (not constant time), which is
+acceptable for a 32+ character random token on a LAN.
+
+Create the token once and put the same value on the VM:
+
+```sh
+token=$(openssl rand -hex 32)
+kubectl -n claude-system create secret generic claude-vm-upgrade-token --from-literal=token="$token" --dry-run=client -o yaml \
+  | sops --encrypt --input-type yaml --output-type yaml /dev/stdin > claude-vm-upgrade-token.enc.yaml   # see "Secrets (SOPS)" in the root readme.md
+# add claude-vm-upgrade-token.enc.yaml to kustomization.yaml resources:, then on the VM (root):
+#   install -d -m 0700 /etc/claude-vm/upgrade
+#   printf %s "$token" > /etc/claude-vm/upgrade/token && chmod 600 /etc/claude-vm/upgrade/token
+#   printf %s http://192.168.1.244 > /etc/claude-vm/upgrade/url
+```
+
+Check from the LAN: `curl -s -XPOST -H "Authorization: Bearer $token" http://192.168.1.244/api/v1/claim` answers `{"upgrade":false}` while nothing is queued.
+The page shows when the VM last polled, so a dead timer is visible.

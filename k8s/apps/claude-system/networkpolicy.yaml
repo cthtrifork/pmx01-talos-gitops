@@ -202,3 +202,35 @@ spec:
       toPorts:
         - ports:
             - { port: "9090", protocol: TCP }
+---
+# Update-VM button. The page (8080) is reached by the Omni service exposer, which runs on the host network (host or remote-node).
+# The VM polls 8081 through claude-vm-upgrade-lb from the LAN; the bearer token is what authenticates it.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: claude-vm-upgrade
+  namespace: claude-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app: claude-vm-upgrade
+  ingress:
+    - fromEntities:
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - { port: "8080", protocol: TCP }
+    - fromCIDR:
+        - 192.168.1.0/24
+      toPorts:
+        - ports:
+            - { port: "8081", protocol: TCP }
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }

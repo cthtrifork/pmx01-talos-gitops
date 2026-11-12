@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Update Claude VM</title>
+<style>
+  :root { color-scheme: light dark; --font: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { margin: 0; padding: 24px 16px; font: 15px/1.5 var(--font); display: flex; justify-content: center; }
+  main { width: 100%; max-width: 420px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 4px 0 16px; opacity: .75; }
+  button { font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: 0; cursor: pointer;
+           background: #2a78d6; color: #fff; width: 100%; }
+  button:disabled { opacity: .5; cursor: default; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 20px 0 0; }
+  dt { opacity: .7; }
+  dd { margin: 0; text-align: right; }
+  .warn { margin-top: 16px; font-size: 13px; opacity: .8; }
+  #msg { min-height: 1.5em; margin-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Update Claude VM</h1>
+  <p>Queues <code>bootc upgrade --apply</code>. The VM picks it up within about a minute and reboots only if a new image exists.</p>
+  <button id="go" type="button">Update now</button>
+  <div id="msg" role="status"></div>
+  <dl>
+    <dt>Queued</dt><dd id="pending">…</dd>
+    <dt>VM last polled</dt><dd id="poll">…</dd>
+  </dl>
+  <p class="warn">A reboot ends running Claude sessions.</p>
+</main>
+<script>
+(function () {
+  var go = document.getElementById('go'), msg = document.getElementById('msg');
+  function ago(t, now) {
+    if (!t) return 'never';
+    var s = Math.max(0, now - t);
+    return s < 90 ? s + ' s ago' : Math.round(s / 60) + ' min ago';
+  }
+  function refresh() {
+    fetch('api/v1/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+      document.getElementById('pending').textContent = d.pending ? 'yes, ' + ago(d.pending_at, d.now) : 'no';
+      document.getElementById('poll').textContent = ago(d.last_poll_at, d.now);
+      go.disabled = d.pending;
+    }).catch(function () { msg.textContent = 'Status unavailable'; });
+  }
+  go.addEventListener('click', function () {
+    go.disabled = true;
+    fetch('api/v1/upgrade', { method: 'POST', headers: { 'X-Requested-With': 'vm-upgrade-button' } })
+      .then(function (r) { msg.textContent = r.ok ? 'Queued.' : 'Failed (' + r.status + ').'; refresh(); })
+      .catch(function () { msg.textContent = 'Failed.'; go.disabled = false; });
+  });
+  refresh();
+  setInterval(refresh, 5000);
+})();
+</script>
+</body>
+</html>
