@@ -204,7 +204,7 @@ spec:
             - { port: "9090", protocol: TCP }
 ---
 # Update-VM button. The page (8080) is reached by the Omni service exposer, which runs on the host network (host or remote-node).
-# The VM polls 8081 through claude-vm-upgrade-lb from the LAN; the bearer token is what authenticates it.
+# The VM (static 192.168.1.132) polls 8081 through claude-vm-upgrade-lb; its address is the only authentication, so keep the /32.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -222,7 +222,7 @@ spec:
         - ports:
             - { port: "8080", protocol: TCP }
     - fromCIDR:
-        - 192.168.1.0/24
+        - 192.168.1.132/32
       toPorts:
         - ports:
             - { port: "8081", protocol: TCP }

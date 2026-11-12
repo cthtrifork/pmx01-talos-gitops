@@ -1,6 +1,5 @@
 ---
 # "Update the Claude VM" button (see vm-upgrade/redpanda-connect.yaml and the README). The pod only holds a flag; the VM polls it.
-# The token Secret `claude-vm-upgrade-token` (key `token`) is required: without it the pod does not start, so the poll endpoint is never open.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,12 +30,6 @@ spec:
             - -c
             - /etc/connect/redpanda-connect.yaml
             - --disable-telemetry
-          env:
-            - name: UPGRADE_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: claude-vm-upgrade-token
-                  key: token
           ports:
             - { name: http, containerPort: 8080 }
             - { name: poll, containerPort: 8081 }
@@ -90,7 +83,9 @@ spec:
       port: 4195
       targetPort: metrics
 ---
-# The VM's poll (POST /api/v1/claim with the bearer token), plain HTTP on the LAN. Not exposed through Omni: this listener cannot queue an upgrade.
+# The VM's poll (POST /api/v1/claim), plain HTTP on the LAN. Not exposed through Omni: this listener cannot queue an upgrade.
+# Only the VM's address (192.168.1.132) is let in, by the CiliumNetworkPolicy. externalTrafficPolicy Local keeps the client address:
+# with Cluster, traffic that lands on another node is source-NATed to that node and the policy would see the node, not the VM.
 # 192.168.1.244 is free in the MetalLB pool (192.168.1.221-254); the VM's /etc/claude-vm/upgrade/url points at it.
 apiVersion: v1
 kind: Service
@@ -101,6 +96,7 @@ metadata:
     metallb.io/loadBalancerIPs: 192.168.1.244
 spec:
   type: LoadBalancer
+  externalTrafficPolicy: Local
   selector:
     app: claude-vm-upgrade
   ports:

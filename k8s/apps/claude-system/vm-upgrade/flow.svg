@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, Segoe UI, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+    </marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1a7f4b"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="720" fill="#fafaf7"/>
+  <text x="640" y="40" text-anchor="middle" font-size="24" font-weight="700" fill="#111">Update Claude VM: button to bootc upgrade</text>
+
+  <!-- zones -->
+  <rect x="30" y="70" width="230" height="600" rx="14" fill="#eef3fb" stroke="#9db6dd"/>
+  <text x="145" y="98" text-anchor="middle" font-size="15" font-weight="700" fill="#2a4f8a">You</text>
+  <rect x="300" y="70" width="560" height="600" rx="14" fill="#f3f0fa" stroke="#b3a5d9"/>
+  <text x="580" y="98" text-anchor="middle" font-size="15" font-weight="700" fill="#51338f">Cluster · claude-system · Redpanda Connect</text>
+  <rect x="900" y="70" width="350" height="600" rx="14" fill="#fdf1e9" stroke="#e5b08d"/>
+  <text x="1075" y="98" text-anchor="middle" font-size="15" font-weight="700" fill="#a4501a">Claude VM (bootc)</text>
+
+  <!-- you -->
+  <rect x="55" y="150" width="180" height="70" rx="10" fill="#fff" stroke="#2a4f8a"/>
+  <text x="145" y="180" text-anchor="middle" font-size="15" font-weight="600">Browser</text>
+  <text x="145" y="202" text-anchor="middle" font-size="12" fill="#555">presses "Update now"</text>
+  <rect x="55" y="290" width="180" height="70" rx="10" fill="#fff" stroke="#2a4f8a"/>
+  <text x="145" y="320" text-anchor="middle" font-size="15" font-weight="600">Omni exposer</text>
+  <text x="145" y="342" text-anchor="middle" font-size="12" fill="#555">Omni login</text>
+
+  <!-- ui -->
+  <rect x="330" y="270" width="230" height="110" rx="10" fill="#fff" stroke="#51338f" stroke-width="2"/>
+  <text x="445" y="298" text-anchor="middle" font-size="15" font-weight="700">:8080  ui</text>
+  <text x="445" y="320" text-anchor="middle" font-size="12" fill="#444">GET /  ·  GET /api/v1/status</text>
+  <text x="445" y="340" text-anchor="middle" font-size="12" fill="#444">POST /api/v1/upgrade</text>
+  <text x="445" y="360" text-anchor="middle" font-size="11" fill="#777">needs X-Requested-With header</text>
+
+  <!-- flag -->
+  <rect x="440" y="440" width="260" height="80" rx="40" fill="#fff6d6" stroke="#b58a00" stroke-width="2"/>
+  <text x="570" y="473" text-anchor="middle" font-size="15" font-weight="700">In-memory flag</text>
+  <text x="570" y="494" text-anchor="middle" font-size="12" fill="#444">pending (10 min) · last_poll</text>
+
+  <!-- poll -->
+  <rect x="610" y="270" width="230" height="110" rx="10" fill="#fff" stroke="#51338f" stroke-width="2"/>
+  <text x="725" y="298" text-anchor="middle" font-size="15" font-weight="700">:8081  poll</text>
+  <text x="725" y="320" text-anchor="middle" font-size="12" fill="#444">POST /api/v1/claim</text>
+  <text x="725" y="340" text-anchor="middle" font-size="12" fill="#444">only the VM, 192.168.1.132</text>
+  <text x="725" y="360" text-anchor="middle" font-size="11" fill="#777">MetalLB 192.168.1.244, LAN only</text>
+
+  <!-- vm -->
+  <rect x="925" y="150" width="300" height="80" rx="10" fill="#fff" stroke="#a4501a" stroke-width="2"/>
+  <text x="1075" y="180" text-anchor="middle" font-size="15" font-weight="700">Timer, every 60 s (root)</text>
+  <text x="1075" y="202" text-anchor="middle" font-size="12" fill="#444">skip if last upgrade &lt; 1 h ago</text>
+  <rect x="925" y="440" width="300" height="100" rx="10" fill="#fff" stroke="#a4501a" stroke-width="2"/>
+  <text x="1075" y="470" text-anchor="middle" font-size="15" font-weight="700">bootc-fetch-apply-updates</text>
+  <text x="1075" y="492" text-anchor="middle" font-size="12" fill="#444">bootc upgrade --apply</text>
+  <text x="1075" y="512" text-anchor="middle" font-size="11" fill="#777">reboots only if a new image exists</text>
+
+  <!-- arrows -->
+  <!-- 1 browser -> omni -->
+  <path d="M145,220 L145,288" stroke="#333" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <text x="155" y="260" font-size="12" fill="#333">1</text>
+  <!-- 2 omni -> ui -->
+  <path d="M235,325 L328,325" stroke="#333" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <text x="270" y="316" font-size="12" fill="#333">2</text>
+  <!-- 3 ui -> flag set -->
+  <path d="M470,380 L520,438" stroke="#333" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <text x="465" y="420" font-size="12" fill="#333">3 set</text>
+  <!-- 4 timer -> poll -->
+  <path d="M925,190 C800,190 760,220 740,268" stroke="#1a7f4b" stroke-width="2" fill="none" marker-end="url(#g)"/>
+  <text x="820" y="175" font-size="12" fill="#1a7f4b">4 POST claim</text>
+  <!-- 5 poll <-> flag -->
+  <path d="M700,380 L620,438" stroke="#1a7f4b" stroke-width="2" fill="none" marker-end="url(#g)"/>
+  <text x="680" y="420" font-size="12" fill="#1a7f4b">5 read, clear</text>
+  <!-- 6 answer -->
+  <path d="M840,350 C900,350 1000,330 1040,232" stroke="#1a7f4b" stroke-width="2" stroke-dasharray="6 4" fill="none" marker-end="url(#g)"/>
+  <text x="858" y="378" font-size="12" fill="#1a7f4b">6 {"upgrade": true|false}</text>
+  <!-- 7 timer -> bootc -->
+  <path d="M1075,230 L1075,438" stroke="#a4501a" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <text x="1085" y="330" font-size="12" fill="#a4501a">7 only if true:</text>
+  <text x="1085" y="347" font-size="12" fill="#a4501a">systemctl start</text>
+  <!-- status -->
+  <path d="M330,350 L238,350" stroke="#888" stroke-width="1.5" stroke-dasharray="4 4" fill="none" marker-end="url(#a)"/>
+  <text x="250" y="372" font-size="11" fill="#777">status</text>
+
+  <!-- boundaries note -->
+  <rect x="330" y="580" width="510" height="70" rx="10" fill="#fff" stroke="#c9c4d8"/>
+  <text x="585" y="606" text-anchor="middle" font-size="13" font-weight="600" fill="#333">The cluster never connects to the VM</text>
+  <text x="585" y="628" text-anchor="middle" font-size="12" fill="#555">The VM polls; the answer is only true or false, never a command.</text>
+  <text x="585" y="645" text-anchor="middle" font-size="12" fill="#555">ui cannot claim, poll cannot queue.</text>
+  <rect x="55" y="550" width="180" height="100" rx="10" fill="#fff" stroke="#c9c4d8"/>
+  <text x="145" y="575" text-anchor="middle" font-size="12" font-weight="600" fill="#333">Legend</text>
+  <line x1="70" y1="605" x2="110" y2="605" stroke="#333" stroke-width="2"/><text x="118" y="609" font-size="11" fill="#555">you / local</text>
+  <line x1="70" y1="625" x2="110" y2="625" stroke="#1a7f4b" stroke-width="2"/><text x="118" y="629" font-size="11" fill="#555">VM poll</text>
+  <line x1="70" y1="643" x2="110" y2="643" stroke="#a4501a" stroke-width="2"/><text x="118" y="647" font-size="11" fill="#555">VM action</text>
+</svg>

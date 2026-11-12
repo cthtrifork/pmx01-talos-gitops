@@ -166,27 +166,28 @@ From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`
 `bootc upgrade --apply` itself (units in [homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)); the cluster never
 connects to the VM and never sends it a command.
 
+![Update Claude VM flow](vm-upgrade/flow.svg)
+
 | Listener | Reached through | Endpoints |
 |---|---|---|
 | `:8080` page | Omni service exposer, `Service/claude-vm-upgrade` (port 50092, behind Omni login) | `GET /` the button, `GET /api/v1/status`, `POST /api/v1/upgrade` (needs the header `X-Requested-With: vm-upgrade-button`, so a form on another site cannot post it) |
-| `:8081` poll | MetalLB `claude-vm-upgrade-lb`, 192.168.1.244, plain HTTP, LAN only | `POST /api/v1/claim` with `Authorization: Bearer <token>`: answers `{"upgrade": true}` once per click, then clears the flag |
+| `:8081` poll | MetalLB `claude-vm-upgrade-lb`, 192.168.1.244, plain HTTP, only from the VM | `POST /api/v1/claim`: answers `{"upgrade": true}` once per click, then clears the flag |
 
 The flag lives 10 minutes and is cleared by the first claim, so one click is at most one upgrade; a pod restart drops an unclaimed click.
-The poll listener has no way to queue an upgrade, and the page listener has no `claim`. Without the token Secret the pod does not start,
-and an empty token is refused (401), so the poll endpoint is never open. The token is compared as a plain string (not constant time), which is
-acceptable for a 32+ character random token on a LAN.
+The poll listener has no way to queue an upgrade, and the page listener has no `claim`.
 
-Create the token once and put the same value on the VM:
+There is no token. The poll listener is reachable only from the VM's static address: `CiliumNetworkPolicy/claude-vm-upgrade` allows
+`192.168.1.132/32` on 8081, and the LoadBalancer Service uses `externalTrafficPolicy: Local` so Cilium sees the VM's address and not a
+node's. This is weaker than a secret: a host on the same LAN segment that spoofs 192.168.1.132 could claim a click (or poll as the VM), and
+the VM's poll is plain HTTP, so a host in the path could answer `{"upgrade": true}` (bounded by the VM's one-upgrade-per-hour limit).
+If the VM's address changes, change the `/32` in `networkpolicy.yaml`.
+
+On the VM, as root, tell the timer where to poll (the unit is skipped until the file exists):
 
 ```sh
-token=$(openssl rand -hex 32)
-kubectl -n claude-system create secret generic claude-vm-upgrade-token --from-literal=token="$token" --dry-run=client -o yaml \
-  | sops --encrypt --input-type yaml --output-type yaml /dev/stdin > claude-vm-upgrade-token.enc.yaml   # see "Secrets (SOPS)" in the root readme.md
-# add claude-vm-upgrade-token.enc.yaml to kustomization.yaml resources:, then on the VM (root):
-#   install -d -m 0700 /etc/claude-vm/upgrade
-#   printf %s "$token" > /etc/claude-vm/upgrade/token && chmod 600 /etc/claude-vm/upgrade/token
-#   printf %s http://192.168.1.244 > /etc/claude-vm/upgrade/url
+install -d -m 0700 /etc/claude-vm/upgrade
+printf %s http://192.168.1.244 > /etc/claude-vm/upgrade/url
 ```
 
-Check from the LAN: `curl -s -XPOST -H "Authorization: Bearer $token" http://192.168.1.244/api/v1/claim` answers `{"upgrade":false}` while nothing is queued.
+Check from the VM: `curl -s -XPOST http://192.168.1.244/api/v1/claim` answers `{"upgrade":false}` while nothing is queued (from any other address the request times out).
 The page shows when the VM last polled, so a dead timer is visible.

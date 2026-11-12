@@ -2,7 +2,7 @@
 # "Update the Claude VM" button. One in-memory flag, two listeners:
 #
 #   :8080  ui    the page and the button       Omni service exposer (Omni login)
-#   :8081  poll  the VM asks "upgrade now?"    MetalLB, LAN only, bearer token
+#   :8081  poll  the VM asks "upgrade now?"    MetalLB, LAN only, the NetworkPolicy lets in the VM's IP only
 #
 # ui   GET  /                  the page
 #      GET  /api/v1/status     is a click queued, when did the VM last poll
@@ -11,7 +11,7 @@
 #
 # The VM never receives a command, only true or false. A click lives 10 minutes and the first claim clears it, so one click
 # is at most one upgrade. A pod restart drops an unclaimed click.
-# Not a Flux template (configMapGenerator disables postBuild envsubst); env() reads the token from the pod's environment.
+# Not a Flux template (configMapGenerator disables postBuild envsubst).
 http:
   enabled: true
   address: 0.0.0.0:4195
@@ -156,7 +156,7 @@ processor_resources:
           - resource: not_found
 
   # ------------------------------------------------------------------------------------------------
-  # The VM's listener. Everything but /healthz needs the bearer token; no token configured means nothing is let in.
+  # The VM's listener. There is no authentication here: the CiliumNetworkPolicy lets only the VM's address reach :8081.
   # ------------------------------------------------------------------------------------------------
   - label: poll_api
     switch:
@@ -165,12 +165,6 @@ processor_resources:
           - mapping: |
               meta content_type = "text/plain"
               root = "ok"
-
-      - check: '(env("UPGRADE_TOKEN").or("") == "") || (@Authorization.or("") != "Bearer " + env("UPGRADE_TOKEN").or(""))'
-        processors:
-          - mapping: |
-              meta status = "401"
-              root = {"error": "unauthorized"}
 
       - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/claim"'
         processors:
