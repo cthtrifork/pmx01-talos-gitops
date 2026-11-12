@@ -166,7 +166,39 @@ From `claude-rc`: `curl -s http://claude-usage.claude-system.svc/api/v1/summary`
 `bootc upgrade --apply` itself (units in [homeserver-bootc](https://github.com/cthtrifork/homeserver-bootc)); the cluster never
 connects to the VM and never sends it a command.
 
-![Update Claude VM flow](vm-upgrade/flow.svg)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor You as You (browser)
+    participant Omni as Omni exposer (Omni login)
+    participant UI as Connect :8080 ui
+    participant Flag as In-memory flag (pending, last_poll)
+    participant Poll as Connect :8081 poll (MetalLB 192.168.1.244)
+    participant Timer as VM timer (every 60 s, root)
+    participant Bootc as bootc-fetch-apply-updates.service
+
+    You->>Omni: open Update Claude VM
+    Omni->>UI: GET /
+    UI-->>You: page with the button
+    You->>UI: POST /api/v1/upgrade (X-Requested-With header)
+    UI->>Flag: set pending = now (expires after 10 min)
+    UI-->>You: queued
+
+    loop every 60 s
+        Timer->>Timer: last upgrade under 1 h ago? then skip
+        Timer->>Poll: POST /api/v1/claim (NetworkPolicy: only 192.168.1.132)
+        Poll->>Flag: read pending, then clear it
+        Poll->>Flag: set last_poll = now
+        Poll-->>Timer: upgrade: true or false
+    end
+
+    Note over Timer,Bootc: only when upgrade is true
+    Timer->>Bootc: systemctl start --no-block
+    Bootc->>Bootc: bootc upgrade --apply (reboots only if a new image exists)
+
+    You->>UI: GET /api/v1/status (every 5 s)
+    UI-->>You: queued? when did the VM last poll?
+```
 
 | Listener | Reached through | Endpoints |
 |---|---|---|
