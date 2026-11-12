@@ -29,6 +29,8 @@
   <dl>
     <dt>Queued</dt><dd id="pending">…</dd>
     <dt>VM last polled</dt><dd id="poll">…</dd>
+    <dt>Running</dt><dd id="booted">…</dd>
+    <dt>Staged</dt><dd id="staged">…</dd>
   </dl>
   <p class="warn">A reboot ends running Claude sessions.</p>
 </main>
@@ -44,6 +46,9 @@
     fetch('api/v1/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
       document.getElementById('pending').textContent = d.pending ? 'yes, ' + ago(d.pending_at, d.now) : 'no';
       document.getElementById('poll').textContent = ago(d.last_poll_at, d.now);
+      var vm = d.vm || {};
+      document.getElementById('booted').textContent = vm.booted_version ? vm.booted_version + ' (' + (vm.booted_digest || '?').slice(0, 12) + ')' : 'unknown';
+      document.getElementById('staged').textContent = vm.booted_version ? (vm.staged_version || 'none') : 'unknown';
       go.disabled = d.pending;
     }).catch(function () { msg.textContent = 'Status unavailable'; });
   }

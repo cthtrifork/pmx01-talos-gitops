@@ -7,7 +7,8 @@
 # ui   GET  /                  the page
 #      GET  /api/v1/status     is a click queued, when did the VM last poll
 #      POST /api/v1/upgrade    queue a click (needs the header X-Requested-With: vm-upgrade-button)
-# poll POST /api/v1/claim      {"upgrade": true} once per click, then false
+# poll POST /api/v1/report     the VM says what it runs (booted and staged ostree deployment); also counts as a poll
+#      POST /api/v1/claim      {"upgrade": true} once per click, then false
 #
 # The VM never receives a command, only true or false. A click lives 10 minutes and the first claim clears it, so one click
 # is at most one upgrade. A pod restart drops an unclaimed click.
@@ -17,7 +18,7 @@ http:
   address: 0.0.0.0:4195
   debug_endpoints: false
 
-# --- state: a key is "pending" (a click) or "last_poll"; each holds {"at": <unix seconds>} ---
+# --- state: "pending" (a click) and "last_poll" hold {"at": <unix seconds>}; "vm" holds what the VM last reported ---
 cache_resources:
   - label: state
     memory:
@@ -90,6 +91,16 @@ processor_resources:
             value: '{"at": ${! now().ts_unix() }}'
             ttl: '${! @flag_ttl }'
 
+  # Reads what the VM last reported into the metadata field `vm` ({} when nothing, or nothing recent).
+  - label: read_vm
+    branch:
+      request_map: 'root = ""'
+      processors:
+        - cache: { resource: state, operator: get, key: vm }
+        - catch:
+            - mapping: 'root = {}'
+      result_map: 'meta vm = this'
+
   # Clears the flag; clearing one that is not set is fine.
   - label: clear_flag
     branch:
@@ -131,10 +142,12 @@ processor_resources:
           - mapping: 'meta pending_at = @flag_at'
           - mapping: 'meta flag = "last_poll"'
           - resource: read_flag
+          - resource: read_vm
           - mapping: |
               root.pending = @pending_at > 0
               root.pending_at = @pending_at
               root.last_poll_at = @flag_at
+              root.vm = @vm
               root.now = now().ts_unix()
 
       # A form on another site cannot add a custom header without a CORS preflight, which this server never answers.
@@ -172,11 +185,35 @@ processor_resources:
           - resource: read_flag
           - mapping: 'meta upgrade = @flag_at > 0'
           - resource: clear_flag
+          - mapping: 'root = {"upgrade": @upgrade}'
+
+      # The body is whatever the VM sends: keep three known fields, only plain characters, short. The page shows them as text.
+      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/report"'
+        processors:
+          - mapping: |
+              map clean {
+                root = this.string().catch("").re_replace_all("[^A-Za-z0-9._:/@+-]", "").slice(0, 64).catch("")
+              }
+              let b = content().parse_json().catch({})
+              meta vm = {
+                "booted_version": $b.booted_version.or("").apply("clean"),
+                "booted_digest": $b.booted_digest.or("").apply("clean"),
+                "staged_version": $b.staged_version.or("").apply("clean")
+              }
+          - branch:
+              request_map: 'root = @vm'
+              processors:
+                - cache:
+                    resource: state
+                    operator: set
+                    key: vm
+                    value: '${! content() }'
+                    ttl: 24h
           - mapping: |
               meta flag = "last_poll"
               meta flag_ttl = "24h"
           - resource: set_flag
-          - mapping: 'root = {"upgrade": @upgrade}'
+          - mapping: 'root = {"ok": true}'
 
       - processors:
           - resource: not_found

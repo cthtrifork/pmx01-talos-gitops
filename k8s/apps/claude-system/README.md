@@ -185,10 +185,11 @@ sequenceDiagram
     UI-->>You: queued
 
     loop every 60 s
-        Timer->>Timer: last upgrade under 1 h ago? then skip
-        Timer->>Poll: POST /api/v1/claim (NetworkPolicy: only 192.168.1.132)
+        Timer->>Poll: POST /api/v1/report: booted and staged deployment (NetworkPolicy: only 192.168.1.132)
+        Poll->>Flag: store vm status, set last_poll = now
+        Timer->>Timer: last upgrade under 1 h ago? then skip the claim
+        Timer->>Poll: POST /api/v1/claim
         Poll->>Flag: read pending, then clear it
-        Poll->>Flag: set last_poll = now
         Poll-->>Timer: upgrade: true or false
     end
 
@@ -197,13 +198,13 @@ sequenceDiagram
     Bootc->>Bootc: bootc upgrade --apply (reboots only if a new image exists)
 
     You->>UI: GET /api/v1/status (every 5 s)
-    UI-->>You: queued? when did the VM last poll?
+    UI-->>You: queued? last poll, running and staged version
 ```
 
 | Listener | Reached through | Endpoints |
 |---|---|---|
 | `:8080` page | Omni service exposer, `Service/claude-vm-upgrade` (port 50092, behind Omni login) | `GET /` the button, `GET /api/v1/status`, `POST /api/v1/upgrade` (needs the header `X-Requested-With: vm-upgrade-button`, so a form on another site cannot post it) |
-| `:8081` poll | MetalLB `claude-vm-upgrade-lb`, 192.168.1.244, plain HTTP, only from the VM | `POST /api/v1/claim`: answers `{"upgrade": true}` once per click, then clears the flag |
+| `:8081` poll | MetalLB `claude-vm-upgrade-lb`, 192.168.1.244, plain HTTP, only from the VM | `POST /api/v1/report`: the VM's booted and staged ostree deployment (also counts as a poll); `POST /api/v1/claim`: answers `{"upgrade": true}` once per click, then clears the flag |
 
 The flag lives 10 minutes and is cleared by the first claim, so one click is at most one upgrade; a pod restart drops an unclaimed click.
 The poll listener has no way to queue an upgrade, and the page listener has no `claim`.
@@ -222,4 +223,9 @@ printf %s http://192.168.1.244 > /etc/claude-vm/upgrade/url
 ```
 
 Check from the VM: `curl -s -XPOST http://192.168.1.244/api/v1/claim` answers `{"upgrade":false}` while nothing is queued (from any other address the request times out).
-The page shows when the VM last polled, so a dead timer is visible.
+The page shows when the VM last polled and what it runs (booted version and image digest, and the staged version if any), so a dead timer is visible and
+you can tell whether an update is waiting for a reboot.
+
+The report is deliberately dumb: the VM reads `rpm-ostree status --json` (local ostree data, no registry call) and sends three strings. Connect keeps
+only those fields, with plain characters and at most 64 of them, and the page shows them as text. It does not say whether a newer image exists: that
+needs a registry request, which the VM does not make for the page. A spoofed report could only change what the page displays.
