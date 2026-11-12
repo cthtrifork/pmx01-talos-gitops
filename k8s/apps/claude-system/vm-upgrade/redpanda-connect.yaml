@@ -1,24 +1,26 @@
 ---
-# "Update the Claude VM" button. One in-memory flag, two listeners:
+# "Update the VMs" buttons. One in-memory flag per VM, two listeners:
 #
-#   :8080  ui    the page and the button       Omni service exposer (Omni login)
-#   :8081  poll  the VM asks "upgrade now?"    MetalLB, LAN only, the NetworkPolicy lets in the VM's IP only
+#   :8080  ui    the page and the buttons      Omni service exposer (Omni login)
+#   :8081  poll  the VMs ask "upgrade now?"    MetalLB, LAN only, the NetworkPolicy lets in the VMs' IPs only
 #
-# ui   GET  /                  the page
-#      GET  /api/v1/status     is a click queued, when did the VM last poll
-#      POST /api/v1/upgrade    queue a click (needs the header X-Requested-With: vm-upgrade-button)
-# poll POST /api/v1/report     the VM says what it runs (booted and staged ostree deployment); also counts as a poll
-#      POST /api/v1/claim      {"upgrade": true} once per click, then false
+# ui   GET  /                          the page
+#      GET  /api/v1/status             per VM: is a click queued, when did it last poll, what does it run
+#      POST /api/v1/vms/<vm>/upgrade   queue a click (needs the header X-Requested-With: vm-upgrade-button)
+# poll POST /api/v1/vms/<vm>/report    the VM says what it runs (booted and staged ostree deployment); also counts as a poll
+#      POST /api/v1/vms/<vm>/claim     {"upgrade": true} once per click, then false
 #
-# The VM never receives a command, only true or false. A click lives 10 minutes and the first claim clears it, so one click
-# is at most one upgrade. A pod restart drops an unclaimed click.
+# <vm> is one of the names in `vm_names` below. A VM never receives a command, only true or false. A click lives 10 minutes and the
+# first claim clears it, so one click is at most one upgrade. A pod restart drops an unclaimed click.
+# The poll listener cannot tell the VMs apart (both sit behind the same NetworkPolicy), so a VM that names another could claim its click;
+# the names are a convenience, not a security boundary.
 # Not a Flux template (configMapGenerator disables postBuild envsubst).
 http:
   enabled: true
   address: 0.0.0.0:4195
   debug_endpoints: false
 
-# --- state: "pending" (a click) and "last_poll" hold {"at": <unix seconds>}; "vm" holds what the VM last reported ---
+# --- state, keyed "<vm>:pending" and "<vm>:last_poll" ({"at": <unix seconds>}) and "<vm>:vm" (what the VM last reported) ---
 cache_resources:
   - label: state
     memory:
@@ -57,6 +59,12 @@ input:
 
 pipeline:
   processors:
+    # /api/v1/vms/<vm>/<action> becomes the metadata fields `vm` (only a name from vm_names) and `action`.
+    - mapping: |
+        let vm_names = ["claude-vm", "homeserver"]
+        let m = @http_server_request_path.re_find_object("^/api/v1/vms/(?P<vm>[a-z-]+)/(?P<action>[a-z]+)$")
+        meta vm = if $vm_names.contains($m.vm.or("")) { $m.vm } else { "" }
+        meta action = $m.action.or("")
     - switch:
         - check: '@listener == "ui"'
           processors:
@@ -95,16 +103,6 @@ processor_resources:
             value: '{"at": ${! now().ts_unix() }}'
             ttl: '${! @flag_ttl }'
 
-  # Reads what the VM last reported into the metadata field `vm` ({} when nothing, or nothing recent).
-  - label: read_vm
-    branch:
-      request_map: 'root = ""'
-      processors:
-        - cache: { resource: state, operator: get, key: vm }
-        - catch:
-            - mapping: 'root = {}'
-      result_map: 'meta vm = this'
-
   # Clears the flag; clearing one that is not set is fine.
   - label: clear_flag
     branch:
@@ -113,6 +111,33 @@ processor_resources:
         - cache: { resource: state, operator: delete, key: '${! @flag }' }
         - catch:
             - mapping: 'root = ""'
+
+  # Reads what the VM `vm` last reported into the metadata field `vm_status` ({} when nothing, or nothing recent).
+  - label: read_vm_status
+    branch:
+      request_map: 'root = ""'
+      processors:
+        - cache: { resource: state, operator: get, key: '${! @vm }:vm' }
+        - catch:
+            - mapping: 'root = {}'
+      result_map: 'meta vm_status = this'
+
+  # Everything the page shows about the VM `vm`, as the metadata field `vm_state`.
+  - label: read_vm_state
+    processors:
+      - mapping: 'meta flag = @vm + ":pending"'
+      - resource: read_flag
+      - mapping: 'meta pending_at = @flag_at'
+      - mapping: 'meta flag = @vm + ":last_poll"'
+      - resource: read_flag
+      - resource: read_vm_status
+      - mapping: |
+          meta vm_state = {
+            "pending": @pending_at > 0,
+            "pending_at": @pending_at,
+            "last_poll_at": @flag_at,
+            "vm": @vm_status
+          }
 
   # ------------------------------------------------------------------------------------------------
   # Replies
@@ -141,30 +166,26 @@ processor_resources:
 
       - check: '@http_server_verb == "GET" && @http_server_request_path == "/api/v1/status"'
         processors:
-          - mapping: 'meta flag = "pending"'
-          - resource: read_flag
-          - mapping: 'meta pending_at = @flag_at'
-          - mapping: 'meta flag = "last_poll"'
-          - resource: read_flag
-          - resource: read_vm
+          - mapping: 'meta vm = "claude-vm"'
+          - resource: read_vm_state
+          - mapping: 'meta state_claude_vm = @vm_state'
+          - mapping: 'meta vm = "homeserver"'
+          - resource: read_vm_state
           - mapping: |
-              root.pending = @pending_at > 0
-              root.pending_at = @pending_at
-              root.last_poll_at = @flag_at
-              root.vm = @vm
               root.now = now().ts_unix()
+              root.vms = {"claude-vm": @state_claude_vm, "homeserver": @vm_state}
 
       # A form on another site cannot add a custom header without a CORS preflight, which this server never answers.
-      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/upgrade" && metadata("X-Requested-With").or("") != "vm-upgrade-button"'
+      - check: '@http_server_verb == "POST" && @action == "upgrade" && metadata("X-Requested-With").or("") != "vm-upgrade-button"'
         processors:
           - mapping: |
               meta status = "403"
               root = {"error": "missing X-Requested-With header"}
 
-      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/upgrade"'
+      - check: '@http_server_verb == "POST" && @action == "upgrade" && @vm != ""'
         processors:
           - mapping: |
-              meta flag = "pending"
+              meta flag = @vm + ":pending"
               meta flag_ttl = "10m"
           - resource: set_flag
           - mapping: 'root = {"queued": true}'
@@ -173,7 +194,7 @@ processor_resources:
           - resource: not_found
 
   # ------------------------------------------------------------------------------------------------
-  # The VM's listener. There is no authentication here: the CiliumNetworkPolicy lets only the VM's address reach :8081.
+  # The VMs' listener. There is no authentication here: the CiliumNetworkPolicy lets only the VMs' addresses reach :8081.
   # ------------------------------------------------------------------------------------------------
   - label: poll_api
     switch:
@@ -183,38 +204,38 @@ processor_resources:
               meta content_type = "text/plain"
               root = "ok"
 
-      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/claim"'
+      - check: '@http_server_verb == "POST" && @action == "claim" && @vm != ""'
         processors:
-          - mapping: 'meta flag = "pending"'
+          - mapping: 'meta flag = @vm + ":pending"'
           - resource: read_flag
           - mapping: 'meta upgrade = @flag_at > 0'
           - resource: clear_flag
           - mapping: 'root = {"upgrade": @upgrade}'
 
       # The body is whatever the VM sends: keep three known fields, only plain characters, short. The page shows them as text.
-      - check: '@http_server_verb == "POST" && @http_server_request_path == "/api/v1/report"'
+      - check: '@http_server_verb == "POST" && @action == "report" && @vm != ""'
         processors:
           - mapping: |
               map clean {
                 root = this.string().catch("").re_replace_all("[^A-Za-z0-9._:/@+-]", "").slice(0, 64).catch("")
               }
               let b = content().parse_json().catch({})
-              meta vm = {
+              meta vm_status = {
                 "booted_version": $b.booted_version.or("").apply("clean"),
                 "booted_digest": $b.booted_digest.or("").apply("clean"),
                 "staged_version": $b.staged_version.or("").apply("clean")
               }
           - branch:
-              request_map: 'root = @vm'
+              request_map: 'root = @vm_status'
               processors:
                 - cache:
                     resource: state
                     operator: set
-                    key: vm
+                    key: '${! @vm }:vm'
                     value: '${! content() }'
                     ttl: 24h
           - mapping: |
-              meta flag = "last_poll"
+              meta flag = @vm + ":last_poll"
               meta flag_ttl = "24h"
           - resource: set_flag
           - mapping: 'root = {"ok": true}'
