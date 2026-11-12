@@ -222,8 +222,7 @@ path could answer `{"upgrade": true}` (bounded by each VM's one-upgrade-per-hour
 
 Both VM images poll `http://vm-upgrade.portableinfo.cloud`, hardcoded, so nothing is seeded on the VMs. The one manual step is the Cloudflare record
 (DNS only, like `otel.portableinfo.cloud`): an `A` record `vm-upgrade` -> `192.168.1.244`. Until it exists the VMs log that the page is unreachable
-and try again a minute later. To point a VM somewhere else, write the URL to `/etc/claude-vm/upgrade/url` (claude-vm) or `/etc/homeserver/upgrade/url`
-(homeserver) as root.
+and try again a minute later. The name is in both images (`poll-upgrade` and `vm-upgrade-poll`); changing it means rebuilding them.
 
 Check from a VM: `curl -s -XPOST http://vm-upgrade.portableinfo.cloud/api/v1/vms/claude-vm/claim` answers `{"upgrade":false}` while nothing is queued (from
 any other address the request times out).
