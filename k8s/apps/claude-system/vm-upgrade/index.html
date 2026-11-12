@@ -5,59 +5,139 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Update Claude VM</title>
 <style>
-  :root { color-scheme: light dark; --font: system-ui, -apple-system, "Segoe UI", sans-serif; }
-  body { margin: 0; padding: 24px 16px; font: 15px/1.5 var(--font); display: flex; justify-content: center; }
-  main { width: 100%; max-width: 420px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  p { margin: 4px 0 16px; opacity: .75; }
-  button { font: inherit; font-weight: 600; padding: 12px 20px; border-radius: 8px; border: 0; cursor: pointer;
-           background: #2a78d6; color: #fff; width: 100%; }
-  button:disabled { opacity: .5; cursor: default; }
-  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 20px 0 0; }
-  dt { opacity: .7; }
-  dd { margin: 0; text-align: right; }
-  .warn { margin-top: 16px; font-size: 13px; opacity: .8; }
-  #msg { min-height: 1.5em; margin-top: 12px; }
+  :root {
+    color-scheme: light dark;
+    --page: #f4f4f1; --card: #ffffff; --ink: #141413; --ink-2: #55534e; --line: #e3e2da;
+    --accent: #2a78d6; --on-accent: #ffffff; --ok: #1a7f4b; --warn: #b4690e; --bad: #c0392b;
+    --warn-bg: #fff4d6; --danger: #c0392b;
+    --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d; --card: #1a1a19; --ink: #f0efec; --ink-2: #b4b2a9; --line: #2c2c2a;
+      --accent: #3987e5; --ok: #3cc58a; --warn: #e0a040; --bad: #ef6a5b; --warn-bg: #3a2f10; --danger: #ef6a5b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 var(--font);
+         padding: 24px max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); display: flex; justify-content: center; }
+  main { width: 100%; max-width: 440px; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .sub { margin: 0 0 16px; color: var(--ink-2); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .health { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-2); flex: none; }
+  .health.ok .dot { background: var(--ok); }
+  .health.stale .dot { background: var(--bad); }
+  .health small { font-weight: 400; color: var(--ink-2); margin-left: auto; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+  dt { color: var(--ink-2); }
+  dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .mono { font-family: var(--mono); font-size: 13px; }
+  .note { display: block; font-size: 12px; color: var(--warn); }
+  .actions { margin-top: 16px; }
+  button { font: inherit; font-weight: 600; width: 100%; min-height: 48px; padding: 12px 20px; border: 0; border-radius: 10px;
+           background: var(--accent); color: var(--on-accent); cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: .55; cursor: default; }
+  button.danger { background: var(--danger); }
+  .link { background: none; color: var(--ink-2); font-weight: 400; min-height: 40px; margin-top: 4px; text-decoration: underline; }
+  .confirm { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); font-size: 14px; }
+  .hint { margin: 10px 0 0; font-size: 13px; color: var(--ink-2); min-height: 1.5em; }
+  .hint.warn { color: var(--warn); }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <main>
   <h1>Update Claude VM</h1>
-  <p>Queues <code>bootc upgrade --apply</code>. The VM picks it up within about a minute and reboots only if a new image exists.</p>
-  <button id="go" type="button">Update now</button>
-  <div id="msg" role="status"></div>
-  <dl>
-    <dt>Queued</dt><dd id="pending">…</dd>
-    <dt>VM last polled</dt><dd id="poll">…</dd>
-    <dt>Running</dt><dd id="booted">…</dd>
-    <dt>Staged</dt><dd id="staged">…</dd>
-  </dl>
-  <p class="warn">A reboot ends running Claude sessions.</p>
+  <p class="sub">Runs <code>bootc upgrade --apply</code> on the VM.</p>
+
+  <section class="card" aria-label="Claude VM status">
+    <div id="health" class="health"><span class="dot" aria-hidden="true"></span><span id="healthText">Checking…</span><small id="healthAgo"></small></div>
+    <dl>
+      <dt>Running</dt><dd id="booted">…</dd>
+      <dt>Staged</dt><dd id="staged">…</dd>
+    </dl>
+    <div class="actions">
+      <p id="confirm" class="confirm" hidden>The VM reboots if a new image exists, and running Claude sessions end.</p>
+      <button id="go" type="button" disabled>Update now</button>
+      <button id="cancel" type="button" class="link" hidden>Cancel</button>
+      <p id="hint" class="hint" role="status" aria-live="polite"></p>
+    </div>
+  </section>
 </main>
 <script>
 (function () {
-  var go = document.getElementById('go'), msg = document.getElementById('msg');
+  var STALE_AFTER = 150;   // seconds without a poll before the VM counts as not responding (the timer runs every 60 s)
+  var $ = function (id) { return document.getElementById(id); };
+  var go = $('go'), cancel = $('cancel'), confirmBox = $('confirm'), hint = $('hint');
+  var state = { pending: false, online: false }, confirming = false;
+
   function ago(t, now) {
     if (!t) return 'never';
     var s = Math.max(0, now - t);
     return s < 90 ? s + ' s ago' : Math.round(s / 60) + ' min ago';
   }
+
+  function render() {
+    go.hidden = false;
+    cancel.hidden = !confirming;
+    confirmBox.hidden = !confirming;
+    go.classList.toggle('danger', confirming);
+    if (state.pending) {
+      go.disabled = true; go.textContent = 'Queued, waiting for the VM';
+      hint.className = 'hint'; hint.textContent = 'The VM checks every minute; the request expires after 10 minutes.';
+    } else {
+      go.disabled = false; go.textContent = confirming ? 'Confirm update' : 'Update now';
+      if (!state.online && !confirming) { hint.className = 'hint warn'; hint.textContent = 'The VM has not polled recently: a request may expire before it is picked up.'; }
+      else if (!confirming && /^(Queued|Failed)/.test(hint.textContent) === false) { hint.className = 'hint'; hint.textContent = ''; }
+    }
+  }
+
   function refresh() {
     fetch('api/v1/status', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
-      document.getElementById('pending').textContent = d.pending ? 'yes, ' + ago(d.pending_at, d.now) : 'no';
-      document.getElementById('poll').textContent = ago(d.last_poll_at, d.now);
-      var vm = d.vm || {};
-      document.getElementById('booted').textContent = vm.booted_version ? vm.booted_version + ' (' + (vm.booted_digest || '?').slice(0, 12) + ')' : 'unknown';
-      document.getElementById('staged').textContent = vm.booted_version ? (vm.staged_version || 'none') : 'unknown';
-      go.disabled = d.pending;
-    }).catch(function () { msg.textContent = 'Status unavailable'; });
+      var vm = d.vm || {}, known = !!vm.booted_version;
+      state.pending = d.pending;
+      state.online = d.last_poll_at > 0 && d.now - d.last_poll_at < STALE_AFTER;
+      $('health').className = 'health ' + (state.online ? 'ok' : 'stale');
+      $('healthText').textContent = state.online ? 'VM online' : (d.last_poll_at ? 'VM not responding' : 'VM has not reported yet');
+      $('healthAgo').textContent = d.last_poll_at ? 'polled ' + ago(d.last_poll_at, d.now) : '';
+      $('booted').textContent = '';
+      if (known) {
+        $('booted').textContent = vm.booted_version;
+        var digest = document.createElement('span');
+        digest.className = 'mono'; digest.textContent = ' ' + (vm.booted_digest || '').slice(0, 12);
+        $('booted').appendChild(digest);
+      } else { $('booted').textContent = 'unknown'; }
+      $('staged').textContent = '';
+      if (!known) { $('staged').textContent = 'unknown'; }
+      else if (vm.staged_version) {
+        $('staged').textContent = vm.staged_version;
+        var note = document.createElement('span');
+        note.className = 'note'; note.textContent = 'applies on the next reboot';
+        $('staged').appendChild(note);
+      } else { $('staged').textContent = 'none'; }
+      if (!state.pending && hint.textContent.indexOf('Queued') === 0) { hint.textContent = ''; }
+      render();
+    }).catch(function () { hint.className = 'hint warn'; hint.textContent = 'Status unavailable.'; });
   }
+
   go.addEventListener('click', function () {
+    if (!confirming) { confirming = true; hint.textContent = ''; render(); return; }
     go.disabled = true;
     fetch('api/v1/upgrade', { method: 'POST', headers: { 'X-Requested-With': 'vm-upgrade-button' } })
-      .then(function (r) { msg.textContent = r.ok ? 'Queued.' : 'Failed (' + r.status + ').'; refresh(); })
-      .catch(function () { msg.textContent = 'Failed.'; go.disabled = false; });
+      .then(function (r) {
+        confirming = false;
+        hint.className = r.ok ? 'hint' : 'hint warn';
+        hint.textContent = r.ok ? 'Queued.' : 'Failed (' + r.status + ').';
+        refresh();
+      })
+      .catch(function () { confirming = false; hint.className = 'hint warn'; hint.textContent = 'Failed: could not reach the page.'; render(); });
   });
+  cancel.addEventListener('click', function () { confirming = false; render(); });
+
   refresh();
   setInterval(refresh, 5000);
 })();
