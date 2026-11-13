@@ -82,6 +82,11 @@ spec:
         # Zed editor (homeserver-gui)
         - matchName: zed.dev
         - matchName: cloud.zed.dev
+        # VS Code extension marketplace (homeserver-gui: the e2e VM installs the extensions of its user-setup hook; the
+        # VM's traffic leaves from the runner pod). Extension packages come from the gallery CDN hosts.
+        - matchName: marketplace.visualstudio.com
+        - matchPattern: "*.gallery.vsassets.io"
+        - matchPattern: "*.gallerycdn.vsassets.io"
         # Homebrew (the runner image's Brewfile); the bottles come from ghcr.io
         - matchName: formulae.brew.sh
         # Fedora and RPM Fusion repositories (homeserver-bootc image builds). The Containerfiles pin the repos to
