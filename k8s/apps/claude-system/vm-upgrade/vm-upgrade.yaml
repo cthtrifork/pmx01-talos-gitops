@@ -85,7 +85,7 @@ spec:
 ---
 # The VMs' poll (POST /api/v1/vms/<vm>/report and /claim), plain HTTP on the LAN; the Cloudflare A record vm-upgrade.portableinfo.cloud
 # points at it (added by hand, DNS only) and is the URL baked into both VM images. Not exposed through Omni: this listener cannot queue an upgrade.
-# Only the VMs' addresses (192.168.1.132, 192.168.1.136) are let in, by the CiliumNetworkPolicy. externalTrafficPolicy Local keeps the client address:
+# Only the VMs' addresses (192.168.1.138, 192.168.1.173) are let in, by the CiliumNetworkPolicy. externalTrafficPolicy Local keeps the client address:
 # with Cluster, traffic that lands on another node is source-NATed to that node and the policy would see the node, not the VM.
 # 192.168.1.244 is free in the MetalLB pool (192.168.1.221-254); the A record vm-upgrade.portableinfo.cloud points at it.
 apiVersion: v1

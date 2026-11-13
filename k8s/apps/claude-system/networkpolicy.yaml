@@ -204,7 +204,7 @@ spec:
             - { port: "9090", protocol: TCP }
 ---
 # Update-VMs buttons. The page (8080) is reached by the Omni service exposer, which runs on the host network (host or remote-node).
-# The VMs (static 192.168.1.132 claude-vm, 192.168.1.136 homeserver) poll 8081 through claude-vm-upgrade-lb; their addresses are the only
+# The VMs (192.168.1.138 claude-vm, 192.168.1.173 homeserver) poll 8081 through claude-vm-upgrade-lb; their addresses are the only
 # authentication, so keep the /32s.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -223,8 +223,8 @@ spec:
         - ports:
             - { port: "8080", protocol: TCP }
     - fromCIDR:
-        - 192.168.1.132/32 # claude-vm
-        - 192.168.1.136/32 # homeserver
+        - 192.168.1.138/32 # claude-vm
+        - 192.168.1.173/32 # homeserver
       toPorts:
         - ports:
             - { port: "8081", protocol: TCP }
