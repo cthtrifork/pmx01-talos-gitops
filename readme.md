@@ -185,7 +185,7 @@ kubectl --kubeconfig ./kubeconfig.yaml apply -f k8s/clusters/homelab/flux-instan
 
 ```sh
 kubectl --kubeconfig ./kubeconfig.yaml get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.podCIDR}{"\n"}{end}'
-ssh -L 8000:localhost:8000 -N caspertdk@192.168.1.132
+ssh -L 8000:localhost:8000 -N caspertdk@192.168.1.138
 
 talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p  get links
 talosctl --talosconfig ./talosconfig.yaml  --nodes talos-tmd-e0p read /proc/net/route

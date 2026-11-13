@@ -215,7 +215,7 @@ The poll listener has no way to queue an upgrade, and the page listener has no `
 ### Access and DNS
 
 There is no token. The poll listener is reachable only from the VMs' static addresses: `CiliumNetworkPolicy/claude-vm-upgrade` allows
-`192.168.1.132/32` (claude-vm) and `192.168.1.136/32` (homeserver) on 8081, and the LoadBalancer Service uses `externalTrafficPolicy: Local` so
+`192.168.1.138/32` (claude-vm) and `192.168.1.173/32` (homeserver) on 8081, and the LoadBalancer Service uses `externalTrafficPolicy: Local` so
 Cilium sees the VM's address and not a node's. This is weaker than a secret: a host on the same LAN segment that spoofs one of those addresses could
 claim a click (or poll as a VM), a VM can claim another VM's click (both sit behind the same policy), and the poll is plain HTTP, so a host in the
 path could answer `{"upgrade": true}` (bounded by each VM's one-upgrade-per-hour limit). If a VM's address changes, change its `/32` in `networkpolicy.yaml`.
