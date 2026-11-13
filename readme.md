@@ -48,6 +48,7 @@ and Reloader restarts the workloads that carry `reloader.stakater.com/auto`. The
 | `harper-pad/github-auth` | `k8s/apps/harper-pad/github-auth.enc.yaml` | image pull secret for `ghcr.io/cthtrifork/harper-pad-*` |
 | `flux-system/flux-webhook-token` | `k8s/infra/flux-system/flux-webhook-token.enc.yaml` | HMAC secret of the GitHub push webhook |
 | `security-system/dependency-track-api-key` | `k8s/infra/security-system/sbom-hook/dependency-track-api-key.enc.yaml` | Dependency-Track team API key (`BOM_UPLOAD`, `PROJECT_CREATION_UPLOAD`) |
+| `external-dns-system/cloudflare-api-token` | `k8s/infra/external-dns/cloudflare-api-token.enc.yaml` | new Cloudflare API token for ExternalDNS only (not the cert-manager one): Zone:DNS:Edit + Zone:Zone:Read, limited to the `portableinfo.cloud` zone |
 
 ```sh
 # claude-github-app: read the values from the App settings page; the key is the downloaded .pem
@@ -103,6 +104,15 @@ enc k8s/infra/security-system/sbom-hook/dependency-track-api-key.enc.yaml \
   kubectl -n security-system create secret generic dependency-track-api-key --from-literal=api-key="$DT_KEY"
 unset DT_KEY
 # Rotate: create a new key for the team in Dependency-Track, re-run, merge (Reloader restarts sbom-hook), delete the old key.
+
+# cloudflare-api-token (ExternalDNS): Cloudflare > My Profile > API Tokens > Create Token > Edit zone DNS template,
+# permissions Zone:DNS:Edit + Zone:Zone:Read, Zone Resources limited to portableinfo.cloud. Do not reuse the cert-manager token.
+read -rsp 'Cloudflare API token: ' CF_TOKEN
+enc k8s/infra/external-dns/cloudflare-api-token.enc.yaml \
+  kubectl -n external-dns-system create secret generic cloudflare-api-token --from-literal=api-token="$CF_TOKEN"
+unset CF_TOKEN
+# First time: add cloudflare-api-token.enc.yaml to resources: in k8s/infra/external-dns/kustomization.yaml.
+# Rotate: roll the token in Cloudflare, re-run, merge (Reloader restarts external-dns).
 ```
 
 ### Secrets that were already in Git

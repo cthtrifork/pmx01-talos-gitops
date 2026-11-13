@@ -9,6 +9,9 @@ metadata:
     omni-kube-service-exposer.sidero.dev/port: "50085"
     omni-kube-service-exposer.sidero.dev/prefix: zot
     metallb.io/loadBalancerIPs: 192.168.1.240
+    external-dns.alpha.kubernetes.io/hostname: zot.portableinfo.cloud
+    external-dns.alpha.kubernetes.io/ttl: "300"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 spec:
   type: LoadBalancer
   ports:
