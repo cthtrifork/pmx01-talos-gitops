@@ -1,0 +1,51 @@
+# Default deny both ways for the namespace, then DNS and the Kubernetes API.
+# The external-dns pod also needs the Cloudflare API (api.cloudflare.com) on 443.
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/cilium.io/ciliumnetworkpolicy_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: external-dns-default-deny
+  namespace: external-dns-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: external-dns-allow-dns-apiserver
+  namespace: external-dns-system
+spec:
+  endpointSelector: {}
+  egress:
+    # DNS through kube-dns
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s:k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: ANY }
+    # Kubernetes API
+    - toEntities:
+        - kube-apiserver
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: external-dns-egress-world
+  namespace: external-dns-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: external-dns
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - { port: "443", protocol: TCP }

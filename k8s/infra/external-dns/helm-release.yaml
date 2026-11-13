@@ -1,0 +1,61 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# Registers annotated MetalLB LoadBalancer Services as A records in Cloudflare. Safe mode: upsert-only never deletes
+# records, and only records carrying the TXT ownership marker of this instance (txtOwnerId) are ever updated.
+# Create the API token Secret first: see "Secrets that were created by hand" in readme.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-dns
+  namespace: external-dns-system
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: external-dns
+      version: 1.23.0
+      sourceRef:
+        kind: HelmRepository
+        name: external-dns
+      interval: 12h
+  driftDetection:
+    mode: enabled
+  install:
+    strategy:
+      name: RetryOnFailure
+  # https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/values.yaml
+  values:
+    image:
+      # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
+      # renovate: datasource=docker depName=registry.k8s.io/external-dns/external-dns versioning=docker
+      tag: v0.23.0
+    provider:
+      name: cloudflare
+    sources:
+      - service
+    policy: upsert-only
+    registry: txt
+    txtOwnerId: talos-gitops
+    domainFilters:
+      - portableinfo.cloud
+    interval: 1m
+    triggerLoopOnEvent: true
+    # Records are not proxied (--cloudflare-proxied is not set): MetalLB IPs are private and cannot be proxied.
+    env:
+      - name: CF_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: cloudflare-api-token
+            key: api-token
+    # Chart defaults already run as non-root (65532) with a read-only root filesystem and all capabilities dropped.
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi
+    serviceMonitor:
+      enabled: false
+    deploymentAnnotations:
+      reloader.stakater.com/auto: "true"

@@ -12,3 +12,4 @@ resources:
   - policy-system/
   - registry-system/
   - security-system/
+  - external-dns/

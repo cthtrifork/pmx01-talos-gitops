@@ -1,0 +1,12 @@
+---
+# yaml-language-server: $schema=https://datreeio.github.io/CRDs-catalog/source.toolkit.fluxcd.io/helmrepository_v1.json
+# HTTP repository: registry.k8s.io (the upstream OCI chart location) was not reachable when this was written,
+# so the chart digest could not be pinned.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: external-dns
+  namespace: external-dns-system
+spec:
+  interval: 24h
+  url: https://kubernetes-sigs.github.io/external-dns/
