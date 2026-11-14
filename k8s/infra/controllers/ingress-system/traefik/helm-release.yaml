@@ -89,7 +89,8 @@ spec:
     podDisruptionBudget:
       enabled: true
       maxUnavailable: 1
-    # spread over nodes when possible; ScheduleAnyway keeps a drain from leaving a replica Pending
+    # one replica per node; the tainted control-plane node is not a domain (nodeTaintsPolicy), and a drained node
+    # leaves its replica Pending until it is back, which the PDB expects
     topologySpreadConstraints:
       - labelSelector:
           matchLabels:
@@ -97,7 +98,8 @@ spec:
             app.kubernetes.io/instance: traefik-traefik-system
         maxSkew: 1
         topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: ScheduleAnyway
+        nodeTaintsPolicy: Honor
+        whenUnsatisfiable: DoNotSchedule
     service:
       spec:
         type: ClusterIP # reached through the tunnel only
