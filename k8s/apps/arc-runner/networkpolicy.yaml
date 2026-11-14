@@ -123,6 +123,17 @@ spec:
         - ports:
             - { port: "80", protocol: TCP }
             - { port: "443", protocol: TCP }
+    # Certificate revocation checks (CRL and OCSP, plain HTTP) of the VS Code extension signature verification: the
+    # homeserver-gui e2e VM installs extensions, and without these each check waits for a 30 to 60 s timeout, so one
+    # install takes about 90 s. The names are those the VM queried during an install.
+    - toFQDNs:
+        - matchName: ocsp.digicert.com
+        - matchName: crl3.digicert.com
+        - matchName: crl.microsoft.com
+        - matchName: www.microsoft.com
+      toPorts:
+        - ports:
+            - { port: "80", protocol: TCP }
     # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
     - toEndpoints:
         - matchLabels:
