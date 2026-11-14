@@ -184,8 +184,9 @@ spec:
               app.kubernetes.io/instance: traefik-traefik-system
               app.kubernetes.io/name: traefik
           maxSkew: 1
+          nodeTaintsPolicy: Honor
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
+          whenUnsatisfiable: DoNotSchedule
       volumes:
         - emptyDir: {}
           name: data
