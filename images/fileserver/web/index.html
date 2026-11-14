@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fileserver admin</title>
+<style>
+  body { font: 15px system-ui, sans-serif; margin: 2rem auto; max-width: 52rem; padding: 0 1rem; color: #222; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid #ddd; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pub { color: #2e7d32; } .priv { color: #ef6c00; }
+  button, select { font: inherit; }
+  #msg { margin: .75rem 0; min-height: 1.4em; } .err { color: #b00020; }
+  progress { width: 12rem; vertical-align: middle; }
+</style>
+</head>
+<body>
+<h1>Fileserver</h1>
+<form id="up">
+  <input type="file" name="file" required>
+  <select id="vis"><option value="private">private</option><option value="public">public</option></select>
+  <button>Upload</button> <progress id="bar" max="1" value="0" hidden></progress>
+</form>
+<div id="msg"></div>
+<details id="tok">
+  <summary>Upload token (internal upload API only)</summary>
+  <p><code id="tokval">hidden</code>
+    <button id="tokshow" type="button">Show</button>
+    <button id="tokcopy" type="button">Copy</button></p>
+  <p id="tokinfo"></p>
+</details>
+<table>
+  <thead><tr><th>Name</th><th>Visibility</th><th class="num">Size</th><th>Modified</th><th></th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<script>
+const H = { 'X-Requested-With': 'fileserver' };
+const msg = (t, err) => { const m = document.getElementById('msg'); m.textContent = t; m.className = err ? 'err' : ''; };
+const size = n => n >= 2**30 ? (n/2**30).toFixed(2)+' GiB' : n >= 2**20 ? (n/2**20).toFixed(1)+' MiB' : (n/1024).toFixed(1)+' KiB';
+const cell = (tr, text, cls) => { const td = tr.insertCell(); td.textContent = text; if (cls) td.className = cls; return td; };
+
+async function call(url, opts) {
+  const r = await fetch(url, { ...opts, headers: { ...H, ...(opts && opts.headers) } });
+  if (!r.ok) throw new Error((await r.text()).trim() || r.statusText);
+  return r;
+}
+
+async function load() {
+  const list = await (await call('/api/files')).json();
+  const rows = document.getElementById('rows');
+  rows.replaceChildren();
+  for (const f of list) {
+    const tr = rows.insertRow();
+    const name = tr.insertCell();
+    const a = document.createElement('a');
+    a.href = `/download/${f.visibility}/${encodeURIComponent(f.name)}`;
+    a.textContent = f.name;
+    name.append(a);
+    cell(tr, f.visibility, f.visibility === 'public' ? 'pub' : 'priv');
+    cell(tr, size(f.size), 'num');
+    cell(tr, new Date(f.modified).toLocaleString());
+    const act = tr.insertCell();
+    const to = f.visibility === 'public' ? 'private' : 'public';
+    const mv = document.createElement('button');
+    mv.textContent = 'Make ' + to;
+    mv.onclick = () => act2(() => call(`/api/files/${encodeURIComponent(f.name)}/visibility?to=${to}`, { method: 'POST' }));
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.onclick = () => confirm(`Delete ${f.name}?`) && act2(() => call(`/api/files/${encodeURIComponent(f.name)}`, { method: 'DELETE' }));
+    act.append(mv, ' ', del);
+  }
+}
+
+async function act2(fn) {
+  try { await fn(); msg(''); await load(); } catch (e) { msg(e.message, true); }
+}
+
+document.getElementById('up').addEventListener('submit', e => {
+  e.preventDefault();
+  const bar = document.getElementById('bar');
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/files?visibility=' + document.getElementById('vis').value);
+  xhr.setRequestHeader('X-Requested-With', 'fileserver');
+  xhr.upload.onprogress = p => { bar.hidden = false; bar.value = p.loaded / p.total; };
+  xhr.onload = () => {
+    bar.hidden = true;
+    if (xhr.status === 201) { msg('Uploaded'); e.target.reset(); load(); } else msg(xhr.responseText.trim() || xhr.statusText, true);
+  };
+  xhr.onerror = () => { bar.hidden = true; msg('Upload failed', true); };
+  xhr.send(new FormData(e.target));
+});
+
+let token = '';
+async function loadToken() {
+  const t = await (await call('/api/token')).json();
+  token = t.current || '';
+  const when = d => new Date(d).toLocaleString();
+  document.getElementById('tokinfo').textContent = !token ? 'No token yet: the rotation job has not run.'
+    : 'Rotated ' + when(t.rotatedAt) + (t.previousValidUntil ? '. The previous token also works until ' + when(t.previousValidUntil) + '.' : '.');
+}
+document.getElementById('tokshow').onclick = e => {
+  const v = document.getElementById('tokval');
+  const hidden = v.textContent === 'hidden';
+  v.textContent = hidden ? (token || 'none') : 'hidden';
+  e.target.textContent = hidden ? 'Hide' : 'Show';
+};
+document.getElementById('tokcopy').onclick = () => navigator.clipboard.writeText(token).then(() => msg('Token copied'), () => msg('Copy failed', true));
+
+load().catch(e => msg(e.message, true));
+loadToken().catch(e => msg(e.message, true));
+</script>
+</body>
+</html>
