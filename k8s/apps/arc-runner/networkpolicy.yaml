@@ -134,6 +134,14 @@ spec:
       toPorts:
         - ports:
             - { port: "80", protocol: TCP }
+    # NetworkManager's connectivity check in the homeserver-gui VM (NetworkManager-config-connectivity-fedora): a
+    # plain HTTP GET of http://fedoraproject.org/static/hotspot.txt, retried against every address of the name when it
+    # is dropped (about 100 dropped connections per address in one job).
+    - toFQDNs:
+        - matchName: fedoraproject.org
+      toPorts:
+        - ports:
+            - { port: "80", protocol: TCP }
     # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
     - toEndpoints:
         - matchLabels:
