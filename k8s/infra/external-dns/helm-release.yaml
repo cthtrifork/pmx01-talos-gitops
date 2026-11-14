@@ -30,6 +30,9 @@ spec:
       # No digest yet: registry.k8s.io was not reachable when this was written. Renovate pins it (pinDigests).
       # renovate: datasource=docker depName=registry.k8s.io/external-dns/external-dns versioning=docker
       tag: v0.23.0
+    # Scaled to zero until the Secret cloudflare-api-token exists, so the missing Secret does not fail the release
+    # and block the Kustomization. Remove this line once the Secret is created.
+    replicaCount: 0
     provider:
       name: cloudflare
     sources:

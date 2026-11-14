@@ -48,6 +48,8 @@ kind: Job
 metadata:
   name: dependency-track-kek
   namespace: security-system
+  annotations:
+    kustomize.toolkit.fluxcd.io/force: enabled # a new image digest changes the immutable pod template: Flux recreates the Job
 spec:
   backoffLimit: 3
   template:
