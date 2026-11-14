@@ -123,6 +123,25 @@ spec:
         - ports:
             - { port: "80", protocol: TCP }
             - { port: "443", protocol: TCP }
+    # Certificate revocation checks (CRL and OCSP, plain HTTP) of the VS Code extension signature verification: the
+    # homeserver-gui e2e VM installs extensions, and without these each check waits for a 30 to 60 s timeout, so one
+    # install takes about 90 s. The names are those the VM queried during an install.
+    - toFQDNs:
+        - matchName: ocsp.digicert.com
+        - matchName: crl3.digicert.com
+        - matchName: crl.microsoft.com
+        - matchName: www.microsoft.com
+      toPorts:
+        - ports:
+            - { port: "80", protocol: TCP }
+    # NetworkManager's connectivity check in the homeserver-gui VM (NetworkManager-config-connectivity-fedora): a
+    # plain HTTP GET of http://fedoraproject.org/static/hotspot.txt, retried against every address of the name when it
+    # is dropped (about 100 dropped connections per address in one job).
+    - toFQDNs:
+        - matchName: fedoraproject.org
+      toPorts:
+        - ports:
+            - { port: "80", protocol: TCP }
     # zot, the cluster's registry (image pushes and pulls; the zot-lb address is translated to the pod)
     - toEndpoints:
         - matchLabels:
