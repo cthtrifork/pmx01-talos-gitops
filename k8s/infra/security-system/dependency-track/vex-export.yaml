@@ -49,12 +49,12 @@ spec:
                 - -eu
                 - -c
                 - |
-                  if [ -z "$API_KEY" ]; then
+                  if [ -z "${API_KEY:-}" ]; then
                     echo "DRY RUN: Secret dependency-track-vex-api-key is missing (config-job creates it once dependency-track-admin is seeded); nothing to export"
                     exit 0
                   fi
                   cd /work
-                  if [ -n "$GITHUB_TOKEN" ]; then
+                  if [ -n "${GITHUB_TOKEN:-}" ]; then
                     # the token goes to git through the environment, not the command line
                     export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0="http.https://github.com/.extraheader" \
                       GIT_CONFIG_VALUE_0="Authorization: Basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
@@ -139,7 +139,7 @@ spec:
                   done
 
                   # 3. index, commit only vex/, push, pull request
-                  if [ -z "$GITHUB_TOKEN" ]; then
+                  if [ -z "${GITHUB_TOKEN:-}" ]; then
                     echo "DRY RUN: Secret dependency-track-vex-github (key token) is not seeded, nothing is pushed. Would write:"
                     for doc in $(find vex/pkg/oci -name oci.openvex.json 2>/dev/null | sort); do
                       echo "  $doc ($(jq '.statements | length' "$doc") statements)"
