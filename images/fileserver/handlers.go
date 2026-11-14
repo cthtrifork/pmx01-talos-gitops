@@ -38,8 +38,10 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 func httpError(w http.ResponseWriter, err error) {
 	code := http.StatusInternalServerError
 	switch {
-	case errors.Is(err, ErrBadName):
+	case errors.Is(err, ErrBadName), errors.Is(err, ErrBadSum):
 		code = http.StatusBadRequest
+	case errors.Is(err, ErrChecksum):
+		code = http.StatusUnprocessableEntity
 	case errors.Is(err, ErrNotFound):
 		code = http.StatusNotFound
 	case errors.Is(err, ErrClash):
@@ -81,18 +83,13 @@ func publicHandler(root *os.Root) http.Handler {
 	return mux
 }
 
-// uploadHandler is the CI endpoint: PUT /v1/files/<name>?visibility=public|private with a GitHub OIDC bearer token.
-// An existing file with the same name in the same visibility is replaced.
-func uploadHandler(s *Store, a *Verifier, max int64) http.Handler {
+// uploadHandler is the CI endpoint: PUT /v1/files/<name>?visibility=public|private with the rotating bearer token.
+// An existing file with the same name in the same visibility is replaced. Only this handler accepts the token.
+func uploadHandler(s *Store, a *TokenAuth, max int64) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /v1/files/{name}", func(w http.ResponseWriter, r *http.Request) {
-		repo, err := a.Check(r.Context(), r.Header.Get("Authorization"))
-		if err != nil {
-			if errors.Is(err, errForbidden) {
-				slog.Warn("upload refused", "reason", "repository not allowed")
-				http.Error(w, err.Error(), http.StatusForbidden)
-				return
-			}
+		if err := a.Check(r.Header.Get("Authorization")); err != nil {
+			slog.Warn("upload refused", "remote", r.RemoteAddr)
 			w.Header().Set("WWW-Authenticate", "Bearer")
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -107,13 +104,13 @@ func uploadHandler(s *Store, a *Verifier, max int64) http.Handler {
 			return
 		}
 		body := http.MaxBytesReader(w, r.Body, max)
-		n, err := s.Put(name, vis, body, max, r.ContentLength)
+		n, err := s.Put(name, vis, body, max, r.ContentLength, r.Header.Get("X-Content-SHA256"))
 		if err != nil {
-			slog.Warn("upload failed", "repository", repo, "name", name, "visibility", vis, "err", err)
+			slog.Warn("upload failed", "name", name, "visibility", vis, "err", err)
 			httpError(w, err)
 			return
 		}
-		slog.Info("uploaded", "repository", repo, "name", name, "visibility", vis, "bytes", n)
+		slog.Info("uploaded", "name", name, "visibility", vis, "bytes", n)
 		writeJSON(w, http.StatusCreated, Entry{Name: name, Visibility: vis, Size: n})
 	})
 	return mux
@@ -121,7 +118,7 @@ func uploadHandler(s *Store, a *Verifier, max int64) http.Handler {
 
 // adminHandler serves the admin page and its JSON API. It has no login of its own: only the Omni service exposer
 // reaches it. State-changing calls need a custom header so a page on another origin cannot trigger them.
-func adminHandler(s *Store, max int64) http.Handler {
+func adminHandler(s *Store, a *TokenAuth, max int64) http.Handler {
 	mux := http.NewServeMux()
 	guard := func(h http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -150,6 +147,11 @@ func adminHandler(s *Store, max int64) http.Handler {
 		}
 		writeJSON(w, http.StatusOK, list)
 	})
+	// The upload token is shown here on purpose: reaching this page already takes the Omni login.
+	mux.HandleFunc("GET /api/token", guard(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		writeJSON(w, http.StatusOK, a.Info())
+	}))
 	mux.HandleFunc("POST /api/files", guard(func(w http.ResponseWriter, r *http.Request) {
 		vis := Visibility(r.URL.Query().Get("visibility"))
 		if vis == "" {
@@ -178,7 +180,7 @@ func adminHandler(s *Store, max int64) http.Handler {
 				continue
 			}
 			name := part.FileName()
-			n, err := s.Put(name, vis, part, max, 0)
+			n, err := s.Put(name, vis, part, max, 0, "")
 			if err != nil {
 				slog.Warn("admin upload failed", "name", name, "err", err)
 				httpError(w, err)

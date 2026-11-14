@@ -23,6 +23,13 @@
   <button>Upload</button> <progress id="bar" max="1" value="0" hidden></progress>
 </form>
 <div id="msg"></div>
+<details id="tok">
+  <summary>Upload token (internal upload API only)</summary>
+  <p><code id="tokval">hidden</code>
+    <button id="tokshow" type="button">Show</button>
+    <button id="tokcopy" type="button">Copy</button></p>
+  <p id="tokinfo"></p>
+</details>
 <table>
   <thead><tr><th>Name</th><th>Visibility</th><th class="num">Size</th><th>Modified</th><th></th></tr></thead>
   <tbody id="rows"></tbody>
@@ -84,7 +91,24 @@ document.getElementById('up').addEventListener('submit', e => {
   xhr.send(new FormData(e.target));
 });
 
+let token = '';
+async function loadToken() {
+  const t = await (await call('/api/token')).json();
+  token = t.current || '';
+  const when = d => new Date(d).toLocaleString();
+  document.getElementById('tokinfo').textContent = !token ? 'No token yet: the rotation job has not run.'
+    : 'Rotated ' + when(t.rotatedAt) + (t.previousValidUntil ? '. The previous token also works until ' + when(t.previousValidUntil) + '.' : '.');
+}
+document.getElementById('tokshow').onclick = e => {
+  const v = document.getElementById('tokval');
+  const hidden = v.textContent === 'hidden';
+  v.textContent = hidden ? (token || 'none') : 'hidden';
+  e.target.textContent = hidden ? 'Hide' : 'Show';
+};
+document.getElementById('tokcopy').onclick = () => navigator.clipboard.writeText(token).then(() => msg('Token copied'), () => msg('Copy failed', true));
+
 load().catch(e => msg(e.message, true));
+loadToken().catch(e => msg(e.message, true));
 </script>
 </body>
 </html>

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -38,7 +40,11 @@ var (
 	ErrClash    = errors.New("name exists with the other visibility")
 	ErrTooLarge = errors.New("file too large")
 	ErrNoSpace  = errors.New("not enough free space")
+	ErrBadSum   = errors.New("X-Content-SHA256 must be 64 hex characters")
+	ErrChecksum = errors.New("body does not match X-Content-SHA256")
 )
+
+var sumRe = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 // A name starts with a letter, digit or underscore (no dotfiles, no "..") and has no path separator.
 var nameRe = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$`)
@@ -98,9 +104,14 @@ func (s *Store) exists(v Visibility, name string) bool {
 
 // Put streams r into a temporary file and renames it into place, so a half upload is never visible and an
 // existing file is replaced only by a complete one. sizeHint is the Content-Length or 0 if unknown.
-func (s *Store) Put(name string, vis Visibility, r io.Reader, max, sizeHint int64) (int64, error) {
+// wantSum is an optional hex SHA-256 of the whole body; when set, a body that hashes differently is refused.
+func (s *Store) Put(name string, vis Visibility, r io.Reader, max, sizeHint int64, wantSum string) (int64, error) {
 	if !validName(name) || !vis.valid() {
 		return 0, ErrBadName
+	}
+	wantSum = strings.ToLower(strings.TrimSpace(wantSum))
+	if wantSum != "" && !sumRe.MatchString(wantSum) {
+		return 0, ErrBadSum
 	}
 	if sizeHint > max {
 		return 0, ErrTooLarge
@@ -127,7 +138,8 @@ func (s *Store) Put(name string, vis Visibility, r io.Reader, max, sizeHint int6
 	}
 	cleanup := func() { _ = f.Close(); _ = s.root.Remove(tmp) }
 
-	n, err := io.Copy(f, io.LimitReader(r, max+1))
+	h := sha256.New()
+	n, err := io.Copy(io.MultiWriter(f, h), io.LimitReader(r, max+1))
 	if err != nil {
 		cleanup()
 		if errors.Is(err, syscall.ENOSPC) {
@@ -138,6 +150,10 @@ func (s *Store) Put(name string, vis Visibility, r io.Reader, max, sizeHint int6
 	if n > max {
 		cleanup()
 		return 0, ErrTooLarge
+	}
+	if wantSum != "" && hex.EncodeToString(h.Sum(nil)) != wantSum {
+		cleanup()
+		return 0, ErrChecksum
 	}
 	if err := f.Sync(); err != nil {
 		cleanup()

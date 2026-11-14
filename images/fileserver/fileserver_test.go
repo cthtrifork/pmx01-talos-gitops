@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -13,12 +15,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"crypto/rand"
-	"crypto/rsa"
-
-	"github.com/go-jose/go-jose/v4"
-	"github.com/go-jose/go-jose/v4/jwt"
 )
 
 func newStore(t *testing.T) *Store {
@@ -32,7 +28,7 @@ func newStore(t *testing.T) *Store {
 
 func put(t *testing.T, s *Store, name string, v Visibility, body string) error {
 	t.Helper()
-	_, err := s.Put(name, v, strings.NewReader(body), 1<<20, 0)
+	_, err := s.Put(name, v, strings.NewReader(body), 1<<20, 0, "")
 	return err
 }
 
@@ -77,7 +73,7 @@ func TestPutOverwriteAndClash(t *testing.T) {
 func TestPutTooLargeLeavesNothing(t *testing.T) {
 	s := newStore(t)
 	_ = put(t, s, "keep", Public, "good")
-	_, err := s.Put("keep", Public, strings.NewReader("0123456789"), 5, 0)
+	_, err := s.Put("keep", Public, strings.NewReader("0123456789"), 5, 0, "")
 	if !errors.Is(err, ErrTooLarge) {
 		t.Fatalf("want ErrTooLarge, got %v", err)
 	}
@@ -158,7 +154,7 @@ func TestPublicNeverServesPrivate(t *testing.T) {
 
 func TestAdminAPI(t *testing.T) {
 	s := newStore(t)
-	h := adminHandler(s, 1<<20)
+	h := adminHandler(s, NewTokenAuth(t.TempDir(), time.Hour), 1<<20)
 
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
@@ -202,99 +198,226 @@ func TestAdminAPI(t *testing.T) {
 	}
 }
 
-// fakeIssuer is a minimal OIDC provider: discovery document, JWKS and a token signer.
-type fakeIssuer struct {
-	srv *httptest.Server
-	key *rsa.PrivateKey
+func writeToken(t *testing.T, dir, cur, prev string, at time.Time) {
+	t.Helper()
+	for k, v := range map[string]string{"current": cur, "previous": prev, "rotated-at": at.UTC().Format(time.RFC3339)} {
+		if v == "" {
+			continue
+		}
+		if err := os.WriteFile(filepath.Join(dir, k), []byte(v+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
-func newFakeIssuer(t *testing.T) *fakeIssuer {
-	t.Helper()
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatal(err)
+func TestTokenAuth(t *testing.T) {
+	dir := t.TempDir()
+	now := time.Now()
+	a := NewTokenAuth(dir, 24*time.Hour)
+	if err := a.Check("Bearer anything"); err == nil {
+		t.Fatal("no Secret yet: every token must be refused")
 	}
-	f := &fakeIssuer{key: key}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"issuer": f.srv.URL, "jwks_uri": f.srv.URL + "/jwks",
-			"id_token_signing_alg_values_supported": []string{"RS256"},
-		})
-	})
-	mux.HandleFunc("/jwks", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: &key.PublicKey, KeyID: "k1", Algorithm: "RS256", Use: "sig"}}})
-	})
-	f.srv = httptest.NewServer(mux)
+	writeToken(t, dir, "new-token", "old-token", now.Add(-time.Hour))
+	cases := map[string]bool{
+		"Bearer new-token": true, "Bearer old-token": true, // previous is valid inside the grace period
+		"Bearer wrong": false, "Bearer ": false, "new-token": false, "Basic new-token": false, "": false,
+	}
+	for h, ok := range cases {
+		if err := a.Check(h); (err == nil) != ok {
+			t.Errorf("Check(%q): ok=%v, want %v", h, err == nil, ok)
+		}
+	}
+	writeToken(t, dir, "new-token", "old-token", now.Add(-25*time.Hour))
+	if err := a.Check("Bearer old-token"); err == nil {
+		t.Error("previous token must expire after the grace period")
+	}
+	if err := a.Check("Bearer new-token"); err != nil {
+		t.Error("current token must stay valid")
+	}
+}
+
+func TestUploadWithToken(t *testing.T) {
+	dir := t.TempDir()
+	writeToken(t, dir, "tok", "", time.Now())
+	s := newStore(t)
+	h := uploadHandler(s, NewTokenAuth(dir, time.Hour), 1<<20)
+	send := func(auth, path string) int {
+		req := httptest.NewRequest("PUT", path, strings.NewReader("data"))
+		if auth != "" {
+			req.Header.Set("Authorization", auth)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	if c := send("", "/v1/files/a"); c != 401 {
+		t.Errorf("no token: %d", c)
+	}
+	if c := send("Bearer nope", "/v1/files/a"); c != 401 {
+		t.Errorf("bad token: %d", c)
+	}
+	if c := send("Bearer tok", "/v1/files/a?visibility=private"); c != 201 {
+		t.Errorf("good token: %d", c)
+	}
+	if c := send("Bearer tok", "/v1/files/a?visibility=private"); c != 201 { // CI always overwrites
+		t.Errorf("overwrite: %d", c)
+	}
+	if c := send("Bearer tok", "/v1/files/a?visibility=public"); c != 409 {
+		t.Errorf("clash: %d", c)
+	}
+	if c := send("Bearer tok", "/v1/files/x?visibility=nope"); c != 400 {
+		t.Errorf("bad visibility: %d", c)
+	}
+	if c := send("Bearer tok", "/v1/files/.hidden"); c != 400 {
+		t.Errorf("bad name: %d", c)
+	}
+}
+
+func TestAdminShowsToken(t *testing.T) {
+	dir := t.TempDir()
+	writeToken(t, dir, "tok", "", time.Now())
+	h := adminHandler(newStore(t), NewTokenAuth(dir, time.Hour), 1<<20)
+	req := httptest.NewRequest("GET", "/api/token", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != 403 {
+		t.Fatalf("without header: %d", rec.Code)
+	}
+	req.Header.Set("X-Requested-With", "fileserver")
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	var info TokenInfo
+	_ = json.Unmarshal(rec.Body.Bytes(), &info)
+	if rec.Code != 200 || info.Current != "tok" || info.RotatedAt == nil {
+		t.Fatalf("got %d %s", rec.Code, rec.Body)
+	}
+	// the public handler must know nothing about tokens
+	root, _ := os.OpenRoot(t.TempDir())
+	rec = httptest.NewRecorder()
+	publicHandler(root).ServeHTTP(rec, httptest.NewRequest("GET", "/api/token", nil))
+	if rec.Code == 200 {
+		t.Fatal("public handler served /api/token")
+	}
+}
+
+// fakeKube is just enough of the Secrets API for the rotator.
+type fakeKube struct {
+	srv     *httptest.Server
+	secrets map[string]*secretObj
+	writes  int
+}
+
+func newFakeKube(t *testing.T) *fakeKube {
+	f := &fakeKube{secrets: map[string]*secretObj{}}
+	f.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer sa-token" {
+			w.WriteHeader(401)
+			return
+		}
+		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/v1/namespaces/"), "/") // ns, "secrets"[, name]
+		ns := parts[0]
+		switch r.Method {
+		case "GET":
+			s, ok := f.secrets[ns+"/"+parts[2]]
+			if !ok {
+				w.WriteHeader(404)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(s)
+		case "POST", "PUT":
+			var s secretObj
+			_ = json.NewDecoder(r.Body).Decode(&s)
+			key := ns + "/" + s.Metadata.Name
+			_, exists := f.secrets[key]
+			if (r.Method == "POST") == exists {
+				w.WriteHeader(409)
+				return
+			}
+			s.Metadata.ResourceVersion = "1"
+			f.secrets[key] = &s
+			f.writes++
+			w.WriteHeader(200)
+			_ = json.NewEncoder(w).Encode(s)
+		}
+	}))
 	t.Cleanup(f.srv.Close)
 	return f
 }
 
-func (f *fakeIssuer) token(t *testing.T, key *rsa.PrivateKey, iss, aud, repo string, exp time.Time) string {
-	t.Helper()
-	sig, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: key}, (&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", "k1"))
-	if err != nil {
-		t.Fatal(err)
+func TestRotate(t *testing.T) {
+	f := newFakeKube(t)
+	k := &kube{base: f.srv.URL, token: "sa-token", hc: f.srv.Client()}
+	targets := []secretRef{{"fileserver", "tok"}, {"arc", "tok"}}
+	month := 30 * 24 * time.Hour
+	now := time.Now()
+
+	// first run creates both copies with the same token
+	if r, err := rotate(t.Context(), k, targets, month, now); err != nil || !r {
+		t.Fatalf("first run: rotated=%v err=%v", r, err)
 	}
-	tok, err := jwt.Signed(sig).Claims(jwt.Claims{Issuer: iss, Audience: jwt.Audience{aud}, Expiry: jwt.NewNumericDate(exp), IssuedAt: jwt.NewNumericDate(time.Now())}).
-		Claims(map[string]any{"repository": repo}).Serialize()
-	if err != nil {
-		t.Fatal(err)
+	a, b := f.secrets["fileserver/tok"], f.secrets["arc/tok"]
+	if a == nil || b == nil || !sameData(a.Data, b.Data) || !strings.HasPrefix(string(a.Data["current"]), "fs_") || len(a.Data["previous"]) != 0 {
+		t.Fatalf("bad first state: %+v %+v", a, b)
 	}
-	return tok
+	first := string(a.Data["current"])
+
+	// a run inside the period changes nothing
+	w := f.writes
+	if r, err := rotate(t.Context(), k, targets, month, now.Add(24*time.Hour)); err != nil || r || f.writes != w {
+		t.Fatalf("early run: rotated=%v writes=%d err=%v", r, f.writes-w, err)
+	}
+
+	// a deleted copy is repaired without rotating
+	delete(f.secrets, "arc/tok")
+	if r, err := rotate(t.Context(), k, targets, month, now.Add(48*time.Hour)); err != nil || r || f.secrets["arc/tok"] == nil {
+		t.Fatalf("repair: rotated=%v err=%v", r, err)
+	}
+
+	// after 30 days it rotates, keeps the old token as previous, and updates both copies
+	if r, err := rotate(t.Context(), k, targets, month, now.Add(31*24*time.Hour)); err != nil || !r {
+		t.Fatalf("rotation: rotated=%v err=%v", r, err)
+	}
+	a, b = f.secrets["fileserver/tok"], f.secrets["arc/tok"]
+	if string(a.Data["current"]) == first || string(a.Data["previous"]) != first || !sameData(a.Data, b.Data) {
+		t.Fatalf("bad rotated state: %+v", a.Data)
+	}
 }
 
-func TestUploadAuth(t *testing.T) {
-	iss := newFakeIssuer(t)
+func TestParseTargets(t *testing.T) {
+	if got, err := parseTargets("a/b, c/d"); err != nil || len(got) != 2 || got[1] != (secretRef{"c", "d"}) {
+		t.Fatalf("got %v %v", got, err)
+	}
+	for _, bad := range []string{"", "ab", "/x", "x/"} {
+		if _, err := parseTargets(bad); err == nil {
+			t.Errorf("%q should fail", bad)
+		}
+	}
+}
+
+func TestPutChecksum(t *testing.T) {
 	s := newStore(t)
-	v := NewVerifier(iss.srv.URL, "fileserver", []string{"cthtrifork/homeserver-bootc"})
-	h := uploadHandler(s, v, 1<<20)
-	other, _ := rsa.GenerateKey(rand.Reader, 2048)
-	future := time.Now().Add(time.Hour)
-
-	send := func(token, path, body string) *httptest.ResponseRecorder {
-		req := httptest.NewRequest("PUT", path, strings.NewReader(body))
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, req)
-		return rec
+	sum := sha256.Sum256([]byte("payload"))
+	good := hex.EncodeToString(sum[:])
+	put := func(body, want string) error {
+		_, err := s.Put("img", Private, strings.NewReader(body), 1<<20, 0, want)
+		return err
 	}
-	good := iss.token(t, iss.key, iss.srv.URL, "fileserver", "cthtrifork/homeserver-bootc", future)
-
-	cases := []struct {
-		name  string
-		token string
-		want  int
-	}{
-		{"no token", "", 401},
-		{"garbage", "abc.def.ghi", 401},
-		{"wrong signature", iss.token(t, other, iss.srv.URL, "fileserver", "cthtrifork/homeserver-bootc", future), 401},
-		{"wrong audience", iss.token(t, iss.key, iss.srv.URL, "other", "cthtrifork/homeserver-bootc", future), 401},
-		{"wrong issuer", iss.token(t, iss.key, "https://evil.example", "fileserver", "cthtrifork/homeserver-bootc", future), 401},
-		{"expired", iss.token(t, iss.key, iss.srv.URL, "fileserver", "cthtrifork/homeserver-bootc", time.Now().Add(-time.Hour)), 401},
-		{"other repository", iss.token(t, iss.key, iss.srv.URL, "fileserver", "cthtrifork/other", future), 403},
-		{"allowed repository", good, 201},
+	if err := put("payload", strings.ToUpper(good)); err != nil { // case-insensitive
+		t.Fatalf("matching sum: %v", err)
 	}
-	for _, c := range cases {
-		if rec := send(c.token, "/v1/files/img.qcow2?visibility=private", "data"); rec.Code != c.want {
-			t.Errorf("%s: want %d, got %d (%s)", c.name, c.want, rec.Code, strings.TrimSpace(rec.Body.String()))
-		}
+	if err := put("truncated", good); !errors.Is(err, ErrChecksum) {
+		t.Fatalf("want ErrChecksum, got %v", err)
 	}
-	if _, _, err := s.Open(Private, "img.qcow2"); err != nil {
-		t.Fatal("authorised upload not stored")
+	if err := put("payload", "xyz"); !errors.Is(err, ErrBadSum) {
+		t.Fatalf("want ErrBadSum, got %v", err)
 	}
-	if rec := send(good, "/v1/files/img.qcow2?visibility=private", "newer"); rec.Code != 201 { // CI always overwrites
-		t.Fatalf("overwrite: %d", rec.Code)
+	f, _, _ := s.Open(Private, "img")
+	b, _ := io.ReadAll(f)
+	f.Close()
+	if string(b) != "payload" {
+		t.Fatalf("a refused upload replaced the good file: %q", b)
 	}
-	if rec := send(good, "/v1/files/img.qcow2?visibility=public", "x"); rec.Code != 409 {
-		t.Fatalf("clash: want 409, got %d", rec.Code)
-	}
-	if rec := send(good, "/v1/files/x?visibility=nope", "x"); rec.Code != 400 {
-		t.Fatalf("bad visibility: want 400, got %d", rec.Code)
-	}
-	if rec := send(good, "/v1/files/.hidden", "x"); rec.Code != 400 {
-		t.Fatalf("bad name: want 400, got %d", rec.Code)
+	if ents, _ := os.ReadDir(filepath.Join(s.dir, ".tmp")); len(ents) != 0 {
+		t.Fatalf("temp files left: %d", len(ents))
 	}
 }

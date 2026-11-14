@@ -2,7 +2,8 @@
 //
 //	--mode=public  GET /<name> from the public directory, read-only mount
 //	--mode=admin   admin page and JSON API, reached through the Omni service exposer
-//	--mode=upload  PUT /v1/files/<name> for CI, authenticated with GitHub Actions OIDC tokens
+//	--mode=upload  PUT /v1/files/<name> for CI, authenticated with a bearer token rotated by --mode=rotate
+//	--mode=rotate  CronJob: creates and rotates the upload token Secret in the pod and runner namespaces
 package main
 
 import (
@@ -14,7 +15,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -39,8 +39,16 @@ func envInt(key string, def int64) int64 {
 	return n
 }
 
+// tokenAuth reads the mounted token Secret. The directory may not exist yet (before the first rotation): uploads
+// are refused until it does, the pod itself stays up.
+func tokenAuth() *TokenAuth {
+	grace, err := time.ParseDuration(env("PREVIOUS_TOKEN_GRACE", "24h"))
+	fatal(err)
+	return NewTokenAuth(env("TOKEN_DIR", "/var/run/fileserver-token"), grace)
+}
+
 func main() {
-	mode := flag.String("mode", "", "public, admin or upload")
+	mode := flag.String("mode", "", "public, admin, upload or rotate")
 	flag.Parse()
 
 	dataDir := env("DATA_DIR", "/data")
@@ -59,21 +67,16 @@ func main() {
 	case "admin":
 		s, err := NewStore(dataDir, uint64(minFree))
 		fatal(err)
-		handler, addr = adminHandler(s, maxBytes), env("LISTEN_ADDR", ":8081")
+		handler, addr = adminHandler(s, tokenAuth(), maxBytes), env("LISTEN_ADDR", ":8081")
 	case "upload":
 		s, err := NewStore(dataDir, uint64(minFree))
 		fatal(err)
-		a := NewVerifier(
-			env("OIDC_ISSUER", "https://token.actions.githubusercontent.com"),
-			env("OIDC_AUDIENCE", "fileserver"),
-			strings.Split(os.Getenv("ALLOWED_REPOS"), ","),
-		)
-		if len(a.repos) == 0 {
-			fatal(fmt.Errorf("ALLOWED_REPOS is empty: refusing to start an upload endpoint nobody may use"))
-		}
-		handler, addr = uploadHandler(s, a, maxBytes), env("LISTEN_ADDR", ":8082")
+		handler, addr = uploadHandler(s, tokenAuth(), maxBytes), env("LISTEN_ADDR", ":8082")
+	case "rotate":
+		fatal(runRotate())
+		return
 	default:
-		fatal(fmt.Errorf("--mode must be public, admin or upload"))
+		fatal(fmt.Errorf("--mode must be public, admin, upload or rotate"))
 	}
 
 	// No overall read/write timeout: images are several GiB. Header and idle timeouts still bound slow clients.
