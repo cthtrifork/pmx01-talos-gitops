@@ -8,6 +8,8 @@ metadata:
   namespace: security-system
 spec:
   instances: 1
+  # A single instance has nothing to fail over to, so the default PDB (minAvailable 1) only blocks node drains and Talos upgrades.
+  enablePDB: false
   enableSuperuserAccess: false
   storage:
     size: 8Gi
