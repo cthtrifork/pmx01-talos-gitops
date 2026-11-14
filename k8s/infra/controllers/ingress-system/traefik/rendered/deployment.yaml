@@ -14,7 +14,7 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: traefik
@@ -178,6 +178,14 @@ spec:
           type: RuntimeDefault
       serviceAccountName: traefik
       terminationGracePeriodSeconds: 60
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: traefik-traefik-system
+              app.kubernetes.io/name: traefik
+          maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
       volumes:
         - emptyDir: {}
           name: data

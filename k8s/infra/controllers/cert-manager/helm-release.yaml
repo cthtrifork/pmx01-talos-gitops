@@ -29,6 +29,20 @@ spec:
       limits:
         memory: 256Mi
     webhook:
+      # the API server calls this on every cert-manager resource write: keep it up while a node drains
+      replicaCount: 2
+      podDisruptionBudget:
+        enabled: true
+        maxUnavailable: 1
+      topologySpreadConstraints:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: webhook
+              app.kubernetes.io/instance: cert-manager
+              app.kubernetes.io/component: webhook
+          maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
       image:
         # renovate: datasource=docker depName=quay.io/jetstack/cert-manager-webhook versioning=docker
         tag: v1.21.3@sha256:055ac8e9de6a0ba6763794838fe38944acc650f68ebe1b01dd8be079e580f458

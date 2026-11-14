@@ -28,6 +28,9 @@ spec:
       enabled: true
     dashboard:
       replicas: 1
+      pdb:
+        # one replica: maxUnavailable 1 allows evicting it, so the chart PDB protects nothing
+        enable: false
       service:
         annotations:
           omni-kube-service-exposer.sidero.dev/label: "Polaris"
