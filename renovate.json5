@@ -24,7 +24,6 @@
   "ignorePaths": [
     "scripts/**",
     "k8s/**/rendered/**",
-    "k8s/**/kyverno-policies/tests/**/*.yaml",
     "k8s/**/sync.yaml",
     "k8s/**/cluster.yaml"
   ],

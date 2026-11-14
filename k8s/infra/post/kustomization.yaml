@@ -13,4 +13,3 @@ resources:
   - registry-system/zot-certificate.yaml
   - security-system/dependency-track-postgres-cluster.yaml
   - security-system/dependency-track-ingressroute.yaml
-  #- kyverno-policies/

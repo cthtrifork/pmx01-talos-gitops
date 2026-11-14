@@ -4,7 +4,6 @@ kind: Kustomization
 namespace: policy-system
 resources:
   - namespace.yaml
-  #- kyverno/
   - networkpolicy.yaml
   - polaris/
   # - reports-server-postgres/

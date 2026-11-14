@@ -45,7 +45,6 @@ jobs:
           files: |
             k8s/**/*.{yaml,yml}
           files_ignore: |
-            k8s/**/kyverno-policies/**
             k8s/**/policies/tests/**
           separator: "\n"
           # The default escaping turns the newline separator into a backslash + newline, so every path but the last
