@@ -32,7 +32,7 @@ spec:
       # renovate: datasource=docker depName=mirror.gcr.io/library/traefik versioning=docker
       tag: v3.7.19@sha256:aa942a00bce033c909bf1f7e861d93761be4b31a035f10d2410d33e38a8f41cf
     deployment:
-      replicas: 1
+      replicas: 2
       annotations:
         reloader.stakater.com/auto: "true" # restart when the tunnel token Secret changes
       additionalContainers:
@@ -86,6 +86,18 @@ spec:
             capabilities:
               drop:
                 - "ALL"
+    podDisruptionBudget:
+      enabled: true
+      maxUnavailable: 1
+    # spread over nodes when possible; ScheduleAnyway keeps a drain from leaving a replica Pending
+    topologySpreadConstraints:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
+            app.kubernetes.io/instance: traefik-traefik-system
+        maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
     service:
       spec:
         type: ClusterIP # reached through the tunnel only
