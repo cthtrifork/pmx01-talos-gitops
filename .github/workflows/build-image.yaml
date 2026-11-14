@@ -13,6 +13,7 @@ on:
     paths:
       - images/github-actions-runner/**
       - images/claude-runner/**
+      - images/fileserver/**
       - .github/workflows/build-image.yaml
   push:
     tags:
@@ -46,6 +47,8 @@ jobs:
       image_digest_github-actions-runner: ${{ steps.slsa.outputs.image_digest_github-actions-runner }}
       image_url_claude-runner: ${{ steps.slsa.outputs.image_url_claude-runner }}
       image_digest_claude-runner: ${{ steps.slsa.outputs.image_digest_claude-runner }}
+      image_url_fileserver: ${{ steps.slsa.outputs.image_url_fileserver }}
+      image_digest_fileserver: ${{ steps.slsa.outputs.image_digest_fileserver }}
     permissions:
       contents: read
       id-token: write # for creating OIDC tokens for signing.
@@ -62,6 +65,10 @@ jobs:
             containerfile: images/claude-runner/Dockerfile
             context: images/claude-runner
             registryurl: ghcr.io/${{ github.repository }}/claude-runner
+          - name: fileserver
+            containerfile: images/fileserver/Dockerfile
+            context: images/fileserver
+            registryurl: ghcr.io/${{ github.repository }}/fileserver
     env:
       PUBLISH: ${{ github.event_name != 'pull_request' }}
     steps:
@@ -165,7 +172,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [github-actions-runner, claude-runner]
+        image: [github-actions-runner, claude-runner, fileserver]
     permissions:
       actions: read # for detecting the Github Actions environment.
       id-token: write # for creating OIDC tokens for signing.
